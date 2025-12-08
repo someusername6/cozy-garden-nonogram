@@ -299,6 +299,7 @@
   function updateDropdown() {
     const puzzles = getPuzzles();
     const select = document.getElementById('puzzle-select-dropdown');
+    if (!select) return; // Skip if dropdown doesn't exist (using collection view)
     const storage = getStorage();
     select.innerHTML = '';
 
@@ -379,6 +380,7 @@
     buildPalette(puzzle);
     buildClues(puzzle);
     buildGrid(puzzle);
+    updateCurrentPuzzleTitle();
 
     // Update cell visuals if grid was restored
     if (hasRestoredGrid) {
@@ -760,6 +762,9 @@
       storage.completePuzzle(puzzleId);
       clearSession();
       updateDropdown();
+      // Refresh collection to show completion
+      const collection = window.CozyCollection;
+      if (collection) collection.refresh();
     }
 
     // Clear history after win
@@ -866,10 +871,53 @@
     });
   }
 
+  // === Navigation ===
+
+  function showCollection() {
+    document.body.classList.remove('showing-game');
+    document.body.classList.add('showing-collection');
+
+    // Save current puzzle before leaving
+    const puzzles = getPuzzles();
+    const storage = getStorage();
+    if (grid.length > 0 && puzzles[currentPuzzle] && storage) {
+      const puzzleId = getPuzzleId(puzzles[currentPuzzle]);
+      storage.savePuzzleGrid(puzzleId, grid);
+    }
+
+    // Refresh collection to show updated completion status
+    const collection = window.CozyCollection;
+    if (collection) {
+      collection.refresh();
+    }
+  }
+
+  function showGame(puzzleIndex) {
+    document.body.classList.remove('showing-collection');
+    document.body.classList.add('showing-game');
+
+    if (puzzleIndex !== undefined && puzzleIndex !== currentPuzzle) {
+      loadPuzzle(puzzleIndex);
+    }
+  }
+
+  function updateCurrentPuzzleTitle() {
+    const titleEl = document.getElementById('current-puzzle-title');
+    if (!titleEl) return;
+
+    const puzzles = getPuzzles();
+    const puzzle = puzzles[currentPuzzle];
+    if (puzzle) {
+      // Parse name from title (e.g., "Dandelion 2 (5x7, easy)" -> "Dandelion 2")
+      const match = puzzle.title.match(/^(.+?)\s*\(/);
+      const name = match ? match[1].trim() : puzzle.title;
+      titleEl.innerHTML = `<strong>${name}</strong>`;
+    }
+  }
+
   // === Initialization ===
 
   function init() {
-    initPuzzleSelect();
     setupKeyboardShortcuts();
 
     // Initialize history UI
@@ -879,20 +927,29 @@
     // Initialize pencil mode UI
     updatePencilModeUI();
 
-    // Restore session
+    // Initialize collection screen
+    const collection = window.CozyCollection;
+    const puzzles = getPuzzles();
+
+    if (collection && puzzles.length > 0) {
+      collection.init('collection-screen', puzzles, (index) => {
+        showGame(index);
+      });
+    }
+
+    // Check if there's a saved session to resume
     const storage = getStorage();
     const session = storage ? storage.getSession() : null;
 
-    if (session && session.puzzleIndex !== undefined) {
+    if (session && session.puzzleIndex !== undefined && session.grid) {
+      // Resume game in progress
       currentDifficulty = session.difficulty || 'easy';
-
-      document.querySelectorAll('.difficulty-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.textContent.toLowerCase() === currentDifficulty);
-      });
-
-      updateDropdown();
       loadPuzzle(session.puzzleIndex, session.grid);
+      showGame();
     } else {
+      // Start with collection view
+      showCollection();
+      // Pre-load first puzzle in background
       loadPuzzle(0);
     }
   }
@@ -907,7 +964,9 @@
     setPencilMode: setPencilMode,
     clearAllPencilMarks: clearAllPencilMarks,
     confirmAllPencilMarks: confirmAllPencilMarks,
-    selectColor: selectColor
+    selectColor: selectColor,
+    showCollection: showCollection,
+    showGame: showGame
   };
 
   // Auto-initialize

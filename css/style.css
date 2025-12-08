@@ -88,6 +88,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  width: 100%;
   padding: 0 15px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -983,5 +985,286 @@ body.is-installed {
   .zoom-btn {
     width: 40px;
     height: 40px;
+  }
+}
+
+/* === Collection Screen === */
+
+.collection-screen {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 20px;
+}
+
+.collection-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.collection-title {
+  margin: 0 0 8px 0;
+  color: var(--color-primary);
+  font-weight: normal;
+  font-size: 1.3rem;
+}
+
+.collection-stats {
+  font-size: 14px;
+  color: var(--color-text-light);
+}
+
+/* Back button when in game view */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-secondary-dark);
+  padding: 8px 14px;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  transition: all 0.2s;
+  min-height: 40px;
+  margin-bottom: 10px;
+}
+
+.back-btn:hover {
+  background: var(--color-secondary);
+}
+
+.back-btn:active {
+  transform: scale(0.98);
+}
+
+.back-btn-arrow {
+  font-size: 16px;
+}
+
+/* Difficulty sections */
+.collection-section {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.collection-section.collapsed {
+  margin-bottom: 8px;
+}
+
+.collection-section.collapsed .collection-section-header {
+  margin-bottom: 0;
+  border-bottom-color: transparent;
+}
+
+.collection-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 0 6px 0;
+  border-bottom: 2px solid var(--color-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  border-radius: 4px 4px 0 0;
+}
+
+.collection-section-header:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.collection-section-header:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.section-chevron {
+  font-size: 12px;
+  color: var(--color-text-light);
+  width: 16px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.collection-section.collapsed .section-chevron {
+  color: var(--color-text-muted);
+}
+
+.collection-section-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: normal;
+  color: var(--color-primary-dark);
+}
+
+.collection-section-stats {
+  font-size: 13px;
+  color: var(--color-text-light);
+  background: var(--color-secondary);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.collection-section-stats.complete {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+/* Puzzle grid */
+.collection-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+}
+
+/* Puzzle card */
+.puzzle-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.puzzle-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.puzzle-card:active {
+  transform: scale(0.98);
+}
+
+.puzzle-card.completed {
+  border: 2px solid var(--color-primary-light);
+}
+
+.puzzle-card-preview {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  background: var(--color-cell);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.puzzle-card-placeholder {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-family: monospace;
+}
+
+.puzzle-mini-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.puzzle-card-name {
+  font-size: 11px;
+  color: var(--color-text);
+  line-height: 1.2;
+  margin-bottom: 4px;
+  word-break: break-word;
+  max-height: 2.4em;
+  overflow: hidden;
+}
+
+.puzzle-card-badge {
+  font-size: 10px;
+  color: var(--color-text-light);
+  background: var(--color-secondary);
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.puzzle-card.completed .puzzle-card-badge {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+/* Hide game container when collection is shown */
+body.showing-collection .game-container {
+  display: none;
+}
+
+body.showing-game .collection-screen {
+  display: none;
+}
+
+/* Current puzzle indicator */
+.current-puzzle-title {
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin-bottom: 10px;
+}
+
+.current-puzzle-title strong {
+  color: var(--color-text);
+}
+
+/* Responsive collection grid */
+@media (min-width: 480px) {
+  .collection-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 14px;
+  }
+
+  .puzzle-card-preview {
+    width: 70px;
+    height: 70px;
+  }
+
+  .puzzle-card-name {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 768px) {
+  .collection-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 16px;
+  }
+
+  .puzzle-card {
+    padding: 12px;
+  }
+
+  .puzzle-card-preview {
+    width: 80px;
+    height: 80px;
+  }
+
+  .puzzle-card-name {
+    font-size: 13px;
+  }
+}
+
+/* Touch device adjustments */
+@media (hover: none) {
+  .puzzle-card:hover {
+    transform: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  .back-btn:hover {
+    background: var(--color-surface);
+  }
+
+  .collection-section-header:hover {
+    background: transparent;
   }
 }

@@ -27,6 +27,7 @@
   <link rel="preload" href="js/app.js" as="script">
   <link rel="preload" href="js/storage.js" as="script">
   <link rel="preload" href="js/history.js" as="script">
+  <link rel="preload" href="js/collection.js" as="script">
   <link rel="preload" href="js/game.js" as="script">
   <link rel="preload" href="js/zoom.js" as="script">
 
@@ -42,9 +43,18 @@
   </header>
 
   <main class="app-main">
-    <div class="puzzle-select" id="puzzle-select"></div>
+    <!-- Collection Screen (puzzle gallery by difficulty) -->
+    <div class="collection-screen" id="collection-screen"></div>
 
+    <!-- Game View -->
     <div class="game-container">
+      <!-- Back to collection button -->
+      <button class="back-btn" onclick="CozyGarden.showCollection()">
+        <span class="back-btn-arrow">&#8592;</span> Collection
+      </button>
+
+      <!-- Current puzzle title -->
+      <div class="current-puzzle-title" id="current-puzzle-title"></div>
       <div class="palette" id="palette">
         <span class="palette-label">Colors:</span>
       </div>
@@ -112,6 +122,8 @@
   <script src="js/storage.js"></script>
   <!-- Undo/redo history -->
   <script src="js/history.js"></script>
+  <!-- Collection screen -->
+  <script src="js/collection.js"></script>
   <!-- PWA & App lifecycle -->
   <script src="js/app.js"></script>
   <!-- Game logic -->
