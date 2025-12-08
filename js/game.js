@@ -1,6 +1,7 @@
 // Cozy Garden - Nonogram Game Logic
 // Uses window.PUZZLE_DATA loaded from data/puzzles.js
 // Uses window.CozyStorage for progress persistence
+// Uses window.CozyHistory for undo/redo
 
 (function() {
   'use strict';
@@ -9,16 +10,39 @@
   let currentPuzzle = 0;
   let currentDifficulty = 'easy';
   let selectedColor = 1;
-  let grid = [];
+  let grid = [];           // Stores {value, certain} objects
   let isDragging = false;
   let dragColor = null;
+  let dragCertain = true;  // Whether current drag creates certain or maybe cells
+  let pencilMode = false;  // Pencil mode for uncertain marks
 
   // Get puzzles from global (loaded via script tag)
   function getPuzzles() {
     return window.PUZZLE_DATA || [];
   }
 
-  // Utility functions
+  // === Cell State Helpers ===
+
+  function createCell(value = null, certain = true) {
+    return { value: value, certain: certain };
+  }
+
+  function getCell(row, col) {
+    const cell = grid[row]?.[col];
+    if (!cell) return createCell();
+    // Handle legacy format (raw values)
+    if (typeof cell !== 'object' || !('value' in cell)) {
+      return createCell(cell, true);
+    }
+    return cell;
+  }
+
+  function setCellDirect(row, col, value, certain) {
+    grid[row][col] = { value: value, certain: certain };
+  }
+
+  // === Utility functions ===
+
   function rgb(color) {
     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
   }
@@ -37,17 +61,182 @@
     return 'easy';
   }
 
-  // Generate unique puzzle ID from title
   function getPuzzleId(puzzle) {
     return puzzle.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
 
-  // Get storage instance (may not be available yet)
   function getStorage() {
     return window.CozyStorage || null;
   }
 
-  // Save current session state (saves per-puzzle grid)
+  function getHistory() {
+    return window.CozyHistory || null;
+  }
+
+  // === Pencil Mode ===
+
+  function setPencilMode(enabled) {
+    pencilMode = enabled;
+    updatePencilModeUI();
+  }
+
+  function togglePencilMode() {
+    setPencilMode(!pencilMode);
+  }
+
+  function updatePencilModeUI() {
+    const penBtn = document.getElementById('pen-mode-btn');
+    const pencilBtn = document.getElementById('pencil-mode-btn');
+
+    if (penBtn) penBtn.classList.toggle('active', !pencilMode);
+    if (pencilBtn) pencilBtn.classList.toggle('active', pencilMode);
+
+    document.body.classList.toggle('pencil-mode', pencilMode);
+  }
+
+  // Check if there are any pencil marks on the grid
+  function hasPencilMarks() {
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return false;
+
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        if (!cell.certain && cell.value !== null) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function updatePencilActionsVisibility() {
+    const pencilActions = document.getElementById('pencil-actions');
+    if (pencilActions) {
+      pencilActions.style.display = hasPencilMarks() ? 'flex' : 'none';
+    }
+  }
+
+  // === Batch Operations ===
+
+  function clearAllPencilMarks() {
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return;
+
+    const changes = [];
+
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        if (!cell.certain && cell.value !== null) {
+          changes.push({
+            row, col,
+            before: { value: cell.value, certain: cell.certain },
+            after: { value: null, certain: true }
+          });
+          setCellDirect(row, col, null, true);
+          updateCellVisual(row, col, puzzle);
+        }
+      }
+    }
+
+    if (changes.length > 0) {
+      const history = getHistory();
+      if (history) {
+        history.recordBatchAction('batch-clear', changes);
+      }
+
+      // Haptic feedback
+      if (window.CozyApp) window.CozyApp.vibrate(20);
+    }
+
+    updatePencilActionsVisibility();
+    saveSession();
+  }
+
+  function confirmAllPencilMarks() {
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return;
+
+    const changes = [];
+
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        if (!cell.certain && cell.value !== null) {
+          changes.push({
+            row, col,
+            before: { value: cell.value, certain: cell.certain },
+            after: { value: cell.value, certain: true }
+          });
+          setCellDirect(row, col, cell.value, true);
+          updateCellVisual(row, col, puzzle);
+        }
+      }
+    }
+
+    if (changes.length > 0) {
+      const history = getHistory();
+      if (history) {
+        history.recordBatchAction('batch-confirm', changes);
+      }
+
+      // Haptic feedback
+      if (window.CozyApp) window.CozyApp.vibrate([20, 50, 20]);
+    }
+
+    updatePencilActionsVisibility();
+    checkWin(puzzle);
+    saveSession();
+  }
+
+  // === Undo/Redo ===
+
+  function performUndo() {
+    const history = getHistory();
+    if (!history) return;
+
+    const changes = history.undo();
+    if (!changes) return;
+
+    const puzzle = getPuzzles()[currentPuzzle];
+
+    for (const change of changes) {
+      setCellDirect(change.row, change.col, change.state.value, change.state.certain);
+      updateCellVisual(change.row, change.col, puzzle);
+    }
+
+    // Haptic feedback
+    if (window.CozyApp) window.CozyApp.vibrate(15);
+
+    updatePencilActionsVisibility();
+    saveSession();
+  }
+
+  function performRedo() {
+    const history = getHistory();
+    if (!history) return;
+
+    const changes = history.redo();
+    if (!changes) return;
+
+    const puzzle = getPuzzles()[currentPuzzle];
+
+    for (const change of changes) {
+      setCellDirect(change.row, change.col, change.state.value, change.state.certain);
+      updateCellVisual(change.row, change.col, puzzle);
+    }
+
+    // Haptic feedback
+    if (window.CozyApp) window.CozyApp.vibrate(15);
+
+    updatePencilActionsVisibility();
+    checkWin(puzzle);
+    saveSession();
+  }
+
+  // === Session Management ===
+
   function saveSession() {
     const storage = getStorage();
     if (!storage) return;
@@ -61,23 +250,21 @@
     storage.saveSession(currentPuzzle, currentDifficulty, grid);
   }
 
-  // Clear session (called on puzzle completion)
   function clearSession() {
     const storage = getStorage();
     if (storage) storage.clearSession();
   }
 
-  // Puzzle selection UI
+  // === Puzzle Selection UI ===
+
   function initPuzzleSelect() {
     const puzzles = getPuzzles();
     const container = document.getElementById('puzzle-select');
 
-    // Get unique difficulties
     const difficulties = [...new Set(puzzles.map(p => getDifficulty(p.title)))];
     const diffOrder = ['easy', 'medium', 'hard', 'challenging', 'expert'];
     difficulties.sort((a, b) => diffOrder.indexOf(a) - diffOrder.indexOf(b));
 
-    // Create tabs
     const tabsDiv = document.createElement('div');
     tabsDiv.className = 'difficulty-tabs';
 
@@ -94,7 +281,6 @@
       tabsDiv.appendChild(btn);
     });
 
-    // Create dropdown
     const dropdownDiv = document.createElement('div');
     dropdownDiv.className = 'puzzle-dropdown';
     const select = document.createElement('select');
@@ -121,7 +307,6 @@
         const opt = document.createElement('option');
         opt.value = idx;
 
-        // Check if puzzle is completed
         const puzzleId = getPuzzleId(puzzle);
         const isCompleted = storage ? storage.isPuzzleCompleted(puzzleId) : false;
         opt.textContent = (isCompleted ? '\u2713 ' : '') + puzzle.title;
@@ -131,7 +316,6 @@
       }
     });
 
-    // If current puzzle is not in this difficulty, load first of this difficulty
     const filteredPuzzles = puzzles.filter(p => getDifficulty(p.title) === currentDifficulty);
     if (filteredPuzzles.length > 0) {
       const currentInDifficulty = getDifficulty(puzzles[currentPuzzle]?.title) === currentDifficulty;
@@ -142,16 +326,21 @@
     }
   }
 
-  // Core game functions
+  // === Core Game Functions ===
+
   function loadPuzzle(index, restoreGrid = null) {
     const puzzles = getPuzzles();
     const storage = getStorage();
+    const history = getHistory();
 
-    // Save current puzzle's grid before switching to a DIFFERENT puzzle
+    // Save current puzzle's grid before switching
     if (index !== currentPuzzle && grid.length > 0 && puzzles[currentPuzzle] && storage) {
       const currentPuzzleId = getPuzzleId(puzzles[currentPuzzle]);
       storage.savePuzzleGrid(currentPuzzleId, grid);
     }
+
+    // Clear history when switching puzzles
+    if (history) history.clear();
 
     currentPuzzle = index;
     const puzzle = puzzles[index];
@@ -159,7 +348,7 @@
 
     const puzzleId = getPuzzleId(puzzle);
 
-    // Initialize or restore grid (check per-puzzle saved state)
+    // Initialize or restore grid
     let savedGrid = restoreGrid;
     if (!savedGrid && storage) {
       savedGrid = storage.getPuzzleGrid(puzzleId);
@@ -167,11 +356,22 @@
 
     const hasRestoredGrid = savedGrid && savedGrid.length === puzzle.height;
     if (hasRestoredGrid) {
-      grid = savedGrid.map(row => [...row]);
+      // Deep copy and migrate format if needed
+      grid = savedGrid.map(row => row.map(cell => {
+        if (typeof cell === 'object' && 'value' in cell) {
+          return { value: cell.value, certain: cell.certain };
+        }
+        // Legacy format: raw value
+        return createCell(cell, true);
+      }));
     } else {
+      // Create empty grid
       grid = [];
       for (let row = 0; row < puzzle.height; row++) {
-        grid.push(new Array(puzzle.width).fill(null));
+        grid.push([]);
+        for (let col = 0; col < puzzle.width; col++) {
+          grid[row][col] = createCell(null, true);
+        }
       }
     }
 
@@ -184,8 +384,9 @@
     if (hasRestoredGrid) {
       for (let row = 0; row < puzzle.height; row++) {
         for (let col = 0; col < puzzle.width; col++) {
-          if (grid[row][col] !== null) {
-            updateCell(row, col, puzzle);
+          const cell = getCell(row, col);
+          if (cell.value !== null) {
+            updateCellVisual(row, col, puzzle);
           }
         }
       }
@@ -194,11 +395,9 @@
     document.getElementById('status').textContent = 'Select colors and fill the grid';
     document.getElementById('status').classList.remove('won');
 
-    // Update dropdown selection
     const select = document.getElementById('puzzle-select-dropdown');
     if (select) select.value = index;
 
-    // Update difficulty tab if needed
     const newDiff = getDifficulty(puzzle.title);
     if (newDiff !== currentDifficulty) {
       currentDifficulty = newDiff;
@@ -208,7 +407,8 @@
       updateDropdown();
     }
 
-    // Notify zoom module that puzzle changed (recalculates scale limits)
+    updatePencilActionsVisibility();
+
     if (window.CozyZoom && window.CozyZoom.onPuzzleChange) {
       window.CozyZoom.onPuzzleChange();
     }
@@ -325,60 +525,210 @@
         cell.dataset.row = row;
         cell.dataset.col = col;
 
+        // === Mouse Events ===
         cell.onmousedown = (e) => {
           e.preventDefault();
+          const history = getHistory();
+          if (history) history.beginAction('fill');
+
           isDragging = true;
-          dragColor = selectedColor;
-          fillCell(row, col);
+          dragColor = e.button === 2 ? 0 : selectedColor;
+          dragCertain = !pencilMode;
+          fillCell(row, col, dragColor, dragCertain);
         };
 
         cell.onmouseenter = () => {
           if (isDragging) {
-            fillCell(row, col);
+            fillCell(row, col, dragColor, dragCertain);
           }
         };
 
         cell.oncontextmenu = (e) => {
           e.preventDefault();
+        };
+
+        // === Touch Events with Long-Press ===
+        let longPressTimer = null;
+        let touchStartTime = 0;
+        let touchMoved = false;
+        let initialTouchRow = row;
+        let initialTouchCol = col;
+
+        cell.ontouchstart = (e) => {
+          // Don't prevent default here - let zoom handle multi-touch
+          if (e.touches.length > 1) return;
+
+          e.preventDefault();
+          touchMoved = false;
+          touchStartTime = Date.now();
+          initialTouchRow = row;
+          initialTouchCol = col;
+
+          const history = getHistory();
+          if (history) history.beginAction('fill');
+
           isDragging = true;
-          dragColor = 0;
-          fillCell(row, col);
+          dragColor = selectedColor;
+          dragCertain = !pencilMode;
+
+          // Long press timer for X mark
+          longPressTimer = setTimeout(() => {
+            if (!touchMoved) {
+              // Switch to X mode
+              dragColor = 0;
+              fillCell(initialTouchRow, initialTouchCol, 0, dragCertain);
+              // Haptic feedback for long-press
+              if (window.CozyApp) window.CozyApp.vibrate(50);
+            }
+          }, 400);
+
+          // Immediate fill with color (will be undone if long-press triggers)
+          fillCell(row, col, dragColor, dragCertain);
+        };
+
+        cell.ontouchmove = (e) => {
+          if (e.touches.length > 1) return;
+
+          touchMoved = true;
+          clearTimeout(longPressTimer);
+
+          // Handle drag-to-fill
+          const touch = e.touches[0];
+          const target = document.elementFromPoint(touch.clientX, touch.clientY);
+          if (target && target.classList.contains('cell')) {
+            const r = parseInt(target.dataset.row);
+            const c = parseInt(target.dataset.col);
+            if (!isNaN(r) && !isNaN(c)) {
+              fillCell(r, c, dragColor, dragCertain);
+            }
+          }
+        };
+
+        cell.ontouchend = () => {
+          clearTimeout(longPressTimer);
+
+          // If it was a quick tap (not long-press, not drag), ensure we filled
+          const tapDuration = Date.now() - touchStartTime;
+          if (tapDuration < 400 && !touchMoved) {
+            // Quick tap - already filled in touchstart
+          }
+
+          isDragging = false;
+          dragColor = null;
+
+          const history = getHistory();
+          if (history) history.commitAction();
+
+          updatePencilActionsVisibility();
+        };
+
+        cell.ontouchcancel = () => {
+          clearTimeout(longPressTimer);
+          isDragging = false;
+          dragColor = null;
+
+          const history = getHistory();
+          if (history) history.cancelAction();
         };
 
         gridEl.appendChild(cell);
       }
     }
 
+    // Mouse up handler (for mouse-based drag)
     document.onmouseup = () => {
-      isDragging = false;
-      dragColor = null;
+      if (isDragging) {
+        isDragging = false;
+        dragColor = null;
+
+        const history = getHistory();
+        if (history) history.commitAction();
+
+        updatePencilActionsVisibility();
+      }
     };
   }
 
-  function fillCell(row, col) {
-    const puzzles = getPuzzles();
-    const puzzle = puzzles[currentPuzzle];
-    grid[row][col] = dragColor;
-    updateCell(row, col, puzzle);
-    checkWin(puzzle);
+  function fillCell(row, col, newValue, newCertain) {
+    const puzzle = getPuzzles()[currentPuzzle];
+    const currentCell = getCell(row, col);
+    const history = getHistory();
 
-    // Save session progress (debounced via browser)
+    // Determine final state based on current state and action
+    let finalValue = newValue;
+    let finalCertain = newCertain;
+
+    // Special case: tapping a maybe cell in pen mode with same color converts to certain
+    if (newCertain && !currentCell.certain &&
+        currentCell.value === newValue && newValue !== null) {
+      finalValue = currentCell.value;
+      finalCertain = true;
+    }
+    // Special case: tapping same state toggles to blank
+    else if (currentCell.value === newValue &&
+             currentCell.certain === newCertain &&
+             newValue !== null) {
+      finalValue = null;
+      finalCertain = true;
+    }
+
+    // Skip if no change
+    if (currentCell.value === finalValue && currentCell.certain === finalCertain) {
+      return;
+    }
+
+    // Record change for undo
+    if (history) {
+      history.recordChange(row, col, currentCell, { value: finalValue, certain: finalCertain });
+    }
+
+    // Apply change
+    setCellDirect(row, col, finalValue, finalCertain);
+    updateCellVisual(row, col, puzzle);
+
+    // Light haptic on fill
+    if (window.CozyApp) window.CozyApp.vibrate(10);
+
+    checkWin(puzzle);
     saveSession();
   }
 
-  function updateCell(row, col, puzzle) {
-    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-    const value = grid[row][col];
+  function updateCellVisual(row, col, puzzle) {
+    const cellEl = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (!cellEl) return;
 
-    cell.classList.remove('marked-empty');
-    cell.style.background = '';
+    const cell = getCell(row, col);
 
-    if (value === null) {
-      cell.style.background = '#faf8f3';
-    } else if (value === 0) {
-      cell.classList.add('marked-empty');
-    } else {
-      cell.style.background = rgb(puzzle.color_map[value]);
+    // Clear previous classes and styles
+    cellEl.classList.remove('marked-empty', 'maybe-empty', 'maybe-color');
+    cellEl.style.background = '';
+    cellEl.style.setProperty('--cell-color', '');
+
+    if (cell.value === null) {
+      // Blank cell
+      cellEl.style.background = 'var(--color-cell)';
+    }
+    else if (cell.value === 0) {
+      // X mark
+      if (cell.certain) {
+        cellEl.classList.add('marked-empty');
+      } else {
+        cellEl.classList.add('maybe-empty');
+      }
+    }
+    else {
+      // Color
+      const colorRgb = puzzle.color_map[cell.value];
+      if (colorRgb) {
+        const colorStr = `rgb(${colorRgb[0]}, ${colorRgb[1]}, ${colorRgb[2]})`;
+
+        if (cell.certain) {
+          cellEl.style.background = colorStr;
+        } else {
+          cellEl.classList.add('maybe-color');
+          cellEl.style.setProperty('--cell-color', colorStr);
+        }
+      }
     }
   }
 
@@ -386,10 +736,13 @@
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
         const expected = puzzle.solution[row][col];
-        const actual = grid[row][col];
+        const cell = getCell(row, col);
 
-        if (actual === null) return;
-        if (actual !== expected) return;
+        // Can't win with uncertain cells
+        if (!cell.certain) return;
+
+        if (cell.value === null) return;
+        if (cell.value !== expected) return;
       }
     }
 
@@ -397,57 +750,142 @@
     document.getElementById('status').textContent = 'Puzzle Complete!';
     document.getElementById('status').classList.add('won');
 
-    // Record completion in storage
+    // Success haptic
+    if (window.CozyApp) window.CozyApp.vibrate([50, 100, 50]);
+
+    // Record completion
     const storage = getStorage();
     if (storage) {
       const puzzleId = getPuzzleId(puzzle);
       storage.completePuzzle(puzzleId);
       clearSession();
-
-      // Update dropdown to show completion checkmark
       updateDropdown();
     }
+
+    // Clear history after win
+    const history = getHistory();
+    if (history) history.clear();
   }
 
   function resetPuzzle() {
-    // Clear saved grid for this puzzle before reloading
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return;
+
+    const history = getHistory();
+    const changes = [];
+
+    // Record all non-blank cells for undo
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        if (cell.value !== null) {
+          changes.push({
+            row, col,
+            before: { value: cell.value, certain: cell.certain },
+            after: { value: null, certain: true }
+          });
+        }
+      }
+    }
+
+    if (changes.length > 0 && history) {
+      history.recordBatchAction('reset', changes);
+    }
+
+    // Clear storage and reload
     const storage = getStorage();
-    const puzzles = getPuzzles();
-    const puzzle = puzzles[currentPuzzle];
-    if (storage && puzzle) {
+    if (storage) {
       const puzzleId = getPuzzleId(puzzle);
       storage.savePuzzleGrid(puzzleId, null);
     }
+
+    // Reload without restoring grid
     loadPuzzle(currentPuzzle);
   }
 
   function showSolution() {
-    const puzzles = getPuzzles();
-    const puzzle = puzzles[currentPuzzle];
-    grid = puzzle.solution.map(row => [...row]);
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return;
+
+    // Clear history - showing solution is not undoable
+    const history = getHistory();
+    if (history) history.clear();
+
+    // Convert solution to new format
+    grid = puzzle.solution.map(row =>
+      row.map(value => createCell(value, true))
+    );
 
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
-        updateCell(row, col, puzzle);
+        updateCellVisual(row, col, puzzle);
       }
     }
 
     document.getElementById('status').textContent = 'Solution revealed';
+    updatePencilActionsVisibility();
   }
 
-  // Initialize on DOM ready
+  // === Keyboard Shortcuts ===
+
+  function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Ignore if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      // Ctrl+Z / Cmd+Z = Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        performUndo();
+      }
+      // Ctrl+Shift+Z / Cmd+Shift+Z = Redo
+      // Ctrl+Y = Redo (Windows)
+      if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') ||
+          ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+        e.preventDefault();
+        performRedo();
+      }
+      // P = Toggle pencil mode
+      if (e.key === 'p' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        togglePencilMode();
+      }
+      // Number keys 1-9 = Select color
+      if (e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.metaKey) {
+        const colorIndex = parseInt(e.key);
+        const puzzle = getPuzzles()[currentPuzzle];
+        const colorIds = Object.keys(puzzle.color_map).map(Number);
+        if (colorIndex <= colorIds.length) {
+          selectColor(colorIds[colorIndex - 1]);
+        }
+      }
+      // 0 or X = Select eraser
+      if ((e.key === '0' || e.key === 'x') && !e.ctrlKey && !e.metaKey) {
+        selectColor(0);
+      }
+    });
+  }
+
+  // === Initialization ===
+
   function init() {
     initPuzzleSelect();
+    setupKeyboardShortcuts();
 
-    // Try to restore previous session
+    // Initialize history UI
+    const history = getHistory();
+    if (history) history.updateUI();
+
+    // Initialize pencil mode UI
+    updatePencilModeUI();
+
+    // Restore session
     const storage = getStorage();
     const session = storage ? storage.getSession() : null;
 
     if (session && session.puzzleIndex !== undefined) {
-      // Restore previous session
       currentDifficulty = session.difficulty || 'easy';
 
-      // Update tab selection
       document.querySelectorAll('.difficulty-tab').forEach(tab => {
         tab.classList.toggle('active', tab.textContent.toLowerCase() === currentDifficulty);
       });
@@ -459,13 +897,20 @@
     }
   }
 
-  // Expose necessary functions globally
+  // Expose globally
   window.CozyGarden = {
     resetPuzzle: resetPuzzle,
-    showSolution: showSolution
+    showSolution: showSolution,
+    performUndo: performUndo,
+    performRedo: performRedo,
+    togglePencilMode: togglePencilMode,
+    setPencilMode: setPencilMode,
+    clearAllPencilMarks: clearAllPencilMarks,
+    confirmAllPencilMarks: confirmAllPencilMarks,
+    selectColor: selectColor
   };
 
-  // Auto-initialize when DOM is ready
+  // Auto-initialize
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

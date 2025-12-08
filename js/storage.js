@@ -112,6 +112,7 @@
     }
 
     // Save grid state for a puzzle (for resuming later)
+    // Grid format: array of rows, each row is array of {value, certain} objects
     savePuzzleGrid(puzzleId, grid) {
       // Ensure progress object exists
       if (!this.data.progress) {
@@ -127,17 +128,42 @@
           savedGrid: null
         };
       }
-      // Save the grid (deep copy)
-      this.data.progress[puzzleId].savedGrid = grid ? grid.map(row => [...row]) : null;
+      // Save the grid (deep copy with object support)
+      if (grid) {
+        this.data.progress[puzzleId].savedGrid = grid.map(row =>
+          row.map(cell => {
+            // Handle new object format {value, certain}
+            if (typeof cell === 'object' && cell !== null && 'value' in cell) {
+              return { value: cell.value, certain: cell.certain };
+            }
+            // Handle legacy format (raw value) - convert to new format
+            return { value: cell, certain: true };
+          })
+        );
+      } else {
+        this.data.progress[puzzleId].savedGrid = null;
+      }
       this.save();
     }
 
     // Get saved grid for a puzzle
+    // Returns grid in new format: array of {value, certain} objects
     getPuzzleGrid(puzzleId) {
       if (!this.data.progress) return null;
       const progress = this.data.progress[puzzleId];
-      if (!progress) return null;
-      return progress.savedGrid ? progress.savedGrid.map(row => [...row]) : null;
+      if (!progress || !progress.savedGrid) return null;
+
+      // Deep copy with format handling
+      return progress.savedGrid.map(row =>
+        row.map(cell => {
+          // Handle new object format
+          if (typeof cell === 'object' && cell !== null && 'value' in cell) {
+            return { value: cell.value, certain: cell.certain };
+          }
+          // Handle legacy format (raw value) - convert to new format
+          return { value: cell, certain: true };
+        })
+      );
     }
 
     // Mark puzzle as completed
@@ -185,11 +211,26 @@
     // === Session Methods ===
 
     // Save current session state
+    // Grid format: array of rows, each row is array of {value, certain} objects
     saveSession(puzzleIndex, difficulty, grid) {
+      let savedGrid = null;
+      if (grid) {
+        savedGrid = grid.map(row =>
+          row.map(cell => {
+            // Handle new object format {value, certain}
+            if (typeof cell === 'object' && cell !== null && 'value' in cell) {
+              return { value: cell.value, certain: cell.certain };
+            }
+            // Handle legacy format (raw value) - convert to new format
+            return { value: cell, certain: true };
+          })
+        );
+      }
+
       this.data.currentSession = {
         puzzleIndex,
         difficulty,
-        grid: grid ? grid.map(row => [...row]) : null
+        grid: savedGrid
       };
       this.save();
     }

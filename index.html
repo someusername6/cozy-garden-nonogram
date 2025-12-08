@@ -26,6 +26,7 @@
   <link rel="preload" href="css/style.css" as="style">
   <link rel="preload" href="js/app.js" as="script">
   <link rel="preload" href="js/storage.js" as="script">
+  <link rel="preload" href="js/history.js" as="script">
   <link rel="preload" href="js/game.js" as="script">
   <link rel="preload" href="js/zoom.js" as="script">
 
@@ -48,6 +49,26 @@
         <span class="palette-label">Colors:</span>
       </div>
 
+      <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
+      <div class="mode-toggle">
+        <button id="pen-mode-btn" class="mode-btn active" onclick="CozyGarden.setPencilMode(false)">
+          Pen
+        </button>
+        <button id="pencil-mode-btn" class="mode-btn" onclick="CozyGarden.setPencilMode(true)">
+          Pencil
+        </button>
+      </div>
+
+      <!-- Pencil batch actions (shown when pencil marks exist) -->
+      <div id="pencil-actions" class="pencil-actions">
+        <button class="pencil-action-btn" onclick="CozyGarden.clearAllPencilMarks()">
+          Clear Pencil
+        </button>
+        <button class="pencil-action-btn" onclick="CozyGarden.confirmAllPencilMarks()">
+          Confirm All
+        </button>
+      </div>
+
       <div class="board-wrapper">
         <div class="corner"></div>
         <div class="col-clues" id="col-clues"></div>
@@ -58,13 +79,24 @@
       <div class="status" id="status">Select colors and fill the grid</div>
 
       <div class="controls">
+        <!-- Undo/Redo -->
+        <div class="history-controls">
+          <button id="undo-btn" class="history-btn" onclick="CozyGarden.performUndo()" disabled title="Undo (Ctrl+Z)">
+            &#8630;
+          </button>
+          <button id="redo-btn" class="history-btn" onclick="CozyGarden.performRedo()" disabled title="Redo (Ctrl+Y)">
+            &#8631;
+          </button>
+        </div>
+
         <button onclick="CozyGarden.resetPuzzle()" class="btn btn-secondary">Reset</button>
         <button onclick="CozyGarden.showSolution()" class="btn btn-secondary">Solution</button>
       </div>
 
       <div class="instructions">
-        <strong>How to play:</strong> Click a colored clue or palette color, then click or drag to fill cells.<br>
-        Right-click to mark cells as empty. Solve the puzzle to reveal your garden flower!
+        <strong>How to play:</strong> Tap a color, then tap/drag to fill cells.
+        Long-press to mark X (empty). Use Pencil mode for uncertain guesses.<br>
+        <kbd>Ctrl+Z</kbd> undo, <kbd>P</kbd> toggle pencil mode, <kbd>1-9</kbd> select colors.
       </div>
     </div>
   </main>
@@ -78,6 +110,8 @@
   <script src="data/puzzles.js"></script>
   <!-- Storage layer -->
   <script src="js/storage.js"></script>
+  <!-- Undo/redo history -->
+  <script src="js/history.js"></script>
   <!-- PWA & App lifecycle -->
   <script src="js/app.js"></script>
   <!-- Game logic -->
