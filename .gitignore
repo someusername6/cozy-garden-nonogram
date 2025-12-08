@@ -21,6 +21,7 @@ Thumbs.db
 # Generated/temporary files
 *.json
 !puzzles.json
+!manifest.json
 report.txt
 skip_list.txt
 

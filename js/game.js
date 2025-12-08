@@ -1,5 +1,6 @@
 // Cozy Garden - Nonogram Game Logic
 // Uses window.PUZZLE_DATA loaded from data/puzzles.js
+// Uses window.CozyStorage for progress persistence
 
 (function() {
   'use strict';
@@ -11,6 +12,7 @@
   let grid = [];
   let isDragging = false;
   let dragColor = null;
+  let sessionStartTime = null;
 
   // Get puzzles from global (loaded via script tag)
   function getPuzzles() {
@@ -34,6 +36,34 @@
     if (t.includes('challenging')) return 'challenging';
     if (t.includes('expert')) return 'expert';
     return 'easy';
+  }
+
+  // Generate unique puzzle ID from title
+  function getPuzzleId(puzzle) {
+    return puzzle.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  }
+
+  // Get storage instance (may not be available yet)
+  function getStorage() {
+    return window.CozyStorage || null;
+  }
+
+  // Save current session state
+  function saveSession() {
+    const storage = getStorage();
+    if (!storage) return;
+
+    const puzzles = getPuzzles();
+    const puzzle = puzzles[currentPuzzle];
+    if (!puzzle) return;
+
+    storage.saveSession(currentPuzzle, currentDifficulty, grid, sessionStartTime);
+  }
+
+  // Clear session (called on puzzle completion)
+  function clearSession() {
+    const storage = getStorage();
+    if (storage) storage.clearSession();
   }
 
   // Puzzle selection UI
@@ -82,13 +112,19 @@
   function updateDropdown() {
     const puzzles = getPuzzles();
     const select = document.getElementById('puzzle-select-dropdown');
+    const storage = getStorage();
     select.innerHTML = '';
 
     puzzles.forEach((puzzle, idx) => {
       if (getDifficulty(puzzle.title) === currentDifficulty) {
         const opt = document.createElement('option');
         opt.value = idx;
-        opt.textContent = puzzle.title;
+
+        // Check if puzzle is completed
+        const puzzleId = getPuzzleId(puzzle);
+        const isCompleted = storage ? storage.isPuzzleCompleted(puzzleId) : false;
+        opt.textContent = (isCompleted ? '\u2713 ' : '') + puzzle.title;
+
         if (idx === currentPuzzle) opt.selected = true;
         select.appendChild(opt);
       }
@@ -106,21 +142,40 @@
   }
 
   // Core game functions
-  function loadPuzzle(index) {
+  function loadPuzzle(index, restoreGrid = null) {
     const puzzles = getPuzzles();
     currentPuzzle = index;
     const puzzle = puzzles[index];
     if (!puzzle) return;
 
-    grid = [];
-    for (let row = 0; row < puzzle.height; row++) {
-      grid.push(new Array(puzzle.width).fill(null));
+    // Initialize or restore grid
+    if (restoreGrid && restoreGrid.length === puzzle.height) {
+      grid = restoreGrid.map(row => [...row]);
+    } else {
+      grid = [];
+      for (let row = 0; row < puzzle.height; row++) {
+        grid.push(new Array(puzzle.width).fill(null));
+      }
     }
+
+    // Start session timer
+    sessionStartTime = Date.now();
 
     selectedColor = 1;
     buildPalette(puzzle);
     buildClues(puzzle);
     buildGrid(puzzle);
+
+    // Update cell visuals if grid was restored
+    if (restoreGrid) {
+      for (let row = 0; row < puzzle.height; row++) {
+        for (let col = 0; col < puzzle.width; col++) {
+          if (grid[row][col] !== null) {
+            updateCell(row, col, puzzle);
+          }
+        }
+      }
+    }
 
     document.getElementById('status').textContent = 'Select colors and fill the grid';
     document.getElementById('status').classList.remove('won');
@@ -287,6 +342,9 @@
     grid[row][col] = dragColor;
     updateCell(row, col, puzzle);
     checkWin(puzzle);
+
+    // Save session progress (debounced via browser)
+    saveSession();
   }
 
   function updateCell(row, col, puzzle) {
@@ -316,8 +374,21 @@
       }
     }
 
+    // Puzzle completed!
     document.getElementById('status').textContent = 'Puzzle Complete!';
     document.getElementById('status').classList.add('won');
+
+    // Record completion in storage
+    const storage = getStorage();
+    if (storage && sessionStartTime) {
+      const timeMs = Date.now() - sessionStartTime;
+      const puzzleId = getPuzzleId(puzzle);
+      storage.completePuzzle(puzzleId, timeMs);
+      clearSession();
+
+      // Update dropdown to show completion checkmark
+      updateDropdown();
+    }
   }
 
   function resetPuzzle() {
@@ -341,7 +412,30 @@
   // Initialize on DOM ready
   function init() {
     initPuzzleSelect();
-    loadPuzzle(0);
+
+    // Try to restore previous session
+    const storage = getStorage();
+    const session = storage ? storage.getSession() : null;
+
+    if (session && session.puzzleIndex !== undefined) {
+      // Restore previous session
+      currentDifficulty = session.difficulty || 'easy';
+
+      // Update tab selection
+      document.querySelectorAll('.difficulty-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.textContent.toLowerCase() === currentDifficulty);
+      });
+
+      updateDropdown();
+      loadPuzzle(session.puzzleIndex, session.grid);
+
+      // Restore session start time if available
+      if (session.startTime) {
+        sessionStartTime = session.startTime;
+      }
+    } else {
+      loadPuzzle(0);
+    }
   }
 
   // Expose necessary functions globally

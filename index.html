@@ -2,42 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#5c6b4a">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Relaxing colored nonogram puzzles. Solve puzzles to reveal beautiful pixel art flowers and garden scenes.">
+
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cozy Garden">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+
+  <!-- Android/Chrome PWA -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/icon-16.png">
+
+  <!-- Preconnect for performance -->
+  <link rel="preload" href="css/style.css" as="style">
+  <link rel="preload" href="js/app.js" as="script">
+  <link rel="preload" href="js/storage.js" as="script">
+  <link rel="preload" href="js/game.js" as="script">
+
   <title>Cozy Garden - Nonogram Puzzles</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>Cozy Garden</h1>
+  <!-- Offline indicator (shown by app.js when offline) -->
+  <div id="offline-indicator" class="offline-indicator">Playing offline</div>
 
-  <div class="puzzle-select" id="puzzle-select"></div>
+  <header class="app-header">
+    <h1>Cozy Garden</h1>
+  </header>
 
-  <div class="game-container">
-    <div class="palette" id="palette">
-      <span class="palette-label">Colors:</span>
+  <main class="app-main">
+    <div class="puzzle-select" id="puzzle-select"></div>
+
+    <div class="game-container">
+      <div class="palette" id="palette">
+        <span class="palette-label">Colors:</span>
+      </div>
+
+      <div class="board-wrapper">
+        <div class="corner"></div>
+        <div class="col-clues" id="col-clues"></div>
+        <div id="row-clues-container"></div>
+        <div class="grid" id="grid"></div>
+      </div>
+
+      <div class="status" id="status">Select colors and fill the grid</div>
+
+      <div class="controls">
+        <button onclick="CozyGarden.resetPuzzle()" class="btn btn-secondary">Reset</button>
+        <button onclick="CozyGarden.showSolution()" class="btn btn-secondary">Solution</button>
+      </div>
+
+      <div class="instructions">
+        <strong>How to play:</strong> Click a colored clue or palette color, then click or drag to fill cells.<br>
+        Right-click to mark cells as empty. Solve the puzzle to reveal your garden flower!
+      </div>
     </div>
+  </main>
 
-    <div class="board-wrapper">
-      <div class="corner"></div>
-      <div class="col-clues" id="col-clues"></div>
-      <div id="row-clues-container"></div>
-      <div class="grid" id="grid"></div>
-    </div>
+  <footer class="app-footer">
+    <p class="footer-text">Solve puzzles. Grow your garden.</p>
+  </footer>
 
-    <div class="status" id="status">Select colors and fill the grid</div>
-
-    <div class="controls">
-      <button onclick="CozyGarden.resetPuzzle()">Reset</button>
-      <button onclick="CozyGarden.showSolution()">Show Solution</button>
-    </div>
-
-    <div class="instructions">
-      <strong>How to play:</strong> Click a colored clue or palette color, then click or drag to fill cells.<br>
-      Right-click to mark cells as empty. Solve the puzzle to reveal your garden flower!
-    </div>
-  </div>
-
+  <!-- Scripts loaded in order -->
   <!-- Puzzle data (auto-generated) -->
   <script src="data/puzzles.js"></script>
+  <!-- Storage layer -->
+  <script src="js/storage.js"></script>
+  <!-- PWA & App lifecycle -->
+  <script src="js/app.js"></script>
   <!-- Game logic -->
   <script src="js/game.js"></script>
 </body>
