@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cozy Garden - Nonogram Puzzles</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h1>Cozy Garden</h1>
+
+  <div class="puzzle-select" id="puzzle-select"></div>
+
+  <div class="game-container">
+    <div class="palette" id="palette">
+      <span class="palette-label">Colors:</span>
+    </div>
+
+    <div class="board-wrapper">
+      <div class="corner"></div>
+      <div class="col-clues" id="col-clues"></div>
+      <div id="row-clues-container"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="status" id="status">Select colors and fill the grid</div>
+
+    <div class="controls">
+      <button onclick="CozyGarden.resetPuzzle()">Reset</button>
+      <button onclick="CozyGarden.showSolution()">Show Solution</button>
+    </div>
+
+    <div class="instructions">
+      <strong>How to play:</strong> Click a colored clue or palette color, then click or drag to fill cells.<br>
+      Right-click to mark cells as empty. Solve the puzzle to reveal your garden flower!
+    </div>
+  </div>
+
+  <!-- Puzzle data (auto-generated) -->
+  <script src="data/puzzles.js"></script>
+  <!-- Game logic -->
+  <script src="js/game.js"></script>
+</body>
+</html>

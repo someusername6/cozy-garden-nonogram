@@ -40,7 +40,7 @@ A relaxing colored nonogram puzzle game where players reveal pixel art of flower
 
 ## Content Categories
 
-Current inventory: **112 source images** → **57 valid puzzles** in play.html
+Current inventory: **112 source images** → **57 valid puzzles**
 
 ### Flowers (59 images → ~35 valid)
 Generated varieties: cherry blossom, lavender, poppy, marigold, morning glory, daffodil, lily, peony, carnation, iris, tulip, rose, daisy, sunflower
@@ -156,7 +156,7 @@ Score is calculated from: grid size, fill ratio, color count, clue fragmentation
 2. Place PNGs in `test_images/<category>/`
 3. Run `python build_puzzles.py test_images/<dirs>...`
 4. Pipeline automatically: trims, reduces palette (max 6 colors), validates, scores
-5. Valid puzzles (easy-expert) are added to play.html
+5. Valid puzzles (easy-expert) are written to `data/puzzles.js`
 6. Review report.txt for failures
 
 ### Failure Reasons
@@ -179,8 +179,8 @@ Score is calculated from: grid size, fill ratio, color count, clue fragmentation
 - [x] Core nonogram solver
 - [x] Uniqueness validator
 - [x] Difficulty scoring (7 levels: trivial → master)
-- [x] Web-based player (play.html)
-- [x] Content pipeline (build_puzzles.py)
+- [x] Web-based player (modular: index.html + css/ + js/ + data/)
+- [x] Content pipeline (build_puzzles.py → data/puzzles.js)
 - [x] 57 puzzles across 5 difficulty levels
 - [x] Color similarity validation (MIN_COLOR_DISTANCE = 35)
 - [x] Automatic palette reduction (max 6 colors)

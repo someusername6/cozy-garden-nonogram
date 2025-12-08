@@ -10,7 +10,13 @@ A colored nonogram puzzle game with a cozy garden theme. Players solve pixel art
 
 ```
 nonogram/
-├── play.html           # Web player (single-file, self-contained)
+├── index.html          # Web player entry point
+├── css/
+│   └── style.css       # Game styles
+├── js/
+│   └── game.js         # Game logic (IIFE pattern)
+├── data/
+│   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA)
 ├── build_puzzles.py    # Main content pipeline
 ├── solver.py           # Nonogram solver with uniqueness checking
 ├── validator.py        # Puzzle validation
@@ -33,6 +39,12 @@ nonogram/
 ```bash
 python build_puzzles.py test_images/flowers test_images/potted_plants test_images/garden_elements --report report.txt
 ```
+This outputs puzzle data to `data/puzzles.js` by default.
+
+### Legacy: Update old monolithic HTML (deprecated)
+```bash
+python build_puzzles.py ... --html play.html
+```
 
 ### Test a single image
 ```python
@@ -42,7 +54,7 @@ result = process_single_image(Path("image.png"), Path("output.png"), 100.0, 6, t
 
 ### View the game
 ```bash
-open play.html
+open index.html
 ```
 
 ## Important Constants
