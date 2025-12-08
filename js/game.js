@@ -457,9 +457,10 @@
     colCluesEl.innerHTML = '';
     colCluesEl.style.gridTemplateColumns = `repeat(${puzzle.width}, var(--cell-size))`;
 
-    puzzle.col_clues.forEach(clues => {
+    puzzle.col_clues.forEach((clues, colIndex) => {
       const col = document.createElement('div');
       col.className = 'col-clue';
+      col.dataset.col = colIndex;
 
       if (clues.length === 0) {
         const cell = document.createElement('div');
@@ -488,9 +489,10 @@
     rowContainer.innerHTML = '';
     rowContainer.style.gridTemplateRows = `repeat(${puzzle.height}, var(--cell-size))`;
 
-    puzzle.row_clues.forEach(clues => {
+    puzzle.row_clues.forEach((clues, rowIndex) => {
       const rowClues = document.createElement('div');
       rowClues.className = 'row-clues';
+      rowClues.dataset.row = rowIndex;
 
       if (clues.length === 0) {
         const cell = document.createElement('div');
@@ -515,10 +517,71 @@
     });
   }
 
+  // === Crosshair Hover Effect ===
+  let currentHoverRow = -1;
+  let currentHoverCol = -1;
+
+  // Detect touch device to disable crosshair (causes issues with touch)
+  const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  function updateCrosshairHighlight(row, col) {
+    // Skip on touch devices
+    if (isTouchDevice()) return;
+
+    // Skip if same position
+    if (row === currentHoverRow && col === currentHoverCol) return;
+
+    // Clear previous highlights
+    clearCrosshairHighlight();
+
+    // Set new position
+    currentHoverRow = row;
+    currentHoverCol = col;
+
+    if (row < 0 || col < 0) return;
+
+    // Highlight cells in same row and column
+    document.querySelectorAll('.cell').forEach(cell => {
+      const cellRow = parseInt(cell.dataset.row);
+      const cellCol = parseInt(cell.dataset.col);
+
+      if (cellRow === row && cellCol === col) {
+        cell.classList.add('highlight-cell');
+      }
+      if (cellRow === row) {
+        cell.classList.add('highlight-row');
+      }
+      if (cellCol === col) {
+        cell.classList.add('highlight-col');
+      }
+    });
+
+    // Highlight corresponding clues
+    const rowClue = document.querySelector(`.row-clues[data-row="${row}"]`);
+    const colClue = document.querySelector(`.col-clue[data-col="${col}"]`);
+    if (rowClue) rowClue.classList.add('highlight-clue');
+    if (colClue) colClue.classList.add('highlight-clue');
+  }
+
+  function clearCrosshairHighlight() {
+    currentHoverRow = -1;
+    currentHoverCol = -1;
+
+    document.querySelectorAll('.highlight-row, .highlight-col, .highlight-cell').forEach(el => {
+      el.classList.remove('highlight-row', 'highlight-col', 'highlight-cell');
+    });
+    document.querySelectorAll('.highlight-clue').forEach(el => {
+      el.classList.remove('highlight-clue');
+    });
+  }
+
   function buildGrid(puzzle) {
     const gridEl = document.getElementById('grid');
     gridEl.innerHTML = '';
     gridEl.style.gridTemplateColumns = `repeat(${puzzle.width}, var(--cell-size))`;
+
+    // Clear highlight when leaving grid
+    gridEl.onmouseleave = () => clearCrosshairHighlight();
 
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
@@ -540,6 +603,7 @@
         };
 
         cell.onmouseenter = () => {
+          updateCrosshairHighlight(row, col);
           if (isDragging) {
             fillCell(row, col, dragColor, dragCertain);
           }
