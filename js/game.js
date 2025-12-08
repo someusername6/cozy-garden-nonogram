@@ -600,12 +600,16 @@
           dragColor = e.button === 2 ? 0 : selectedColor;
           dragCertain = !pencilMode;
           fillCell(row, col, dragColor, dragCertain);
+          // Capture actual value after toggle logic for consistent drag
+          const cellAfterFill = getCell(row, col);
+          dragColor = cellAfterFill.value;
+          dragCertain = cellAfterFill.certain;
         };
 
         cell.onmouseenter = () => {
           updateCrosshairHighlight(row, col);
           if (isDragging) {
-            fillCell(row, col, dragColor, dragCertain);
+            fillCell(row, col, dragColor, dragCertain, true); // skipToggle=true
           }
         };
 
@@ -625,6 +629,7 @@
           if (e.touches.length > 1) return;
 
           e.preventDefault();
+          e.stopPropagation(); // Prevent zoom container from starting pan
           touchMoved = false;
           touchStartTime = Date.now();
           initialTouchRow = row;
@@ -643,6 +648,10 @@
               // Switch to X mode
               dragColor = 0;
               fillCell(initialTouchRow, initialTouchCol, 0, dragCertain);
+              // Capture actual value after fill for consistent drag
+              const cellAfterFill = getCell(initialTouchRow, initialTouchCol);
+              dragColor = cellAfterFill.value;
+              dragCertain = cellAfterFill.certain;
               // Haptic feedback for long-press
               if (window.CozyApp) window.CozyApp.vibrate(50);
             }
@@ -650,11 +659,18 @@
 
           // Immediate fill with color (will be undone if long-press triggers)
           fillCell(row, col, dragColor, dragCertain);
+          // Capture actual value after toggle logic for consistent drag
+          const cellAfterFill = getCell(row, col);
+          dragColor = cellAfterFill.value;
+          dragCertain = cellAfterFill.certain;
         };
 
         cell.ontouchmove = (e) => {
           if (e.touches.length > 1) return;
+          if (!isDragging) return;
 
+          e.preventDefault();
+          e.stopPropagation(); // Prevent zoom container from interfering
           touchMoved = true;
           clearTimeout(longPressTimer);
 
@@ -665,7 +681,7 @@
             const r = parseInt(target.dataset.row);
             const c = parseInt(target.dataset.col);
             if (!isNaN(r) && !isNaN(c)) {
-              fillCell(r, c, dragColor, dragCertain);
+              fillCell(r, c, dragColor, dragCertain, true); // skipToggle=true
             }
           }
         };
@@ -715,7 +731,7 @@
     };
   }
 
-  function fillCell(row, col, newValue, newCertain) {
+  function fillCell(row, col, newValue, newCertain, skipToggle) {
     const puzzle = getPuzzles()[currentPuzzle];
     const currentCell = getCell(row, col);
     const history = getHistory();
@@ -724,18 +740,21 @@
     let finalValue = newValue;
     let finalCertain = newCertain;
 
-    // Special case: tapping a maybe cell in pen mode with same color converts to certain
-    if (newCertain && !currentCell.certain &&
-        currentCell.value === newValue && newValue !== null) {
-      finalValue = currentCell.value;
-      finalCertain = true;
-    }
-    // Special case: tapping same state toggles to blank
-    else if (currentCell.value === newValue &&
-             currentCell.certain === newCertain &&
-             newValue !== null) {
-      finalValue = null;
-      finalCertain = true;
+    // Skip toggle logic during drag operations
+    if (!skipToggle) {
+      // Special case: tapping a maybe cell in pen mode with same color converts to certain
+      if (newCertain && !currentCell.certain &&
+          currentCell.value === newValue && newValue !== null) {
+        finalValue = currentCell.value;
+        finalCertain = true;
+      }
+      // Special case: tapping same state toggles to blank
+      else if (currentCell.value === newValue &&
+               currentCell.certain === newCertain &&
+               newValue !== null) {
+        finalValue = null;
+        finalCertain = true;
+      }
     }
 
     // Skip if no change
