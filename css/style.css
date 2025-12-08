@@ -33,6 +33,9 @@
 
   /* Dynamic viewport height (set by JS) */
   --vh: 1vh;
+
+  /* Grid cell size (responsive) */
+  --cell-size: 24px;
 }
 
 /* === Reset & Base === */
@@ -224,7 +227,7 @@ body {
 }
 
 .col-clue {
-  width: 24px;
+  width: var(--cell-size);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -260,7 +263,7 @@ body {
 
 .row-clues {
   min-width: 80px;
-  height: 24px;
+  height: var(--cell-size);
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -299,8 +302,8 @@ body {
 }
 
 .cell {
-  width: 24px;
-  height: 24px;
+  width: var(--cell-size);
+  height: var(--cell-size);
   background: var(--color-cell);
   cursor: pointer;
   display: flex;
@@ -564,18 +567,22 @@ body.is-offline .app-header {
 
 /* Small phones */
 @media (max-width: 360px) {
+  :root {
+    --cell-size: 20px;
+  }
+
   .cell {
-    width: 20px;
-    height: 20px;
+    width: var(--cell-size);
+    height: var(--cell-size);
   }
 
   .col-clue {
-    width: 20px;
+    width: var(--cell-size);
   }
 
   .row-clues {
     min-width: 60px;
-    height: 20px;
+    height: var(--cell-size);
   }
 
   .clue-cell {
@@ -605,6 +612,10 @@ body.is-offline .app-header {
 
 /* Tablets and larger */
 @media (min-width: 768px) {
+  :root {
+    --cell-size: 28px;
+  }
+
   .app-header h1 {
     font-size: 2rem;
   }
@@ -614,16 +625,16 @@ body.is-offline .app-header {
   }
 
   .cell {
-    width: 28px;
-    height: 28px;
+    width: var(--cell-size);
+    height: var(--cell-size);
   }
 
   .col-clue {
-    width: 28px;
+    width: var(--cell-size);
   }
 
   .row-clues {
-    height: 28px;
+    height: var(--cell-size);
     min-width: 100px;
   }
 

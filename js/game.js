@@ -12,7 +12,6 @@
   let grid = [];
   let isDragging = false;
   let dragColor = null;
-  let sessionStartTime = null;
 
   // Get puzzles from global (loaded via script tag)
   function getPuzzles() {
@@ -48,7 +47,7 @@
     return window.CozyStorage || null;
   }
 
-  // Save current session state
+  // Save current session state (saves per-puzzle grid)
   function saveSession() {
     const storage = getStorage();
     if (!storage) return;
@@ -57,7 +56,9 @@
     const puzzle = puzzles[currentPuzzle];
     if (!puzzle) return;
 
-    storage.saveSession(currentPuzzle, currentDifficulty, grid, sessionStartTime);
+    const puzzleId = getPuzzleId(puzzle);
+    storage.savePuzzleGrid(puzzleId, grid);
+    storage.saveSession(currentPuzzle, currentDifficulty, grid);
   }
 
   // Clear session (called on puzzle completion)
@@ -144,13 +145,29 @@
   // Core game functions
   function loadPuzzle(index, restoreGrid = null) {
     const puzzles = getPuzzles();
+    const storage = getStorage();
+
+    // Save current puzzle's grid before switching to a DIFFERENT puzzle
+    if (index !== currentPuzzle && grid.length > 0 && puzzles[currentPuzzle] && storage) {
+      const currentPuzzleId = getPuzzleId(puzzles[currentPuzzle]);
+      storage.savePuzzleGrid(currentPuzzleId, grid);
+    }
+
     currentPuzzle = index;
     const puzzle = puzzles[index];
     if (!puzzle) return;
 
-    // Initialize or restore grid
-    if (restoreGrid && restoreGrid.length === puzzle.height) {
-      grid = restoreGrid.map(row => [...row]);
+    const puzzleId = getPuzzleId(puzzle);
+
+    // Initialize or restore grid (check per-puzzle saved state)
+    let savedGrid = restoreGrid;
+    if (!savedGrid && storage) {
+      savedGrid = storage.getPuzzleGrid(puzzleId);
+    }
+
+    const hasRestoredGrid = savedGrid && savedGrid.length === puzzle.height;
+    if (hasRestoredGrid) {
+      grid = savedGrid.map(row => [...row]);
     } else {
       grid = [];
       for (let row = 0; row < puzzle.height; row++) {
@@ -158,16 +175,13 @@
       }
     }
 
-    // Start session timer
-    sessionStartTime = Date.now();
-
     selectedColor = 1;
     buildPalette(puzzle);
     buildClues(puzzle);
     buildGrid(puzzle);
 
     // Update cell visuals if grid was restored
-    if (restoreGrid) {
+    if (hasRestoredGrid) {
       for (let row = 0; row < puzzle.height; row++) {
         for (let col = 0; col < puzzle.width; col++) {
           if (grid[row][col] !== null) {
@@ -234,7 +248,7 @@
     // Column clues
     const colCluesEl = document.getElementById('col-clues');
     colCluesEl.innerHTML = '';
-    colCluesEl.style.gridTemplateColumns = `repeat(${puzzle.width}, 24px)`;
+    colCluesEl.style.gridTemplateColumns = `repeat(${puzzle.width}, var(--cell-size))`;
 
     puzzle.col_clues.forEach(clues => {
       const col = document.createElement('div');
@@ -265,7 +279,7 @@
     // Row clues
     const rowContainer = document.getElementById('row-clues-container');
     rowContainer.innerHTML = '';
-    rowContainer.style.gridTemplateRows = `repeat(${puzzle.height}, 24px)`;
+    rowContainer.style.gridTemplateRows = `repeat(${puzzle.height}, var(--cell-size))`;
 
     puzzle.row_clues.forEach(clues => {
       const rowClues = document.createElement('div');
@@ -297,7 +311,7 @@
   function buildGrid(puzzle) {
     const gridEl = document.getElementById('grid');
     gridEl.innerHTML = '';
-    gridEl.style.gridTemplateColumns = `repeat(${puzzle.width}, 24px)`;
+    gridEl.style.gridTemplateColumns = `repeat(${puzzle.width}, var(--cell-size))`;
 
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
@@ -380,10 +394,9 @@
 
     // Record completion in storage
     const storage = getStorage();
-    if (storage && sessionStartTime) {
-      const timeMs = Date.now() - sessionStartTime;
+    if (storage) {
       const puzzleId = getPuzzleId(puzzle);
-      storage.completePuzzle(puzzleId, timeMs);
+      storage.completePuzzle(puzzleId);
       clearSession();
 
       // Update dropdown to show completion checkmark
@@ -392,6 +405,14 @@
   }
 
   function resetPuzzle() {
+    // Clear saved grid for this puzzle before reloading
+    const storage = getStorage();
+    const puzzles = getPuzzles();
+    const puzzle = puzzles[currentPuzzle];
+    if (storage && puzzle) {
+      const puzzleId = getPuzzleId(puzzle);
+      storage.savePuzzleGrid(puzzleId, null);
+    }
     loadPuzzle(currentPuzzle);
   }
 
@@ -428,11 +449,6 @@
 
       updateDropdown();
       loadPuzzle(session.puzzleIndex, session.grid);
-
-      // Restore session start time if available
-      if (session.startTime) {
-        sessionStartTime = session.startTime;
-      }
     } else {
       loadPuzzle(0);
     }

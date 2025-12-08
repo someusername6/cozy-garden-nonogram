@@ -106,22 +106,49 @@
         completed: false,
         bestTime: null,
         attempts: 0,
-        lastPlayed: null
+        lastPlayed: null,
+        savedGrid: null
       };
     }
 
+    // Save grid state for a puzzle (for resuming later)
+    savePuzzleGrid(puzzleId, grid) {
+      // Ensure progress object exists
+      if (!this.data.progress) {
+        this.data.progress = {};
+      }
+      // Create progress entry if it doesn't exist
+      if (!this.data.progress[puzzleId]) {
+        this.data.progress[puzzleId] = {
+          completed: false,
+          bestTime: null,
+          attempts: 0,
+          lastPlayed: null,
+          savedGrid: null
+        };
+      }
+      // Save the grid (deep copy)
+      this.data.progress[puzzleId].savedGrid = grid ? grid.map(row => [...row]) : null;
+      this.save();
+    }
+
+    // Get saved grid for a puzzle
+    getPuzzleGrid(puzzleId) {
+      if (!this.data.progress) return null;
+      const progress = this.data.progress[puzzleId];
+      if (!progress) return null;
+      return progress.savedGrid ? progress.savedGrid.map(row => [...row]) : null;
+    }
+
     // Mark puzzle as completed
-    completePuzzle(puzzleId, timeMs) {
+    completePuzzle(puzzleId) {
       const progress = this.getPuzzleProgress(puzzleId);
       const wasNew = !progress.completed;
 
       progress.completed = true;
       progress.attempts += 1;
       progress.lastPlayed = Date.now();
-
-      if (progress.bestTime === null || timeMs < progress.bestTime) {
-        progress.bestTime = timeMs;
-      }
+      progress.savedGrid = null; // Clear saved grid on completion
 
       this.data.progress[puzzleId] = progress;
 
@@ -158,12 +185,11 @@
     // === Session Methods ===
 
     // Save current session state
-    saveSession(puzzleIndex, difficulty, grid, startTime) {
+    saveSession(puzzleIndex, difficulty, grid) {
       this.data.currentSession = {
         puzzleIndex,
         difficulty,
-        grid: grid ? grid.map(row => [...row]) : null,
-        startTime
+        grid: grid ? grid.map(row => [...row]) : null
       };
       this.save();
     }
@@ -178,8 +204,7 @@
       this.data.currentSession = {
         puzzleIndex: 0,
         difficulty: 'easy',
-        grid: null,
-        startTime: null
+        grid: null
       };
       this.save();
     }
