@@ -29,12 +29,14 @@ Skip List:
 """
 
 import argparse
+import colorsys
 import json
 import re
 import signal
 import sys
 from pathlib import Path
 from datetime import datetime
+from collections import defaultdict
 
 from generator import puzzle_from_image, load_image, trim_grid
 from palette import process_image
@@ -108,6 +110,184 @@ def get_display_name(filename: str) -> str:
     if len(parts) == 2 and parts[1].isdigit():
         name = parts[0] + " " + parts[1]
     return name.title()
+
+
+def get_puzzle_prefix(title: str) -> str:
+    """Extract family prefix from puzzle title (e.g., 'Red Tulip 1 (10x12, easy)' -> 'red_tulip')."""
+    # Remove difficulty suffix like "(10x12, easy)"
+    name = re.sub(r'\s*\([^)]+\)\s*$', '', title)
+    # Remove trailing number
+    name = re.sub(r'\s*\d+\s*$', '', name)
+    return name.strip().lower().replace(' ', '_')
+
+
+def rgb_to_hsl(r: int, g: int, b: int) -> tuple:
+    """Convert RGB to HSL."""
+    r, g, b = r/255, g/255, b/255
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    return (h * 360, s * 100, l * 100)
+
+
+def color_distance_rgb(c1: list, c2: list) -> float:
+    """Euclidean distance in RGB space."""
+    return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
+
+
+def normalize_family_palettes(puzzles: list[dict], min_consistency_score: float = 60.0) -> tuple[list[dict], dict]:
+    """
+    Normalize color palettes across puzzle families.
+
+    For families with low consistency scores, remaps colors to use a canonical palette.
+    Returns (normalized_puzzles, normalization_report).
+    """
+    # Group puzzles by prefix
+    families = defaultdict(list)
+    for i, p in enumerate(puzzles):
+        prefix = get_puzzle_prefix(p["title"])
+        families[prefix].append((i, p))
+
+    report = {
+        "families_analyzed": 0,
+        "families_normalized": 0,
+        "puzzles_modified": 0,
+        "details": []
+    }
+
+    normalized = [p.copy() for p in puzzles]
+
+    for prefix, members in families.items():
+        if len(members) < 2:
+            continue
+
+        report["families_analyzed"] += 1
+
+        # Extract color data for each puzzle
+        family_colors = []
+        for idx, p in members:
+            colors = []
+            for color_idx, rgb in p["color_map"].items():
+                colors.append({
+                    "idx": int(color_idx),
+                    "rgb": tuple(rgb),
+                    "hsl": rgb_to_hsl(*rgb)
+                })
+            family_colors.append({
+                "puzzle_idx": idx,
+                "title": p["title"],
+                "colors": sorted(colors, key=lambda c: c["hsl"][0]),  # Sort by hue
+                "num_colors": len(colors)
+            })
+
+        # Calculate family consistency
+        pair_distances = []
+        for i in range(len(family_colors)):
+            for j in range(i + 1, len(family_colors)):
+                p1_colors = [c["rgb"] for c in family_colors[i]["colors"]]
+                p2_colors = [c["rgb"] for c in family_colors[j]["colors"]]
+
+                # Best matching (greedy)
+                total_dist = 0
+                matched = 0
+                used = set()
+                for c1 in p1_colors:
+                    best_dist = float('inf')
+                    best_idx = -1
+                    for k, c2 in enumerate(p2_colors):
+                        if k not in used:
+                            d = color_distance_rgb(c1, c2)
+                            if d < best_dist:
+                                best_dist = d
+                                best_idx = k
+                    if best_idx >= 0 and best_dist < 200:
+                        used.add(best_idx)
+                        total_dist += best_dist
+                        matched += 1
+
+                avg_dist = total_dist / matched if matched > 0 else 255
+                pair_distances.append(avg_dist)
+
+        avg_pair_dist = sum(pair_distances) / len(pair_distances) if pair_distances else 0
+        color_counts = [fc["num_colors"] for fc in family_colors]
+        count_variance = max(color_counts) - min(color_counts)
+
+        # Simple consistency score
+        consistency_score = max(0, 100 - avg_pair_dist * 1.5 - count_variance * 25)
+
+        # Skip if already consistent enough
+        if consistency_score >= min_consistency_score:
+            report["details"].append({
+                "family": prefix,
+                "action": "skip",
+                "score": consistency_score,
+                "reason": "already consistent"
+            })
+            continue
+
+        # Find canonical palette (puzzle with most colors, or first if tied)
+        canonical_idx = max(range(len(family_colors)), key=lambda i: family_colors[i]["num_colors"])
+        canonical = family_colors[canonical_idx]
+        canonical_puzzle_idx = canonical["puzzle_idx"]
+
+        # Normalize other puzzles to match canonical palette
+        modified_count = 0
+        for fc in family_colors:
+            if fc["puzzle_idx"] == canonical_puzzle_idx:
+                continue  # Skip canonical
+
+            puzzle_idx = fc["puzzle_idx"]
+            puzzle = normalized[puzzle_idx]
+
+            # Build color mapping: old_idx -> new_rgb
+            old_colors = {c["idx"]: c["rgb"] for c in fc["colors"]}
+            canonical_colors = [c["rgb"] for c in canonical["colors"]]
+
+            # Match each old color to closest canonical color
+            color_remap = {}  # old_idx -> (new_idx_in_canonical, new_rgb)
+            used_canonical = set()
+
+            for old_idx, old_rgb in old_colors.items():
+                best_dist = float('inf')
+                best_canonical_idx = 0
+                for k, can_rgb in enumerate(canonical_colors):
+                    if k not in used_canonical:
+                        d = color_distance_rgb(old_rgb, can_rgb)
+                        if d < best_dist:
+                            best_dist = d
+                            best_canonical_idx = k
+
+                # Only remap if distance is reasonable (< 150)
+                if best_dist < 150:
+                    used_canonical.add(best_canonical_idx)
+                    color_remap[old_idx] = canonical_colors[best_canonical_idx]
+                else:
+                    color_remap[old_idx] = old_rgb  # Keep original
+
+            # Apply remapping to puzzle data
+            new_color_map = {}
+            for str_idx, rgb in puzzle["color_map"].items():
+                idx = int(str_idx)
+                if idx in color_remap:
+                    new_color_map[str_idx] = list(color_remap[idx])
+                else:
+                    new_color_map[str_idx] = rgb
+
+            # Update puzzle
+            normalized[puzzle_idx] = puzzle.copy()
+            normalized[puzzle_idx]["color_map"] = new_color_map
+            modified_count += 1
+
+        if modified_count > 0:
+            report["families_normalized"] += 1
+            report["puzzles_modified"] += modified_count
+            report["details"].append({
+                "family": prefix,
+                "action": "normalized",
+                "score": consistency_score,
+                "canonical": canonical["title"],
+                "modified": modified_count
+            })
+
+    return normalized, report
 
 
 def process_single_image(input_path: Path, output_path: Path, min_distance: float, max_colors: int, timeout_seconds: int = 30, max_clues_per_line: int = 15) -> dict:
@@ -322,8 +502,15 @@ Examples:
                         help="Save full results as JSON")
     parser.add_argument("--skip", type=Path, default=None,
                         help="File containing image names to skip (one per line, # for comments)")
+    parser.add_argument("--normalize-colors", action="store_true",
+                        help="Normalize color palettes across puzzle families")
+    parser.add_argument("--no-normalize-colors", action="store_true",
+                        help="Disable color normalization (default: enabled)")
 
     args = parser.parse_args()
+
+    # Default to normalizing colors unless explicitly disabled
+    args.normalize = not args.no_normalize_colors or args.normalize_colors
 
     # Validate all input directories
     for input_dir in args.input_dirs:
@@ -423,6 +610,19 @@ Examples:
         # Sort by difficulty then score
         puzzles.sort(key=lambda x: (x[0], x[1]))
         puzzle_data = [p[2] for p in puzzles]
+
+        # Normalize color palettes across families
+        if puzzle_data and args.normalize:
+            print("\nNormalizing color palettes across families...")
+            puzzle_data, norm_report = normalize_family_palettes(puzzle_data)
+            print(f"  Families analyzed: {norm_report['families_analyzed']}")
+            print(f"  Families normalized: {norm_report['families_normalized']}")
+            print(f"  Puzzles modified: {norm_report['puzzles_modified']}")
+            for detail in norm_report["details"]:
+                if detail["action"] == "normalized":
+                    print(f"    ✓ {detail['family']}: {detail['modified']} puzzles → canonical: {detail['canonical']}")
+                elif detail["action"] == "skip":
+                    pass  # Don't print skipped families to reduce noise
 
         if puzzle_data:
             print(f"\nUpdating {args.html}...")
