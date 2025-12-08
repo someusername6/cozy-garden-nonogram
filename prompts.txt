@@ -1,0 +1,77 @@
+# Cozy Garden - Retrodiffusion Prompts (16x16 sprites)
+# Theme: Flowers, plants, and garden elements
+# Tip: Asymmetric designs work better for unique puzzle solutions
+
+# Flowers
+1. pink cherry blossom branch with buds
+2. purple lavender sprig
+3. red poppy flower side view
+4. orange marigold bloom
+5. blue morning glory vine
+6. yellow daffodil with stem
+7. white lily flower
+8. pink peony bloom
+9. red carnation flower
+10. purple iris flower
+
+# Potted Plants
+11. terracotta pot with small cactus
+12. hanging basket with trailing ivy
+13. ceramic pot with fern fronds
+14. window box with mixed herbs
+15. bonsai tree in pot
+
+# Garden Elements
+16. wooden watering can
+17. garden trowel with dirt
+18. seed packet with flowers
+19. bird on garden fence
+20. butterfly on leaf
+21. ladybug on stem
+22. snail on mushroom
+23. garden gnome
+24. stone lantern with moss
+
+# Fruits and Vegetables
+25. tomato plant with fruit
+26. strawberry with leaves
+27. carrot with greens
+28. pumpkin with vine
+29. sunflower with seeds
+30. corn stalk
+
+# More Flowers
+31. red tulip with green leaves
+32. pink rose bloom side view
+33. purple violet cluster
+34. orange zinnia flower top view
+35. blue hydrangea flower ball
+36. yellow dandelion with stem
+37. white daisy with yellow center
+38. pink cosmos flower
+
+# More Vegetables
+39. orange pumpkin with curly vine
+40. purple eggplant with stem
+41. red bell pepper
+42. pink radish with green tops
+43. green pea pod open with peas
+44. bundle of orange carrots
+45. yellow onion with roots
+
+# More Garden Elements
+46. metal watering can with spout
+47. wooden wheelbarrow with flowers
+48. pair of garden gloves
+49. terracotta bird bath with water
+50. stack of flower pots
+51. garden fork in soil
+52. woven basket with vegetables
+
+# More Critters
+53. green frog on lily pad
+54. red ladybug on green leaf
+55. blue dragonfly with wings spread
+56. orange caterpillar on branch
+57. pink earthworm in dirt
+58. yellow and black bumblebee on flower

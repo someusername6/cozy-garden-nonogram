@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# pytest
+.pytest_cache/
+
+# Generated/temporary files
+*.json
+!puzzles.json
+report.txt
+skip_list.txt
+
+# Reduced images (generated from source)
+test_images/*_reduced/
+test_images/test_variants/
+
+# Claude settings (local)
+.claude/
