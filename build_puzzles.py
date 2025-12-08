@@ -66,6 +66,7 @@ COLOR_OVERRIDES = {
     "strawberry": 5,
     "bee_2": 5,
     "purple_iris_7": 5,
+    "purple_iris_8": 5,
 }
 
 
