@@ -47,6 +47,27 @@ from difficulty import calculate_difficulty
 # Minimum perceptual distance between any two colors in the final palette
 MIN_COLOR_DISTANCE = 35
 
+# Per-image max color overrides (image stem -> max colors)
+COLOR_OVERRIDES = {
+    "yellow_daffodil_1": 5,
+    "orange_zinnia_2": 4,
+    "pink_peony_bloom_5": 5,
+    "purple_iris_10": 5,
+    "orange_zinnia_8": 5,
+    "pink_peony_bloom_1": 5,
+    "purple_iris_11": 5,
+    "red_tulip_4": 5,
+    "bee_4": 5,
+    "orange_marigold_bloom_3": 5,
+    "onion": 4,
+    "red_carnation_3": 5,
+    "bee_5": 5,
+    "blue_morning_glory_vine_1": 5,
+    "strawberry": 5,
+    "bee_2": 5,
+    "purple_iris_7": 5,
+}
+
 
 def perceptual_color_distance(c1: tuple, c2: tuple) -> float:
     """Calculate perceptual distance between two RGB colors.
@@ -290,7 +311,7 @@ def normalize_family_palettes(puzzles: list[dict], min_consistency_score: float 
     return normalized, report
 
 
-def process_single_image(input_path: Path, output_path: Path, min_distance: float, max_colors: int, timeout_seconds: int = 30, max_clues_per_line: int = 15) -> dict:
+def process_single_image(input_path: Path, output_path: Path, min_distance: float, max_colors: int, timeout_seconds: int = 10, max_clues_per_line: int = 15) -> dict:
     """Process a single image and return results."""
     result = {
         "name": input_path.stem,
@@ -495,7 +516,7 @@ Examples:
                         help="Minimum color distance for palette reduction (default: 100)")
     parser.add_argument("--max-colors", type=int, default=6,
                         help="Maximum colors per puzzle (default: 6)")
-    parser.add_argument("--timeout", type=int, default=30,
+    parser.add_argument("--timeout", type=int, default=10,
                         help="Timeout per image in seconds (default: 30)")
     parser.add_argument("--difficulties", nargs="+", default=["easy", "medium", "hard", "challenging", "expert"],
                         choices=["trivial", "easy", "medium", "hard", "challenging", "expert", "master"],
@@ -577,9 +598,12 @@ Examples:
                 })
                 continue
 
-            print(f"  {img_path.name}...", end=" ", flush=True)
+            # Use per-image color override if specified, otherwise use default
+            max_colors = COLOR_OVERRIDES.get(img_path.stem, args.max_colors)
+            override_marker = f" [max:{max_colors}]" if img_path.stem in COLOR_OVERRIDES else ""
+            print(f"  {img_path.name}{override_marker}...", end=" ", flush=True)
 
-            result = process_single_image(img_path, output_path, args.min_distance, args.max_colors, args.timeout)
+            result = process_single_image(img_path, output_path, args.min_distance, max_colors, args.timeout)
             results.append(result)
 
             if result["status"] == "valid":
@@ -609,7 +633,7 @@ Examples:
         print(f"Results saved to: {args.json}")
 
     # Update HTML
-    if not args.no_update_html:
+    if True:  # Always prepare data, actual write controlled by args.no_update
         # Collect puzzle data for included difficulties
         difficulty_order = {"trivial": 0, "easy": 1, "medium": 2, "hard": 3, "challenging": 4, "expert": 5, "master": 6}
         puzzles = []
@@ -622,7 +646,10 @@ Examples:
         puzzle_data = [p[2] for p in puzzles]
 
         # Normalize color palettes across families
-        if puzzle_data and args.normalize:
+        # DISABLED: The greedy matching algorithm has a bug where hue-sorted iteration
+        # causes suboptimal matches (e.g., orange grabs yellow's best match first)
+        # TODO: Fix by using Hungarian algorithm for optimal bipartite matching
+        if False and puzzle_data and args.normalize:
             print("\nNormalizing color palettes across families...")
             puzzle_data, norm_report = normalize_family_palettes(puzzle_data)
             print(f"  Families analyzed: {norm_report['families_analyzed']}")

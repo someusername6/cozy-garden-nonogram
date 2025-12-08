@@ -207,6 +207,11 @@
       });
       updateDropdown();
     }
+
+    // Notify zoom module that puzzle changed (recalculates scale limits)
+    if (window.CozyZoom && window.CozyZoom.onPuzzleChange) {
+      window.CozyZoom.onPuzzleChange();
+    }
   }
 
   function buildPalette(puzzle) {
