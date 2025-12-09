@@ -527,8 +527,8 @@
         return;
       }
 
-      // Use shorter delay for quick animation (back button), longer for victory
-      const scrollDelay = options.quick ? 100 : 400;
+      // Delay before calculating target position (after scroll settles)
+      const scrollDelay = 100;
 
       // Wait for scroll to complete before calculating target position
       setTimeout(() => {

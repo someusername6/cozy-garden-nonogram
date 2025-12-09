@@ -817,19 +817,80 @@
     }
   }
 
+  // Extract color runs from a line of cell values
+  // Returns array of {count, color} objects
+  function extractRuns(values) {
+    const runs = [];
+    let currentColor = null;
+    let currentCount = 0;
+
+    for (const value of values) {
+      if (value > 0) {
+        if (value === currentColor) {
+          currentCount++;
+        } else {
+          if (currentColor !== null) {
+            runs.push({ count: currentCount, color: currentColor });
+          }
+          currentColor = value;
+          currentCount = 1;
+        }
+      } else {
+        if (currentColor !== null) {
+          runs.push({ count: currentCount, color: currentColor });
+          currentColor = null;
+          currentCount = 0;
+        }
+      }
+    }
+
+    if (currentColor !== null) {
+      runs.push({ count: currentCount, color: currentColor });
+    }
+
+    return runs;
+  }
+
+  // Check if extracted runs match the clues
+  function runsMatchClues(runs, clues) {
+    if (runs.length !== clues.length) return false;
+    for (let i = 0; i < runs.length; i++) {
+      if (runs[i].count !== clues[i].count || runs[i].color !== clues[i].color) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   function checkWin(puzzle) {
+    // Check for any uncertain (pencil) cells first
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
-        const expected = puzzle.solution[row][col];
         const cell = getCell(row, col);
-
-        // Can't win with uncertain (pencil) cells
         if (!cell.certain) return;
-
-        // Treat blank cells as empty (0) - player doesn't need to explicitly mark empties
-        const cellValue = cell.value === null ? 0 : cell.value;
-        if (cellValue !== expected) return;
       }
+    }
+
+    // Check each row's clues are satisfied
+    for (let row = 0; row < puzzle.height; row++) {
+      const rowValues = [];
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        rowValues.push(cell.value === null ? 0 : cell.value);
+      }
+      const runs = extractRuns(rowValues);
+      if (!runsMatchClues(runs, puzzle.row_clues[row])) return;
+    }
+
+    // Check each column's clues are satisfied
+    for (let col = 0; col < puzzle.width; col++) {
+      const colValues = [];
+      for (let row = 0; row < puzzle.height; row++) {
+        const cell = getCell(row, col);
+        colValues.push(cell.value === null ? 0 : cell.value);
+      }
+      const runs = extractRuns(colValues);
+      if (!runsMatchClues(runs, puzzle.col_clues[col])) return;
     }
 
     // Puzzle completed!
