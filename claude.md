@@ -6,6 +6,8 @@ A colored nonogram puzzle game with a cozy garden theme. Players solve pixel art
 
 **Current Status:** Fully playable PWA with 84 puzzles across 5 difficulty levels.
 
+**Positioning:** The "Stardew Valley of nonograms" - cozy, quality-focused, zen. No timers, no pressure, no competitive features. Target audience is players seeking relaxation, not competition.
+
 ## Architecture
 
 ```
@@ -72,8 +74,99 @@ open index.html
 
 ### Not Yet Implemented
 - Sound effects
-- Hint system
 - Daily puzzle feature
+
+### Deliberately Not Adding
+- **Hint system**: Doesn't fit the zen philosophy. Players already have pencil mode, undo/redo, clue satisfaction indicators, and "Show Solution" for when truly stuck. Hints would undermine the satisfaction of genuine solving.
+- **Timers or time tracking**: Contradicts the relaxation focus.
+- **Leaderboards or competitive features**: Not aligned with cozy positioning.
+- **Energy systems**: Dark pattern, avoid entirely.
+
+## Market Context
+
+### Target Audience
+- 75% of puzzle game players are women aged 25-44 seeking stress relief
+- Players wanting "me time" and escapism, not competition
+- Cottagecore/garden aesthetic appeals strongly to this demographic
+
+### Competitive Differentiation
+| Competitors | Cozy Garden |
+|-------------|-------------|
+| Thousands of generic puzzles | Curated, themed collection |
+| Tournaments, leaderboards | No pressure, no timers |
+| Energy systems, aggressive ads | Respectful, ethical |
+| Random pixel art | Coherent garden theme |
+| Basic completion | Stamp collection animation |
+
+### Technical Advantages
+- Guaranteed unique solutions (solver validates)
+- Sophisticated difficulty scoring algorithm
+- PWA = no app store friction, works offline
+- Quality-of-life features competitors lack (clue satisfaction, pen/pencil modes)
+
+## Monetization Strategy
+
+### Recommended Model: Simple Level Sectioning
+- **Free tier**: ~25-30 puzzles across ALL difficulty levels (not just easy)
+- **Premium** ($3.99-4.99 one-time): Full collection + future updates
+
+This is clean, honest, and respects players. Mixing difficulties in free tier sets accurate expectations.
+
+### Optional Enhancement
+- Free tier: "Show Solution" has a brief delay (30-60 seconds) encouraging one more attempt
+- Premium: Instant solution reveal
+
+### Avoid
+- Aggressive ads or interstitials during gameplay
+- Pay-to-win hint consumables
+- Progressive unlock gates ("solve X to unlock Y")
+- Subscription models (first thing players cancel)
+
+## Publishing Strategy
+
+### Phase 1: itch.io (Lowest Friction)
+- Create pseudonymous account
+- Upload HTML5 build
+- Set price (pay-what-you-want or fixed $3.99-4.99)
+- itch.io handles payments, takes 10%
+- Post once to r/nonograms, r/WebGames, r/CozyGamers
+
+### Phase 2 (Optional): Own Domain
+- Buy domain (~$12/year)
+- Host on Netlify/Vercel (free)
+- Gumroad or itch.io widget for payments
+
+### Phase 3 (Optional): Mobile Stores
+- Use Capacitor to wrap PWA (same codebase)
+- Google Play: $25 one-time fee
+- iOS App Store: $99/year, requires Mac
+
+### Marketing Approach
+Given no marketing experience and preference for minimal social interaction:
+- Post to relevant subreddits once at launch
+- Let it exist and grow organically
+- Use analytics (Plausible, not Google) for passive "playtesting"
+- No need for active social media presence
+
+## Content Strategy
+
+### Current State
+84 puzzles is already substantial. Many premium puzzle games ship with less.
+
+### Expansion Approach
+1. Generate more puzzles using AI sprite pipeline
+2. Filter aggressively by quality criteria:
+   - Puzzle quality (visual appeal of revealed image)
+   - Difficulty distribution (balanced across levels)
+   - Color balance (good palette variety)
+3. Quality over quantity - 100-150 excellent puzzles better than 500 mediocre ones
+
+### Content Sustainability
+The AI sprite → puzzle pipeline has limits but isn't exhausted. Options for future:
+- Different themes (ocean life, space, food - not just garden)
+- Manually drawn or commissioned pixel art
+- Community submissions (validation pipeline can filter)
+- The game can be "done" whenever - no obligation for infinite content
 
 ## Important Constants
 
