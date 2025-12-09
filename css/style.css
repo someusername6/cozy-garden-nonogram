@@ -1150,14 +1150,15 @@ body.is-installed {
 
 /* Puzzle grid */
 .collection-grid {
-  display: grid;
-  width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
 }
 
 /* Puzzle card */
 .puzzle-card {
+  width: 90px;
   background: var(--color-surface);
   border-radius: 12px;
   padding: 10px;
@@ -1256,8 +1257,11 @@ body.showing-game .collection-screen {
 /* Responsive collection grid */
 @media (min-width: 480px) {
   .collection-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 14px;
+  }
+
+  .puzzle-card {
+    width: 100px;
   }
 
   .puzzle-card-preview {
@@ -1272,11 +1276,11 @@ body.showing-game .collection-screen {
 
 @media (min-width: 768px) {
   .collection-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 16px;
   }
 
   .puzzle-card {
+    width: 110px;
     padding: 12px;
   }
 

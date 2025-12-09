@@ -44,7 +44,7 @@
     const chevron = section.querySelector('.section-chevron');
 
     if (grid) {
-      grid.style.display = !isCollapsed ? 'none' : 'grid';
+      grid.style.display = !isCollapsed ? 'none' : 'flex';
     }
     if (chevron) {
       chevron.textContent = !isCollapsed ? '\u25B6' : '\u25BC';
@@ -371,7 +371,7 @@
       // Puzzle grid
       const grid = document.createElement('div');
       grid.className = 'collection-grid';
-      grid.style.display = isCollapsed ? 'none' : 'grid';
+      grid.style.display = isCollapsed ? 'none' : 'flex';
 
       puzzleItems.forEach(item => {
         const card = createPuzzleCard(item, onPuzzleSelect);
