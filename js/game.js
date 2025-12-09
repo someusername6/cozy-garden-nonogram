@@ -823,11 +823,12 @@
         const expected = puzzle.solution[row][col];
         const cell = getCell(row, col);
 
-        // Can't win with uncertain cells
+        // Can't win with uncertain (pencil) cells
         if (!cell.certain) return;
 
-        if (cell.value === null) return;
-        if (cell.value !== expected) return;
+        // Treat blank cells as empty (0) - player doesn't need to explicitly mark empties
+        const cellValue = cell.value === null ? 0 : cell.value;
+        if (cellValue !== expected) return;
       }
     }
 
