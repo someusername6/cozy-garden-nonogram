@@ -316,27 +316,6 @@
       saveCollapsedSections(collapsed);
     }
 
-    // Header with overall stats
-    const header = document.createElement('div');
-    header.className = 'collection-header';
-
-    // Overall stats
-    let totalCompleted = 0;
-    if (storage) {
-      puzzles.forEach((puzzle, index) => {
-        if (storage.isPuzzleCompleted(getPuzzleId(puzzle))) {
-          totalCompleted++;
-        }
-      });
-    }
-
-    const overallStats = document.createElement('div');
-    overallStats.className = 'collection-stats';
-    overallStats.textContent = `${totalCompleted} / ${puzzles.length} completed`;
-    header.appendChild(overallStats);
-
-    container.appendChild(header);
-
     // Render each difficulty section
     sortedDifficulties.forEach(difficulty => {
       const puzzleItems = groups[difficulty];

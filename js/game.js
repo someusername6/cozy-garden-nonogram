@@ -210,6 +210,7 @@
     if (window.CozyApp) window.CozyApp.vibrate(15);
 
     updatePencilActionsVisibility();
+    updateClueSatisfaction(puzzle);
     saveSession();
   }
 
@@ -231,6 +232,7 @@
     if (window.CozyApp) window.CozyApp.vibrate(15);
 
     updatePencilActionsVisibility();
+    updateClueSatisfaction(puzzle);
     checkWin(puzzle);
     saveSession();
   }
@@ -410,6 +412,7 @@
     }
 
     updatePencilActionsVisibility();
+    updateClueSatisfaction(puzzle);
 
     if (window.CozyZoom && window.CozyZoom.onPuzzleChange) {
       window.CozyZoom.onPuzzleChange();
@@ -774,6 +777,7 @@
     // Light haptic on fill
     if (window.CozyApp) window.CozyApp.vibrate(10);
 
+    updateClueSatisfaction(puzzle);
     checkWin(puzzle);
     saveSession();
   }
@@ -860,6 +864,57 @@
       }
     }
     return true;
+  }
+
+  // Update visual styling of clues based on satisfaction
+  function updateClueSatisfaction(puzzle) {
+    // Check each row
+    for (let row = 0; row < puzzle.height; row++) {
+      const rowValues = [];
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        // Only count certain cells for satisfaction check
+        if (!cell.certain) {
+          rowValues.push(-1); // Mark as uncertain
+        } else {
+          rowValues.push(cell.value === null ? 0 : cell.value);
+        }
+      }
+
+      // Check if row has any uncertain cells
+      const hasUncertain = rowValues.includes(-1);
+      const cleanValues = rowValues.map(v => v === -1 ? 0 : v);
+      const runs = extractRuns(cleanValues);
+      const isSatisfied = !hasUncertain && runsMatchClues(runs, puzzle.row_clues[row]);
+
+      const rowClueEl = document.querySelector(`.row-clues[data-row="${row}"]`);
+      if (rowClueEl) {
+        rowClueEl.classList.toggle('satisfied', isSatisfied);
+      }
+    }
+
+    // Check each column
+    for (let col = 0; col < puzzle.width; col++) {
+      const colValues = [];
+      for (let row = 0; row < puzzle.height; row++) {
+        const cell = getCell(row, col);
+        if (!cell.certain) {
+          colValues.push(-1);
+        } else {
+          colValues.push(cell.value === null ? 0 : cell.value);
+        }
+      }
+
+      const hasUncertain = colValues.includes(-1);
+      const cleanValues = colValues.map(v => v === -1 ? 0 : v);
+      const runs = extractRuns(cleanValues);
+      const isSatisfied = !hasUncertain && runsMatchClues(runs, puzzle.col_clues[col]);
+
+      const colClueEl = document.querySelector(`.col-clue[data-col="${col}"]`);
+      if (colClueEl) {
+        colClueEl.classList.toggle('satisfied', isSatisfied);
+      }
+    }
   }
 
   function checkWin(puzzle) {

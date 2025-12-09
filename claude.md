@@ -4,7 +4,7 @@
 
 A colored nonogram puzzle game with a cozy garden theme. Players solve pixel art puzzles of flowers, plants, and garden elements.
 
-**Current Status:** Phase 1 (Prototype) complete with 57 playable puzzles.
+**Current Status:** Fully playable PWA with 84 puzzles across 5 difficulty levels.
 
 ## Architecture
 
@@ -12,11 +12,17 @@ A colored nonogram puzzle game with a cozy garden theme. Players solve pixel art
 nonogram/
 ├── index.html          # Web player entry point
 ├── css/
-│   └── style.css       # Game styles
+│   └── style.css       # Game styles (~1900 lines)
 ├── js/
-│   └── game.js         # Game logic (IIFE pattern)
+│   ├── game.js         # Core gameplay logic (IIFE pattern)
+│   ├── screens.js      # Screen management (splash, home, collection, puzzle, victory, settings, tutorial)
+│   ├── collection.js   # Collection screen with puzzle cards
+│   ├── storage.js      # LocalStorage persistence
+│   ├── history.js      # Undo/redo system
+│   ├── zoom.js         # Pinch-to-zoom for mobile
+│   └── app.js          # PWA initialization, offline handling
 ├── data/
-│   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA)
+│   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA) - auto-generated
 ├── build_puzzles.py    # Main content pipeline
 ├── solver.py           # Nonogram solver with uniqueness checking
 ├── validator.py        # Puzzle validation
@@ -25,9 +31,9 @@ nonogram/
 ├── generator.py        # Puzzle generation from images
 ├── models.py           # Data models (Puzzle, Clue, etc.)
 ├── test_images/        # Source 16x16 pixel art
-│   ├── flowers/        # 59 flower images
-│   ├── potted_plants/  # 31 plant images
-│   └── garden_elements/# 22 garden element images
+│   ├── flowers/        # Flower images
+│   ├── potted_plants/  # Plant images
+│   └── garden_elements/# Garden element images
 ├── GAME_DESIGN.md      # Full design document
 ├── prompts.txt         # Retrodiffusion prompts used
 └── report.txt          # Latest build report
@@ -41,21 +47,33 @@ python build_puzzles.py test_images/flowers test_images/potted_plants test_image
 ```
 This outputs puzzle data to `data/puzzles.js` by default.
 
-### Legacy: Update old monolithic HTML (deprecated)
-```bash
-python build_puzzles.py ... --html play.html
-```
-
-### Test a single image
-```python
-from build_puzzles import process_single_image
-result = process_single_image(Path("image.png"), Path("output.png"), 100.0, 6, timeout_seconds=30)
-```
-
 ### View the game
 ```bash
 open index.html
 ```
+
+## Game Features
+
+### Implemented
+- Colored nonogram gameplay with pen/pencil modes
+- Clue satisfaction indicators (dim + strikethrough when line is complete)
+- Win detection via clue validation (not solution comparison)
+- Winning without explicitly marking empty cells
+- Undo/redo with full history
+- Progress persistence (localStorage)
+- Collection view with puzzle cards showing completion status and partial progress
+- Victory screen with stamp collection animation
+- Stamp animation when returning from puzzle via back button
+- Tutorial for first-time users
+- Settings (sound/music/vibration toggles, reset progress)
+- PWA support (offline capable, installable)
+- Pinch-to-zoom on mobile
+- Crosshair hover effect on desktop
+
+### Not Yet Implemented
+- Sound effects
+- Hint system
+- Daily puzzle feature
 
 ## Important Constants
 
@@ -119,17 +137,9 @@ See `prompts.txt` for example prompts. Tips:
 - Strong color contrast helps pass color similarity checks
 - Simple silhouettes are more recognizable at small sizes
 
-## Next Steps (Phase 2)
-
-1. Add garden collection screen (show unlocked puzzles)
-2. Implement progress saving with localStorage
-3. Add sound effects
-4. Improve mobile touch controls
-5. Generate more garden elements variety
-
 ## Known Issue: Pan when zoomed not working on mobile
 
-**Problem:** When zoomed in on a puzzle, dragging to pan causes the page to scroll instead of panning the puzzle. This happens whether touching the grid area or the clue area.
+**Problem:** When zoomed in on a puzzle, dragging to pan causes the page to scroll instead of panning the puzzle.
 
 **Relevant files:**
 - `js/zoom.js` - handles pinch-to-zoom and pan via touch events
@@ -137,27 +147,13 @@ See `prompts.txt` for example prompts. Tips:
 - `css/style.css` - `.zoom-container` has `touch-action: none`, `.app-main` has `overflow-y: auto`
 
 **What was attempted (none worked):**
-1. Added epsilon (0.001) to float comparisons: `scale > minScale + 0.001`
-2. Added `e.preventDefault()` and `e.stopPropagation()` to `handleTouchStart` and `handleTouchMove`
+1. Added epsilon (0.001) to float comparisons
+2. Added `e.preventDefault()` and `e.stopPropagation()` to touch handlers
 3. Changed touchstart listener from `passive: true` to `passive: false`
-4. Added `.app-main.zoom-locked` CSS class with `overflow: hidden; touch-action: none` toggled by JS when zoomed
-
-**Hypothesis:** The touch events may not be reaching zoom.js handlers at all. The `.zoom-container` already has `touch-action: none` in CSS but scrolling still occurs on parent `.app-main`.
+4. Added `.app-main.zoom-locked` CSS class toggled by JS when zoomed
 
 **Next steps to investigate:**
-- Add console.log to verify if `handleTouchStart` is even being called
-- Check if touch events are being captured elsewhere before reaching zoom-container
-- Consider using `document.addEventListener` with capture phase instead of container listeners
-- Test on actual mobile device vs Chrome DevTools (behavior may differ)
-
-## Files Modified Recently
-
-- Source images with contrast enhancement applied:
-  - white_lily_1.png, white_lily_2.png
-  - pink_rose_bloom_1/2/3.png
-  - purple_iris_1/2/5.png
-  - purple_lavender_sprig_1/2/4.png
-  - blue_morning_glory_vine_1/2.png
-  - red_carnation_8.png
-  - hanging_basket_4.png, terracota_pot_2.png, vine_7.png
-  - bird_on_fence_1.png, butterfly_1.png
+- Verify if `handleTouchStart` is being called via console.log
+- Check if touch events are captured elsewhere before reaching zoom-container
+- Consider using `document.addEventListener` with capture phase
+- Test on actual mobile device vs Chrome DevTools

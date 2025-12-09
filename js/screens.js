@@ -13,8 +13,7 @@ const ScreenManager = (function() {
     PUZZLE: 'puzzle',
     VICTORY: 'victory',
     SETTINGS: 'settings',
-    TUTORIAL: 'tutorial',
-    STATS: 'stats'
+    TUTORIAL: 'tutorial'
   };
 
   // Current state
@@ -129,9 +128,6 @@ const ScreenManager = (function() {
       case SCREENS.TUTORIAL:
         initTutorialScreen();
         break;
-      case SCREENS.STATS:
-        initStatsScreen();
-        break;
     }
   }
 
@@ -177,7 +173,6 @@ const ScreenManager = (function() {
     // Attach event listeners (only once)
     const playBtn = document.getElementById('home-play-btn');
     const settingsBtn = document.getElementById('home-settings-btn');
-    const statsBtn = document.getElementById('home-stats-btn');
     const progressEl = document.getElementById('home-progress');
 
     if (playBtn && !playBtn.hasAttribute('data-initialized')) {
@@ -188,11 +183,6 @@ const ScreenManager = (function() {
     if (settingsBtn && !settingsBtn.hasAttribute('data-initialized')) {
       settingsBtn.addEventListener('click', () => showScreen(SCREENS.SETTINGS));
       settingsBtn.setAttribute('data-initialized', 'true');
-    }
-
-    if (statsBtn && !statsBtn.hasAttribute('data-initialized')) {
-      statsBtn.addEventListener('click', () => showScreen(SCREENS.STATS));
-      statsBtn.setAttribute('data-initialized', 'true');
     }
 
     // Update progress display
@@ -436,26 +426,6 @@ const ScreenManager = (function() {
     // Reset to first step when entering
     currentStep = 0;
     showStep(0);
-  }
-
-  /**
-   * Stats Screen
-   */
-  function initStatsScreen() {
-    const backBtn = document.getElementById('stats-back-btn');
-    const progress = loadProgress();
-
-    // Update stats display
-    const solvedEl = document.getElementById('stats-puzzles-solved');
-
-    if (solvedEl) {
-      solvedEl.textContent = progress.solved ? progress.solved.length : 0;
-    }
-
-    if (backBtn && !backBtn.hasAttribute('data-initialized')) {
-      backBtn.addEventListener('click', goBack);
-      backBtn.setAttribute('data-initialized', 'true');
-    }
   }
 
   // ============================================
