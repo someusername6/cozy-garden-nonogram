@@ -508,7 +508,8 @@
     }
 
     // Animate a flying stamp canvas to a puzzle card
-    animateStampTo(puzzleId, flyingStamp) {
+    // options.quick: use shorter delay for back button animation
+    animateStampTo(puzzleId, flyingStamp, options = {}) {
       if (!this.container || !flyingStamp) return;
 
       // Find the target card
@@ -523,6 +524,9 @@
         flyingStamp.remove();
         return;
       }
+
+      // Use shorter delay for quick animation (back button), longer for victory
+      const scrollDelay = options.quick ? 100 : 400;
 
       // Wait for scroll to complete before calculating target position
       setTimeout(() => {
@@ -544,20 +548,32 @@
           preview.classList.remove('awaiting-stamp');
           preview.innerHTML = '';
 
-          // Find the puzzle and create the mini solution
+          // Find the puzzle and create the mini solution or progress
           const puzzle = this.puzzles.find(p => {
             const id = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
             return id === puzzleId;
           });
 
           if (puzzle) {
-            preview.appendChild(createMiniSolution(puzzle));
+            // Check if completed or just partial progress
+            const storage = getStorage();
+            const isCompleted = storage ? storage.isPuzzleCompleted(puzzleId) : false;
+
+            if (isCompleted) {
+              preview.appendChild(createMiniSolution(puzzle));
+            } else {
+              // Show partial progress
+              const savedGrid = storage ? storage.getPuzzleGrid(puzzleId) : null;
+              if (savedGrid) {
+                preview.appendChild(createMiniProgress(puzzle, savedGrid));
+              }
+            }
           }
 
           // Remove the flying stamp
           flyingStamp.remove();
         }, 650); // Match CSS transition duration + small buffer
-      }, 400); // Wait for scroll to settle
+      }, scrollDelay);
     }
   }
 

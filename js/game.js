@@ -1029,7 +1029,9 @@
 
           // If animating, fly the stamp to the target
           if (data.animateStamp && data.flyingStamp) {
-            collection.animateStampTo(data.scrollToPuzzleId, data.flyingStamp);
+            collection.animateStampTo(data.scrollToPuzzleId, data.flyingStamp, {
+              quick: data.quickAnimation
+            });
           }
         }, 50);
       }
@@ -1113,6 +1115,107 @@
     }
   }
 
+  // Render current grid state to a canvas for stamp animation
+  function renderGridToCanvas() {
+    const puzzles = getPuzzles();
+    const puzzle = puzzles[currentPuzzle];
+    if (!puzzle || grid.length === 0) return null;
+
+    // Check if there's any progress to show
+    let hasProgress = false;
+    for (let row = 0; row < puzzle.height && !hasProgress; row++) {
+      for (let col = 0; col < puzzle.width && !hasProgress; col++) {
+        const cell = getCell(row, col);
+        if (cell.value !== null && cell.value > 0) {
+          hasProgress = true;
+        }
+      }
+    }
+    if (!hasProgress) return null;
+
+    // Create canvas with same sizing as victory screen
+    const height = puzzle.height;
+    const width = puzzle.width;
+    const maxDim = Math.max(width, height);
+    const targetSize = 180;
+    const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * cellSize;
+    canvas.height = height * cellSize;
+    const ctx = canvas.getContext('2d');
+
+    // Draw current grid state (only filled cells, not X marks)
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const cell = getCell(row, col);
+        if (cell.value !== null && cell.value > 0) {
+          const color = puzzle.color_map[cell.value];
+          if (color) {
+            ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+    }
+
+    return canvas;
+  }
+
+  // Navigate to collection with stamp animation for partial progress
+  function navigateToCollectionWithStamp() {
+    const puzzles = getPuzzles();
+    const puzzle = puzzles[currentPuzzle];
+    if (!puzzle) {
+      showCollection();
+      return;
+    }
+
+    const puzzleId = getPuzzleId(puzzle);
+
+    // Try to render current progress to canvas
+    const progressCanvas = renderGridToCanvas();
+    if (!progressCanvas) {
+      // No progress to animate, just navigate
+      showCollection();
+      return;
+    }
+
+    // Get the grid element's position for the starting point
+    const gridEl = document.getElementById('grid');
+    if (!gridEl) {
+      showCollection();
+      return;
+    }
+
+    const startRect = gridEl.getBoundingClientRect();
+
+    // Create flying stamp from the progress canvas
+    const flyingStamp = document.createElement('canvas');
+    flyingStamp.width = progressCanvas.width;
+    flyingStamp.height = progressCanvas.height;
+    const ctx = flyingStamp.getContext('2d');
+    ctx.drawImage(progressCanvas, 0, 0);
+
+    flyingStamp.className = 'flying-stamp';
+    flyingStamp.style.left = startRect.left + 'px';
+    flyingStamp.style.top = startRect.top + 'px';
+    flyingStamp.style.width = startRect.width + 'px';
+    flyingStamp.style.height = startRect.height + 'px';
+    document.body.appendChild(flyingStamp);
+
+    // Save and navigate to collection with animation
+    saveCurrentPuzzle();
+    if (window.ScreenManager) {
+      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.COLLECTION, {
+        scrollToPuzzleId: puzzleId,
+        animateStamp: true,
+        flyingStamp: flyingStamp,
+        quickAnimation: true  // Flag for shorter delay
+      });
+    }
+  }
+
   // Clear all game state (called when progress is reset)
   function clearAllState() {
     grid = [];
@@ -1139,7 +1242,8 @@
     selectColor: selectColor,
     showCollection: showCollection,
     showGame: showGame,
-    clearAllState: clearAllState
+    clearAllState: clearAllState,
+    navigateToCollectionWithStamp: navigateToCollectionWithStamp
   };
 
   // Auto-initialize
