@@ -261,6 +261,7 @@ body {
   padding: 1px;
   padding-left: 0;
   justify-self: end;
+  width: max-content; /* Ensure container expands to fit widest row of clues */
 }
 
 .row-clues {
