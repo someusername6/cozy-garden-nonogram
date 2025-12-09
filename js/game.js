@@ -1009,17 +1009,27 @@
   function handleCollectionScreen(event) {
     saveCurrentPuzzle();
 
-    // Refresh collection to show updated completion status
+    const data = event.detail || {};
     const collection = window.CozyCollection;
+
     if (collection) {
-      collection.refresh();
+      // If animating stamp, render with blank placeholder for target
+      if (data.animateStamp && data.scrollToPuzzleId) {
+        collection.refresh({ blankPuzzleId: data.scrollToPuzzleId });
+      } else {
+        collection.refresh();
+      }
 
       // Scroll to specific puzzle if requested (e.g., after victory)
-      const data = event.detail || {};
       if (data.scrollToPuzzleId) {
         // Small delay to ensure DOM is updated after refresh
         setTimeout(() => {
           collection.scrollToPuzzle(data.scrollToPuzzleId);
+
+          // If animating, fly the stamp to the target
+          if (data.animateStamp && data.flyingStamp) {
+            collection.animateStampTo(data.scrollToPuzzleId, data.flyingStamp);
+          }
         }, 50);
       }
     }

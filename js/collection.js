@@ -160,7 +160,8 @@
   }
 
   // Create a puzzle card element
-  function createPuzzleCard(item, onClick) {
+  // options.forceBlank: if true, show blank placeholder instead of completed thumbnail
+  function createPuzzleCard(item, onClick, options = {}) {
     const storage = getStorage();
     const isCompleted = storage ? storage.isPuzzleCompleted(item.id) : false;
     const savedGrid = storage ? storage.getPuzzleGrid(item.id) : null;
@@ -169,12 +170,20 @@
     const card = document.createElement('div');
     card.className = 'puzzle-card' + (isCompleted ? ' completed' : '') + (hasPartialProgress ? ' in-progress' : '');
     card.dataset.puzzleIndex = item.index;
+    card.dataset.puzzleId = item.id;
 
     // Puzzle preview (mini grid or icon)
     const preview = document.createElement('div');
     preview.className = 'puzzle-card-preview';
 
-    if (isCompleted) {
+    // Force blank placeholder for stamp animation
+    if (options.forceBlank) {
+      preview.classList.add('awaiting-stamp');
+      const placeholder = document.createElement('div');
+      placeholder.className = 'puzzle-card-placeholder';
+      placeholder.textContent = '?';
+      preview.appendChild(placeholder);
+    } else if (isCompleted) {
       // Show solved thumbnail
       preview.appendChild(createMiniSolution(item.puzzle));
     } else if (hasPartialProgress) {
@@ -272,7 +281,8 @@
   }
 
   // Render the collection screen
-  function renderCollection(container, puzzles, onPuzzleSelect) {
+  // options.blankPuzzleId: puzzle ID to render with blank placeholder (for stamp animation)
+  function renderCollection(container, puzzles, onPuzzleSelect, options = {}) {
     container.innerHTML = '';
 
     const groups = groupPuzzlesByDifficulty(puzzles);
@@ -374,7 +384,11 @@
       grid.style.display = isCollapsed ? 'none' : 'flex';
 
       puzzleItems.forEach(item => {
-        const card = createPuzzleCard(item, onPuzzleSelect);
+        const cardOptions = {};
+        if (options.blankPuzzleId && item.id === options.blankPuzzleId) {
+          cardOptions.forceBlank = true;
+        }
+        const card = createPuzzleCard(item, onPuzzleSelect, cardOptions);
         grid.appendChild(card);
       });
 
@@ -404,13 +418,13 @@
       return this;
     }
 
-    render() {
+    render(options = {}) {
       if (!this.container) return;
       renderCollection(this.container, this.puzzles, (index) => {
         if (this.onPuzzleSelect) {
           this.onPuzzleSelect(index);
         }
-      });
+      }, options);
     }
 
     show() {
@@ -433,9 +447,10 @@
     }
 
     // Refresh display (e.g., after completing a puzzle)
-    refresh() {
+    // options.blankPuzzleId: puzzle ID to show with blank placeholder
+    refresh(options = {}) {
       if (this.visible) {
-        this.render();
+        this.render(options);
       }
     }
 
@@ -490,6 +505,59 @@
       setTimeout(() => {
         targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
+    }
+
+    // Animate a flying stamp canvas to a puzzle card
+    animateStampTo(puzzleId, flyingStamp) {
+      if (!this.container || !flyingStamp) return;
+
+      // Find the target card
+      const targetCard = this.container.querySelector(`.puzzle-card[data-puzzle-id="${puzzleId}"]`);
+      if (!targetCard) {
+        flyingStamp.remove();
+        return;
+      }
+
+      const preview = targetCard.querySelector('.puzzle-card-preview');
+      if (!preview) {
+        flyingStamp.remove();
+        return;
+      }
+
+      // Wait for scroll to complete before calculating target position
+      setTimeout(() => {
+        // Get target position after scroll settles
+        const targetRect = preview.getBoundingClientRect();
+
+        // Animate to target position (match preview container exactly)
+        requestAnimationFrame(() => {
+          flyingStamp.style.left = targetRect.left + 'px';
+          flyingStamp.style.top = targetRect.top + 'px';
+          flyingStamp.style.width = targetRect.width + 'px';
+          flyingStamp.style.height = targetRect.height + 'px';
+          flyingStamp.classList.add('landed');
+        });
+
+        // After animation completes, update the card and remove the flying stamp
+        setTimeout(() => {
+          // Remove the awaiting-stamp class and re-render the preview with actual thumbnail
+          preview.classList.remove('awaiting-stamp');
+          preview.innerHTML = '';
+
+          // Find the puzzle and create the mini solution
+          const puzzle = this.puzzles.find(p => {
+            const id = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            return id === puzzleId;
+          });
+
+          if (puzzle) {
+            preview.appendChild(createMiniSolution(puzzle));
+          }
+
+          // Remove the flying stamp
+          flyingStamp.remove();
+        }, 650); // Match CSS transition duration + small buffer
+      }, 400); // Wait for scroll to settle
     }
   }
 

@@ -248,8 +248,38 @@ const ScreenManager = (function() {
     // Set up continue button (only once)
     if (continueBtn && !continueBtn.hasAttribute('data-initialized')) {
       continueBtn.addEventListener('click', () => {
-        // Go to collection, scrolling to the completed puzzle
-        showScreen(SCREENS.COLLECTION, { scrollToPuzzleId: victoryPuzzleId });
+        // Get the victory canvas for the flying animation
+        const victoryCanvas = imageEl ? imageEl.querySelector('canvas') : null;
+
+        if (victoryCanvas) {
+          // Get the canvas position before transitioning
+          const startRect = victoryCanvas.getBoundingClientRect();
+
+          // Create a new canvas and copy the image content
+          // (cloneNode doesn't copy canvas content)
+          const flyingStamp = document.createElement('canvas');
+          flyingStamp.width = victoryCanvas.width;
+          flyingStamp.height = victoryCanvas.height;
+          const ctx = flyingStamp.getContext('2d');
+          ctx.drawImage(victoryCanvas, 0, 0);
+
+          flyingStamp.className = 'flying-stamp';
+          flyingStamp.style.left = startRect.left + 'px';
+          flyingStamp.style.top = startRect.top + 'px';
+          flyingStamp.style.width = startRect.width + 'px';
+          flyingStamp.style.height = startRect.height + 'px';
+          document.body.appendChild(flyingStamp);
+
+          // Go to collection with animation flag
+          showScreen(SCREENS.COLLECTION, {
+            scrollToPuzzleId: victoryPuzzleId,
+            animateStamp: true,
+            flyingStamp: flyingStamp
+          });
+        } else {
+          // Fallback: just navigate without animation
+          showScreen(SCREENS.COLLECTION, { scrollToPuzzleId: victoryPuzzleId });
+        }
       });
       continueBtn.setAttribute('data-initialized', 'true');
     }
