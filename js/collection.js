@@ -455,7 +455,8 @@
     }
 
     // Scroll to a specific puzzle by ID, expanding its section if needed
-    scrollToPuzzle(puzzleId) {
+    // options.instant: use instant scroll instead of smooth
+    scrollToPuzzle(puzzleId, options = {}) {
       if (!this.container) return;
 
       // Find the puzzle card by data attribute
@@ -502,9 +503,10 @@
       }
 
       // Scroll the card into view with some padding
+      const scrollBehavior = options.instant ? 'instant' : 'smooth';
       setTimeout(() => {
-        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
+        targetCard.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
+      }, options.instant ? 0 : 100);
     }
 
     // Animate a flying stamp canvas to a puzzle card

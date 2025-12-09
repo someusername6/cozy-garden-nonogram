@@ -1025,7 +1025,9 @@
       if (data.scrollToPuzzleId) {
         // Small delay to ensure DOM is updated after refresh
         setTimeout(() => {
-          collection.scrollToPuzzle(data.scrollToPuzzleId);
+          collection.scrollToPuzzle(data.scrollToPuzzleId, {
+            instant: data.quickAnimation
+          });
 
           // If animating, fly the stamp to the target
           if (data.animateStamp && data.flyingStamp) {
