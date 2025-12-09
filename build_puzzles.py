@@ -49,6 +49,10 @@ MIN_COLOR_DISTANCE = 35
 
 # Per-image max color overrides (image stem -> max colors)
 COLOR_OVERRIDES = {
+    "black_susan": 3,
+    "violet_3": 5,
+    "potted_flower_5": 5,
+    "potted_flower_1": 5,
     "yellow_daffodil_1": 5,
     "orange_zinnia_2": 4,
     "pink_peony_bloom_5": 5,
@@ -62,7 +66,7 @@ COLOR_OVERRIDES = {
     "onion": 4,
     "red_carnation_3": 5,
     "bee_5": 5,
-    "blue_morning_glory_vine_1": 5,
+    "blue_morning_glory_vine_1": 4,
     "strawberry": 5,
     "bee_2": 5,
     "purple_iris_7": 5,
