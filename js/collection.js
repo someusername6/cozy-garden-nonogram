@@ -438,6 +438,59 @@
         this.render();
       }
     }
+
+    // Scroll to a specific puzzle by ID, expanding its section if needed
+    scrollToPuzzle(puzzleId) {
+      if (!this.container) return;
+
+      // Find the puzzle card by data attribute
+      const cards = this.container.querySelectorAll('.puzzle-card');
+      let targetCard = null;
+      let targetIndex = -1;
+
+      // Find puzzle index by ID
+      for (let i = 0; i < this.puzzles.length; i++) {
+        const id = this.puzzles[i].title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        if (id === puzzleId) {
+          targetIndex = i;
+          break;
+        }
+      }
+
+      if (targetIndex === -1) return;
+
+      // Find the card with this puzzle index
+      cards.forEach(card => {
+        if (parseInt(card.dataset.puzzleIndex, 10) === targetIndex) {
+          targetCard = card;
+        }
+      });
+
+      if (!targetCard) return;
+
+      // Find the parent section and expand it if collapsed
+      const section = targetCard.closest('.collection-section');
+      if (section && section.classList.contains('collapsed')) {
+        const difficulty = section.dataset.difficulty;
+        const grid = section.querySelector('.collection-grid');
+        const chevron = section.querySelector('.section-chevron');
+
+        // Expand the section
+        section.classList.remove('collapsed');
+        if (grid) grid.style.display = 'flex';
+        if (chevron) chevron.textContent = '\u25BC';
+
+        // Update stored collapsed state
+        let collapsed = getCollapsedSections() || {};
+        collapsed[difficulty] = false;
+        saveCollapsedSections(collapsed);
+      }
+
+      // Scroll the card into view with some padding
+      setTimeout(() => {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
   }
 
   // Create singleton

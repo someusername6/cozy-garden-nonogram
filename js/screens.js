@@ -222,6 +222,9 @@ const ScreenManager = (function() {
     window.dispatchEvent(new CustomEvent('screen:puzzle', { detail: data }));
   }
 
+  // Store current victory puzzle ID for the continue button
+  let victoryPuzzleId = null;
+
   /**
    * Victory Screen - Puzzle completion
    */
@@ -229,8 +232,10 @@ const ScreenManager = (function() {
     // data should contain { puzzleId, puzzleName, solution, palette }
     const titleEl = document.getElementById('victory-puzzle-name');
     const imageEl = document.getElementById('victory-image');
-    const nextBtn = document.getElementById('victory-next-btn');
-    const collectionBtn = document.getElementById('victory-collection-btn');
+    const continueBtn = document.getElementById('victory-continue-btn');
+
+    // Store puzzleId for the continue button handler
+    victoryPuzzleId = data.puzzleId;
 
     if (titleEl && data.puzzleName) {
       titleEl.textContent = data.puzzleName;
@@ -240,23 +245,13 @@ const ScreenManager = (function() {
       renderVictoryImage(imageEl, data.solution, data.palette);
     }
 
-    // Set up buttons (only once)
-    if (nextBtn && !nextBtn.hasAttribute('data-initialized')) {
-      nextBtn.addEventListener('click', () => {
-        // Find next puzzle
-        const nextPuzzle = findNextPuzzle(data.puzzleId);
-        if (nextPuzzle) {
-          showScreen(SCREENS.PUZZLE, { puzzleId: nextPuzzle.id });
-        } else {
-          showScreen(SCREENS.COLLECTION);
-        }
+    // Set up continue button (only once)
+    if (continueBtn && !continueBtn.hasAttribute('data-initialized')) {
+      continueBtn.addEventListener('click', () => {
+        // Go to collection, scrolling to the completed puzzle
+        showScreen(SCREENS.COLLECTION, { scrollToPuzzleId: victoryPuzzleId });
       });
-      nextBtn.setAttribute('data-initialized', 'true');
-    }
-
-    if (collectionBtn && !collectionBtn.hasAttribute('data-initialized')) {
-      collectionBtn.addEventListener('click', () => showScreen(SCREENS.COLLECTION));
-      collectionBtn.setAttribute('data-initialized', 'true');
+      continueBtn.setAttribute('data-initialized', 'true');
     }
   }
 
@@ -289,21 +284,6 @@ const ScreenManager = (function() {
     }
 
     container.appendChild(canvas);
-  }
-
-  /**
-   * Find the next puzzle after the given one
-   */
-  function findNextPuzzle(currentPuzzleId) {
-    if (!window.PUZZLE_DATA) return null;
-
-    const allPuzzles = Object.values(window.PUZZLE_DATA).flat();
-    const currentIndex = allPuzzles.findIndex(p => p.id === currentPuzzleId);
-
-    if (currentIndex >= 0 && currentIndex < allPuzzles.length - 1) {
-      return allPuzzles[currentIndex + 1];
-    }
-    return null;
   }
 
   /**

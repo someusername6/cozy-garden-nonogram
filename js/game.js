@@ -1013,6 +1013,15 @@
     const collection = window.CozyCollection;
     if (collection) {
       collection.refresh();
+
+      // Scroll to specific puzzle if requested (e.g., after victory)
+      const data = event.detail || {};
+      if (data.scrollToPuzzleId) {
+        // Small delay to ensure DOM is updated after refresh
+        setTimeout(() => {
+          collection.scrollToPuzzle(data.scrollToPuzzleId);
+        }, 50);
+      }
     }
   }
 
