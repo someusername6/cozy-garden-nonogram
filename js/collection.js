@@ -181,10 +181,10 @@
       // Show partial progress
       preview.appendChild(createMiniProgress(item.puzzle, savedGrid));
     } else {
-      // Show placeholder with size
+      // Show question mark placeholder (puzzle not yet started)
       const placeholder = document.createElement('div');
       placeholder.className = 'puzzle-card-placeholder';
-      placeholder.textContent = `${item.meta.width}x${item.meta.height}`;
+      placeholder.textContent = '?';
       preview.appendChild(placeholder);
     }
 
@@ -196,11 +196,11 @@
     name.textContent = item.meta.name;
     card.appendChild(name);
 
-    // Color count badge
+    // Dimensions and color count badge
     const colors = Object.keys(item.puzzle.color_map).length;
     const badge = document.createElement('div');
     badge.className = 'puzzle-card-badge';
-    badge.textContent = `${colors} colors`;
+    badge.textContent = `${item.meta.width}×${item.meta.height} · ${colors}c`;
     card.appendChild(badge);
 
     // Click handler

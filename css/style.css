@@ -1197,9 +1197,14 @@ body.is-installed {
 }
 
 .puzzle-card-placeholder {
-  font-size: 12px;
+  font-size: 32px;
+  font-weight: bold;
   color: var(--color-text-muted);
-  font-family: monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .puzzle-mini-canvas {
