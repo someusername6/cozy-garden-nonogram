@@ -147,13 +147,27 @@
     };
   }
 
+  // Check if a saved grid has any filled cells
+  function hasProgress(savedGrid) {
+    if (!savedGrid) return false;
+    for (const row of savedGrid) {
+      for (const cell of row) {
+        const value = (typeof cell === 'object' && cell !== null) ? cell.value : cell;
+        if (value !== null) return true;
+      }
+    }
+    return false;
+  }
+
   // Create a puzzle card element
   function createPuzzleCard(item, onClick) {
     const storage = getStorage();
     const isCompleted = storage ? storage.isPuzzleCompleted(item.id) : false;
+    const savedGrid = storage ? storage.getPuzzleGrid(item.id) : null;
+    const hasPartialProgress = !isCompleted && hasProgress(savedGrid);
 
     const card = document.createElement('div');
-    card.className = 'puzzle-card' + (isCompleted ? ' completed' : '');
+    card.className = 'puzzle-card' + (isCompleted ? ' completed' : '') + (hasPartialProgress ? ' in-progress' : '');
     card.dataset.puzzleIndex = item.index;
 
     // Puzzle preview (mini grid or icon)
@@ -163,6 +177,9 @@
     if (isCompleted) {
       // Show solved thumbnail
       preview.appendChild(createMiniSolution(item.puzzle));
+    } else if (hasPartialProgress) {
+      // Show partial progress
+      preview.appendChild(createMiniProgress(item.puzzle, savedGrid));
     } else {
       // Show placeholder with size
       const placeholder = document.createElement('div');
@@ -219,6 +236,41 @@
     return canvas;
   }
 
+  // Create mini progress preview (partial grid state)
+  function createMiniProgress(puzzle, savedGrid) {
+    const canvas = document.createElement('canvas');
+    const size = 48; // Preview size
+    const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
+
+    canvas.width = puzzle.width * cellSize;
+    canvas.height = puzzle.height * cellSize;
+    canvas.className = 'puzzle-mini-canvas';
+
+    const ctx = canvas.getContext('2d');
+
+    // Draw light grid background
+    ctx.fillStyle = '#f0ede5';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw saved progress
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = savedGrid[row]?.[col];
+        const value = (typeof cell === 'object' && cell !== null) ? cell.value : cell;
+
+        if (value !== null && value > 0) {
+          const color = puzzle.color_map[value];
+          if (color) {
+            ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+    }
+
+    return canvas;
+  }
+
   // Render the collection screen
   function renderCollection(container, puzzles, onPuzzleSelect) {
     container.innerHTML = '';
@@ -254,14 +306,9 @@
       saveCollapsedSections(collapsed);
     }
 
-    // Header
+    // Header with overall stats
     const header = document.createElement('div');
     header.className = 'collection-header';
-
-    const title = document.createElement('h2');
-    title.className = 'collection-title';
-    title.textContent = 'Puzzle Collection';
-    header.appendChild(title);
 
     // Overall stats
     let totalCompleted = 0;
