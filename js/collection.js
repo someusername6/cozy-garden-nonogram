@@ -212,7 +212,7 @@
   // Create mini solution preview (scaled down)
   function createMiniSolution(puzzle) {
     const canvas = document.createElement('canvas');
-    const size = 48; // Preview size
+    const size = 80; // Preview size (larger for better quality, CSS scales down)
     const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
 
     canvas.width = puzzle.width * cellSize;
@@ -239,7 +239,7 @@
   // Create mini progress preview (partial grid state)
   function createMiniProgress(puzzle, savedGrid) {
     const canvas = document.createElement('canvas');
-    const size = 48; // Preview size
+    const size = 80; // Preview size (larger for better quality, CSS scales down)
     const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
 
     canvas.width = puzzle.width * cellSize;
