@@ -1221,7 +1221,10 @@ body.is-installed {
   line-height: 1.2;
   margin-bottom: 4px;
   word-break: break-word;
-  max-height: 2.4em;
+  height: 3.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
