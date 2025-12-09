@@ -1027,8 +1027,7 @@
         puzzleId: puzzleId,
         puzzleName: puzzleName,
         solution: puzzle.solution,
-        palette: puzzle.color_map,
-        timeSeconds: 0 // TODO: track time
+        palette: puzzle.color_map
       });
     }
   }

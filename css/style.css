@@ -1593,9 +1593,9 @@ body.showing-game .collection-screen {
 }
 
 .victory-image {
-  width: 150px;
-  height: 150px;
-  margin: 0 auto 16px auto;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px auto;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -226,21 +226,14 @@ const ScreenManager = (function() {
    * Victory Screen - Puzzle completion
    */
   function initVictoryScreen(data) {
-    // data should contain { puzzleId, puzzleName, timeSeconds, moves }
+    // data should contain { puzzleId, puzzleName, solution, palette }
     const titleEl = document.getElementById('victory-puzzle-name');
-    const timeEl = document.getElementById('victory-time');
     const imageEl = document.getElementById('victory-image');
     const nextBtn = document.getElementById('victory-next-btn');
     const collectionBtn = document.getElementById('victory-collection-btn');
 
     if (titleEl && data.puzzleName) {
       titleEl.textContent = data.puzzleName;
-    }
-
-    if (timeEl && data.timeSeconds !== undefined) {
-      const mins = Math.floor(data.timeSeconds / 60);
-      const secs = data.timeSeconds % 60;
-      timeEl.textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
     }
 
     if (imageEl && data.solution) {
@@ -275,8 +268,8 @@ const ScreenManager = (function() {
     const height = solution.length;
     const width = solution[0] ? solution[0].length : height;
     const maxDim = Math.max(width, height);
-    // Target 130px to fit within 150px container with padding for rounded corners
-    const targetSize = 130;
+    // Target 180px to fit within 200px container with padding for rounded corners
+    const targetSize = 180;
     const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
 
     const canvas = document.createElement('canvas');
@@ -444,16 +437,9 @@ const ScreenManager = (function() {
 
     // Update stats display
     const solvedEl = document.getElementById('stats-puzzles-solved');
-    const timeEl = document.getElementById('stats-total-time');
 
     if (solvedEl) {
       solvedEl.textContent = progress.solved ? progress.solved.length : 0;
-    }
-
-    if (timeEl && progress.totalTime) {
-      const hours = Math.floor(progress.totalTime / 3600);
-      const mins = Math.floor((progress.totalTime % 3600) / 60);
-      timeEl.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
     }
 
     if (backBtn && !backBtn.hasAttribute('data-initialized')) {
