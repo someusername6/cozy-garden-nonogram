@@ -272,19 +272,24 @@ const ScreenManager = (function() {
    */
   function renderVictoryImage(container, solution, palette) {
     container.innerHTML = '';
-    const size = solution.length;
-    const cellSize = Math.min(12, Math.floor(200 / size));
+    const height = solution.length;
+    const width = solution[0] ? solution[0].length : height;
+    const maxDim = Math.max(width, height);
+    // Target 130px to fit within 150px container with padding for rounded corners
+    const targetSize = 130;
+    const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
 
     const canvas = document.createElement('canvas');
-    canvas.width = size * cellSize;
-    canvas.height = size * cellSize;
+    canvas.width = width * cellSize;
+    canvas.height = height * cellSize;
     const ctx = canvas.getContext('2d');
 
-    for (let row = 0; row < size; row++) {
-      for (let col = 0; col < size; col++) {
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
         const colorIndex = solution[row][col];
         if (colorIndex > 0 && palette[colorIndex]) {
-          ctx.fillStyle = palette[colorIndex];
+          const color = palette[colorIndex];
+          ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
           ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
         }
       }
