@@ -1,0 +1,518 @@
+/**
+ * Screen Manager for Cozy Garden
+ * Handles navigation between screens with transitions
+ */
+const ScreenManager = (function() {
+  'use strict';
+
+  // Screen definitions
+  const SCREENS = {
+    SPLASH: 'splash',
+    HOME: 'home',
+    COLLECTION: 'collection',
+    PUZZLE: 'puzzle',
+    VICTORY: 'victory',
+    SETTINGS: 'settings',
+    TUTORIAL: 'tutorial',
+    STATS: 'stats'
+  };
+
+  // Current state
+  let currentScreen = null;
+  let screenHistory = [];
+  let screenData = {}; // Data passed between screens
+
+  // Screen elements cache
+  let screenElements = {};
+
+  /**
+   * Initialize screen manager
+   */
+  function init() {
+    // Cache all screen elements
+    Object.values(SCREENS).forEach(screenId => {
+      screenElements[screenId] = document.getElementById(`screen-${screenId}`);
+    });
+
+    // Handle browser back button
+    window.addEventListener('popstate', handlePopState);
+
+    // Start with splash screen
+    showScreen(SCREENS.SPLASH, {}, false);
+  }
+
+  /**
+   * Show a screen with optional transition
+   * @param {string} screenId - Screen to show
+   * @param {object} data - Data to pass to screen
+   * @param {boolean} addToHistory - Whether to add to navigation history
+   */
+  function showScreen(screenId, data = {}, addToHistory = true) {
+    const targetScreen = screenElements[screenId];
+    if (!targetScreen) {
+      console.error(`Screen not found: ${screenId}`);
+      return;
+    }
+
+    // Store data for the screen
+    screenData = data;
+
+    // Hide current screen
+    if (currentScreen && screenElements[currentScreen]) {
+      screenElements[currentScreen].classList.remove('screen-active');
+      screenElements[currentScreen].classList.add('screen-hidden');
+    }
+
+    // Show target screen
+    targetScreen.classList.remove('screen-hidden');
+    targetScreen.classList.add('screen-active');
+
+    // Track history for back navigation
+    if (addToHistory && currentScreen !== null) {
+      screenHistory.push(currentScreen);
+      history.pushState({ screen: screenId }, '', `#${screenId}`);
+    }
+
+    const previousScreen = currentScreen;
+    currentScreen = screenId;
+
+    // Trigger screen-specific initialization
+    onScreenEnter(screenId, data, previousScreen);
+  }
+
+  /**
+   * Go back to previous screen
+   */
+  function goBack() {
+    if (screenHistory.length > 0) {
+      const previousScreen = screenHistory.pop();
+      showScreen(previousScreen, {}, false);
+      history.back();
+    }
+  }
+
+  /**
+   * Handle browser back/forward buttons
+   */
+  function handlePopState(event) {
+    if (event.state && event.state.screen) {
+      showScreen(event.state.screen, {}, false);
+    } else if (screenHistory.length > 0) {
+      const previousScreen = screenHistory.pop();
+      showScreen(previousScreen, {}, false);
+    }
+  }
+
+  /**
+   * Called when entering a screen - trigger screen-specific logic
+   */
+  function onScreenEnter(screenId, data, previousScreen) {
+    switch (screenId) {
+      case SCREENS.SPLASH:
+        initSplashScreen();
+        break;
+      case SCREENS.HOME:
+        initHomeScreen();
+        break;
+      case SCREENS.COLLECTION:
+        initCollectionScreen(data);
+        break;
+      case SCREENS.PUZZLE:
+        initPuzzleScreen(data);
+        break;
+      case SCREENS.VICTORY:
+        initVictoryScreen(data);
+        break;
+      case SCREENS.SETTINGS:
+        initSettingsScreen();
+        break;
+      case SCREENS.TUTORIAL:
+        initTutorialScreen();
+        break;
+      case SCREENS.STATS:
+        initStatsScreen();
+        break;
+    }
+  }
+
+  /**
+   * Get current screen data
+   */
+  function getScreenData() {
+    return screenData;
+  }
+
+  /**
+   * Get current screen ID
+   */
+  function getCurrentScreen() {
+    return currentScreen;
+  }
+
+  // ============================================
+  // Screen Initialization Functions
+  // ============================================
+
+  /**
+   * Splash Screen - Loading and branding
+   */
+  function initSplashScreen() {
+    // Simulate loading (in real app, load assets here)
+    setTimeout(() => {
+      // Check if first time user
+      const hasPlayedBefore = localStorage.getItem('cozy_garden_played');
+
+      if (!hasPlayedBefore) {
+        showScreen(SCREENS.TUTORIAL);
+      } else {
+        showScreen(SCREENS.HOME);
+      }
+    }, 1500); // Show splash for 1.5 seconds
+  }
+
+  /**
+   * Home Screen - Main menu
+   */
+  function initHomeScreen() {
+    // Attach event listeners (only once)
+    const playBtn = document.getElementById('home-play-btn');
+    const settingsBtn = document.getElementById('home-settings-btn');
+    const statsBtn = document.getElementById('home-stats-btn');
+    const progressEl = document.getElementById('home-progress');
+
+    if (playBtn && !playBtn.hasAttribute('data-initialized')) {
+      playBtn.addEventListener('click', () => showScreen(SCREENS.COLLECTION));
+      playBtn.setAttribute('data-initialized', 'true');
+    }
+
+    if (settingsBtn && !settingsBtn.hasAttribute('data-initialized')) {
+      settingsBtn.addEventListener('click', () => showScreen(SCREENS.SETTINGS));
+      settingsBtn.setAttribute('data-initialized', 'true');
+    }
+
+    if (statsBtn && !statsBtn.hasAttribute('data-initialized')) {
+      statsBtn.addEventListener('click', () => showScreen(SCREENS.STATS));
+      statsBtn.setAttribute('data-initialized', 'true');
+    }
+
+    // Update progress display
+    if (progressEl && window.PUZZLE_DATA) {
+      const progress = loadProgress();
+      const totalPuzzles = Object.values(window.PUZZLE_DATA).flat().length;
+      const solvedCount = progress.solved ? progress.solved.length : 0;
+      progressEl.textContent = `${solvedCount} / ${totalPuzzles} puzzles solved`;
+    }
+  }
+
+  /**
+   * Collection Screen - Level select
+   */
+  function initCollectionScreen(data) {
+    // Collection screen initialization is handled by game.js
+    // Trigger a custom event so game.js can respond
+    window.dispatchEvent(new CustomEvent('screen:collection', { detail: data }));
+  }
+
+  /**
+   * Puzzle Screen - Gameplay
+   */
+  function initPuzzleScreen(data) {
+    // Puzzle screen initialization is handled by game.js
+    // data should contain { puzzleId: string }
+    window.dispatchEvent(new CustomEvent('screen:puzzle', { detail: data }));
+  }
+
+  /**
+   * Victory Screen - Puzzle completion
+   */
+  function initVictoryScreen(data) {
+    // data should contain { puzzleId, puzzleName, timeSeconds, moves }
+    const titleEl = document.getElementById('victory-puzzle-name');
+    const timeEl = document.getElementById('victory-time');
+    const imageEl = document.getElementById('victory-image');
+    const nextBtn = document.getElementById('victory-next-btn');
+    const collectionBtn = document.getElementById('victory-collection-btn');
+
+    if (titleEl && data.puzzleName) {
+      titleEl.textContent = data.puzzleName;
+    }
+
+    if (timeEl && data.timeSeconds !== undefined) {
+      const mins = Math.floor(data.timeSeconds / 60);
+      const secs = data.timeSeconds % 60;
+      timeEl.textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+
+    if (imageEl && data.solution) {
+      renderVictoryImage(imageEl, data.solution, data.palette);
+    }
+
+    // Set up buttons (only once)
+    if (nextBtn && !nextBtn.hasAttribute('data-initialized')) {
+      nextBtn.addEventListener('click', () => {
+        // Find next puzzle
+        const nextPuzzle = findNextPuzzle(data.puzzleId);
+        if (nextPuzzle) {
+          showScreen(SCREENS.PUZZLE, { puzzleId: nextPuzzle.id });
+        } else {
+          showScreen(SCREENS.COLLECTION);
+        }
+      });
+      nextBtn.setAttribute('data-initialized', 'true');
+    }
+
+    if (collectionBtn && !collectionBtn.hasAttribute('data-initialized')) {
+      collectionBtn.addEventListener('click', () => showScreen(SCREENS.COLLECTION));
+      collectionBtn.setAttribute('data-initialized', 'true');
+    }
+  }
+
+  /**
+   * Render completed puzzle image on victory screen
+   */
+  function renderVictoryImage(container, solution, palette) {
+    container.innerHTML = '';
+    const size = solution.length;
+    const cellSize = Math.min(12, Math.floor(200 / size));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size * cellSize;
+    canvas.height = size * cellSize;
+    const ctx = canvas.getContext('2d');
+
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        const colorIndex = solution[row][col];
+        if (colorIndex > 0 && palette[colorIndex]) {
+          ctx.fillStyle = palette[colorIndex];
+          ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    container.appendChild(canvas);
+  }
+
+  /**
+   * Find the next puzzle after the given one
+   */
+  function findNextPuzzle(currentPuzzleId) {
+    if (!window.PUZZLE_DATA) return null;
+
+    const allPuzzles = Object.values(window.PUZZLE_DATA).flat();
+    const currentIndex = allPuzzles.findIndex(p => p.id === currentPuzzleId);
+
+    if (currentIndex >= 0 && currentIndex < allPuzzles.length - 1) {
+      return allPuzzles[currentIndex + 1];
+    }
+    return null;
+  }
+
+  /**
+   * Settings Screen
+   */
+  function initSettingsScreen() {
+    const backBtn = document.getElementById('settings-back-btn');
+    const soundToggle = document.getElementById('settings-sound');
+    const musicToggle = document.getElementById('settings-music');
+    const vibrationToggle = document.getElementById('settings-vibration');
+    const resetBtn = document.getElementById('settings-reset-btn');
+
+    // Load current settings
+    const settings = loadSettings();
+    if (soundToggle) soundToggle.checked = settings.sound;
+    if (musicToggle) musicToggle.checked = settings.music;
+    if (vibrationToggle) vibrationToggle.checked = settings.vibration;
+
+    // Back button
+    if (backBtn && !backBtn.hasAttribute('data-initialized')) {
+      backBtn.addEventListener('click', goBack);
+      backBtn.setAttribute('data-initialized', 'true');
+    }
+
+    // Setting toggles
+    if (soundToggle && !soundToggle.hasAttribute('data-initialized')) {
+      soundToggle.addEventListener('change', () => saveSetting('sound', soundToggle.checked));
+      soundToggle.setAttribute('data-initialized', 'true');
+    }
+
+    if (musicToggle && !musicToggle.hasAttribute('data-initialized')) {
+      musicToggle.addEventListener('change', () => saveSetting('music', musicToggle.checked));
+      musicToggle.setAttribute('data-initialized', 'true');
+    }
+
+    if (vibrationToggle && !vibrationToggle.hasAttribute('data-initialized')) {
+      vibrationToggle.addEventListener('change', () => saveSetting('vibration', vibrationToggle.checked));
+      vibrationToggle.setAttribute('data-initialized', 'true');
+    }
+
+    // Reset progress
+    if (resetBtn && !resetBtn.hasAttribute('data-initialized')) {
+      resetBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+          // Clear game state (in-memory grid, etc.)
+          if (window.CozyGarden && window.CozyGarden.clearAllState) {
+            window.CozyGarden.clearAllState();
+          }
+
+          // Use CozyStorage reset if available
+          if (window.CozyStorage && window.CozyStorage.reset) {
+            window.CozyStorage.reset();
+          }
+
+          // Also clear screen manager's progress tracking
+          localStorage.removeItem('cozy_garden_progress');
+          localStorage.removeItem('cozy_garden_played');
+          localStorage.removeItem('cozy_garden_collapsed_sections');
+
+          // Refresh collection if visible
+          if (window.CozyCollection) {
+            window.CozyCollection.refresh();
+          }
+
+          alert('Progress reset!');
+        }
+      });
+      resetBtn.setAttribute('data-initialized', 'true');
+    }
+  }
+
+  /**
+   * Tutorial Screen
+   */
+  function initTutorialScreen() {
+    const skipBtn = document.getElementById('tutorial-skip-btn');
+    const nextBtn = document.getElementById('tutorial-next-btn');
+    const steps = document.querySelectorAll('.tutorial-step');
+    const dots = document.querySelectorAll('.tutorial-dot');
+    let currentStep = 0;
+
+    function showStep(index) {
+      steps.forEach((step, i) => {
+        step.classList.toggle('active', i === index);
+      });
+
+      // Update dots
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+      });
+
+      // Update button text on last step
+      if (nextBtn) {
+        nextBtn.textContent = index === steps.length - 1 ? 'Start Playing' : 'Next';
+      }
+    }
+
+    function completeTutorial() {
+      localStorage.setItem('cozy_garden_played', 'true');
+      showScreen(SCREENS.HOME);
+    }
+
+    if (skipBtn && !skipBtn.hasAttribute('data-initialized')) {
+      skipBtn.addEventListener('click', completeTutorial);
+      skipBtn.setAttribute('data-initialized', 'true');
+    }
+
+    if (nextBtn && !nextBtn.hasAttribute('data-initialized')) {
+      nextBtn.addEventListener('click', () => {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          showStep(currentStep);
+        } else {
+          completeTutorial();
+        }
+      });
+      nextBtn.setAttribute('data-initialized', 'true');
+    }
+
+    // Reset to first step when entering
+    currentStep = 0;
+    showStep(0);
+  }
+
+  /**
+   * Stats Screen
+   */
+  function initStatsScreen() {
+    const backBtn = document.getElementById('stats-back-btn');
+    const progress = loadProgress();
+
+    // Update stats display
+    const solvedEl = document.getElementById('stats-puzzles-solved');
+    const timeEl = document.getElementById('stats-total-time');
+
+    if (solvedEl) {
+      solvedEl.textContent = progress.solved ? progress.solved.length : 0;
+    }
+
+    if (timeEl && progress.totalTime) {
+      const hours = Math.floor(progress.totalTime / 3600);
+      const mins = Math.floor((progress.totalTime % 3600) / 60);
+      timeEl.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    }
+
+    if (backBtn && !backBtn.hasAttribute('data-initialized')) {
+      backBtn.addEventListener('click', goBack);
+      backBtn.setAttribute('data-initialized', 'true');
+    }
+  }
+
+  // ============================================
+  // Settings & Progress Persistence
+  // ============================================
+
+  function loadSettings() {
+    const defaults = { sound: true, music: true, vibration: true };
+    try {
+      const saved = localStorage.getItem('cozy_garden_settings');
+      return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
+    } catch {
+      return defaults;
+    }
+  }
+
+  function saveSetting(key, value) {
+    const settings = loadSettings();
+    settings[key] = value;
+    localStorage.setItem('cozy_garden_settings', JSON.stringify(settings));
+  }
+
+  function loadProgress() {
+    try {
+      const saved = localStorage.getItem('cozy_garden_progress');
+      return saved ? JSON.parse(saved) : { solved: [], totalTime: 0 };
+    } catch {
+      return { solved: [], totalTime: 0 };
+    }
+  }
+
+  function saveProgress(puzzleId, timeSeconds) {
+    const progress = loadProgress();
+    if (!progress.solved.includes(puzzleId)) {
+      progress.solved.push(puzzleId);
+    }
+    progress.totalTime = (progress.totalTime || 0) + timeSeconds;
+    localStorage.setItem('cozy_garden_progress', JSON.stringify(progress));
+  }
+
+  // Public API
+  return {
+    init,
+    showScreen,
+    goBack,
+    getScreenData,
+    getCurrentScreen,
+    saveProgress,
+    loadProgress,
+    loadSettings,
+    SCREENS
+  };
+})();
+
+// Expose globally
+window.ScreenManager = ScreenManager;
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  ScreenManager.init();
+});

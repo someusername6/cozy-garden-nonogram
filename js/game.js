@@ -853,6 +853,9 @@
     // Clear history after win
     const history = getHistory();
     if (history) history.clear();
+
+    // Show victory screen
+    showVictory(puzzle);
   }
 
   function resetPuzzle() {
@@ -954,19 +957,57 @@
     });
   }
 
-  // === Navigation ===
+  // === Navigation (Screen Manager Integration) ===
 
-  function showCollection() {
-    document.body.classList.remove('showing-game');
-    document.body.classList.add('showing-collection');
-
-    // Save current puzzle before leaving
+  function saveCurrentPuzzle() {
     const puzzles = getPuzzles();
     const storage = getStorage();
     if (grid.length > 0 && puzzles[currentPuzzle] && storage) {
       const puzzleId = getPuzzleId(puzzles[currentPuzzle]);
       storage.savePuzzleGrid(puzzleId, grid);
     }
+  }
+
+  // Legacy function - now uses ScreenManager
+  function showCollection() {
+    saveCurrentPuzzle();
+    if (window.ScreenManager) {
+      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.COLLECTION);
+    }
+  }
+
+  // Legacy function - now uses ScreenManager
+  function showGame(puzzleIndex) {
+    if (window.ScreenManager) {
+      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.PUZZLE, { puzzleId: puzzleIndex });
+    }
+  }
+
+  // Handle screen:puzzle event from ScreenManager
+  function handlePuzzleScreen(event) {
+    const data = event.detail || {};
+
+    // Load specific puzzle by ID or index
+    const puzzles = getPuzzles();
+    let puzzleIndex = 0;
+
+    if (data.puzzleId !== undefined) {
+      puzzleIndex = data.puzzleId;
+
+      // If puzzleId is a string, find the matching puzzle
+      if (typeof data.puzzleId === 'string') {
+        puzzleIndex = puzzles.findIndex(p => getPuzzleId(p) === data.puzzleId);
+        if (puzzleIndex === -1) puzzleIndex = 0;
+      }
+    }
+
+    // Always reload puzzle when entering screen (ensures fresh state from storage)
+    loadPuzzle(puzzleIndex);
+  }
+
+  // Handle screen:collection event from ScreenManager
+  function handleCollectionScreen(event) {
+    saveCurrentPuzzle();
 
     // Refresh collection to show updated completion status
     const collection = window.CozyCollection;
@@ -975,12 +1016,20 @@
     }
   }
 
-  function showGame(puzzleIndex) {
-    document.body.classList.remove('showing-collection');
-    document.body.classList.add('showing-game');
+  // Show victory screen instead of just updating status
+  function showVictory(puzzle) {
+    if (window.ScreenManager) {
+      const puzzleId = getPuzzleId(puzzle);
+      const match = puzzle.title.match(/^(.+?)\s*\(/);
+      const puzzleName = match ? match[1].trim() : puzzle.title;
 
-    if (puzzleIndex !== undefined && puzzleIndex !== currentPuzzle) {
-      loadPuzzle(puzzleIndex);
+      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.VICTORY, {
+        puzzleId: puzzleId,
+        puzzleName: puzzleName,
+        solution: puzzle.solution,
+        palette: puzzle.color_map,
+        timeSeconds: 0 // TODO: track time
+      });
     }
   }
 
@@ -1010,31 +1059,52 @@
     // Initialize pencil mode UI
     updatePencilModeUI();
 
+    // Listen for storage reset to clear in-memory grid
+    const storage = getStorage();
+    if (storage && storage.onChange) {
+      storage.onChange((event) => {
+        if (event === 'reset') {
+          // Clear in-memory grid when storage is reset
+          grid = [];
+          currentPuzzle = 0;
+        }
+      });
+    }
+
     // Initialize collection screen
     const collection = window.CozyCollection;
     const puzzles = getPuzzles();
 
     if (collection && puzzles.length > 0) {
       collection.init('collection-screen', puzzles, (index) => {
-        showGame(index);
+        // Navigate to puzzle via ScreenManager
+        if (window.ScreenManager) {
+          window.ScreenManager.showScreen(window.ScreenManager.SCREENS.PUZZLE, { puzzleId: index });
+        }
       });
     }
 
-    // Check if there's a saved session to resume
-    const storage = getStorage();
-    const session = storage ? storage.getSession() : null;
+    // Listen for screen events from ScreenManager
+    window.addEventListener('screen:puzzle', handlePuzzleScreen);
+    window.addEventListener('screen:collection', handleCollectionScreen);
 
-    if (session && session.puzzleIndex !== undefined && session.grid) {
-      // Resume game in progress
-      currentDifficulty = session.difficulty || 'easy';
-      loadPuzzle(session.puzzleIndex, session.grid);
-      showGame();
-    } else {
-      // Start with collection view
-      showCollection();
-      // Pre-load first puzzle in background
+    // Pre-load first puzzle in background (will be shown when puzzle screen activates)
+    if (puzzles.length > 0) {
       loadPuzzle(0);
     }
+  }
+
+  // Clear all game state (called when progress is reset)
+  function clearAllState() {
+    grid = [];
+    currentPuzzle = 0;
+    selectedColor = 1;
+    isDragging = false;
+    dragColor = null;
+    pencilMode = false;
+
+    const history = getHistory();
+    if (history) history.clear();
   }
 
   // Expose globally
@@ -1049,7 +1119,8 @@
     confirmAllPencilMarks: confirmAllPencilMarks,
     selectColor: selectColor,
     showCollection: showCollection,
-    showGame: showGame
+    showGame: showGame,
+    clearAllState: clearAllState
   };
 
   // Auto-initialize

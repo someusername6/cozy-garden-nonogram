@@ -127,6 +127,29 @@ See `prompts.txt` for example prompts. Tips:
 4. Improve mobile touch controls
 5. Generate more garden elements variety
 
+## Known Issue: Pan when zoomed not working on mobile
+
+**Problem:** When zoomed in on a puzzle, dragging to pan causes the page to scroll instead of panning the puzzle. This happens whether touching the grid area or the clue area.
+
+**Relevant files:**
+- `js/zoom.js` - handles pinch-to-zoom and pan via touch events
+- `js/game.js` - cell touch handlers use `stopPropagation()` to allow drawing
+- `css/style.css` - `.zoom-container` has `touch-action: none`, `.app-main` has `overflow-y: auto`
+
+**What was attempted (none worked):**
+1. Added epsilon (0.001) to float comparisons: `scale > minScale + 0.001`
+2. Added `e.preventDefault()` and `e.stopPropagation()` to `handleTouchStart` and `handleTouchMove`
+3. Changed touchstart listener from `passive: true` to `passive: false`
+4. Added `.app-main.zoom-locked` CSS class with `overflow: hidden; touch-action: none` toggled by JS when zoomed
+
+**Hypothesis:** The touch events may not be reaching zoom.js handlers at all. The `.zoom-container` already has `touch-action: none` in CSS but scrolling still occurs on parent `.app-main`.
+
+**Next steps to investigate:**
+- Add console.log to verify if `handleTouchStart` is even being called
+- Check if touch events are being captured elsewhere before reaching zoom-container
+- Consider using `document.addEventListener` with capture phase instead of container listeners
+- Test on actual mobile device vs Chrome DevTools (behavior may differ)
+
 ## Files Modified Recently
 
 - Source images with contrast enhancement applied:

@@ -24,6 +24,7 @@
 
   <!-- Preconnect for performance -->
   <link rel="preload" href="css/style.css" as="style">
+  <link rel="preload" href="js/screens.js" as="script">
   <link rel="preload" href="js/app.js" as="script">
   <link rel="preload" href="js/storage.js" as="script">
   <link rel="preload" href="js/history.js" as="script">
@@ -38,82 +39,320 @@
   <!-- Offline indicator (shown by app.js when offline) -->
   <div id="offline-indicator" class="offline-indicator">Playing offline</div>
 
-  <header class="app-header">
-    <h1>Cozy Garden</h1>
-  </header>
+  <!-- ============================================ -->
+  <!-- SPLASH SCREEN -->
+  <!-- ============================================ -->
+  <div id="screen-splash" class="screen screen-active">
+    <div class="splash-content">
+      <div class="splash-logo">
+        <span class="splash-icon">&#127793;</span>
+      </div>
+      <h1 class="splash-title">Cozy Garden</h1>
+      <p class="splash-tagline">Nonogram Puzzles</p>
+      <div class="splash-loader">
+        <div class="splash-loader-bar"></div>
+      </div>
+    </div>
+  </div>
 
-  <main class="app-main">
-    <!-- Collection Screen (puzzle gallery by difficulty) -->
-    <div class="collection-screen" id="collection-screen"></div>
+  <!-- ============================================ -->
+  <!-- HOME SCREEN (Main Menu) -->
+  <!-- ============================================ -->
+  <div id="screen-home" class="screen screen-hidden">
+    <div class="home-content">
+      <div class="home-logo">
+        <span class="home-icon">&#127793;</span>
+      </div>
+      <h1 class="home-title">Cozy Garden</h1>
+      <p class="home-tagline">Solve puzzles. Grow your garden.</p>
 
-    <!-- Game View -->
-    <div class="game-container">
-      <!-- Back to collection button -->
-      <button class="back-btn" onclick="CozyGarden.showCollection()">
-        <span class="back-btn-arrow">&#8592;</span> Collection
+      <div class="home-menu">
+        <button id="home-play-btn" class="home-btn home-btn-primary">
+          <span class="btn-icon">&#9658;</span> Play
+        </button>
+        <button id="home-stats-btn" class="home-btn">
+          <span class="btn-icon">&#128202;</span> Stats
+        </button>
+        <button id="home-settings-btn" class="home-btn">
+          <span class="btn-icon">&#9881;</span> Settings
+        </button>
+      </div>
+
+      <div class="home-footer">
+        <p class="home-progress" id="home-progress"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- COLLECTION SCREEN (Level Select) -->
+  <!-- ============================================ -->
+  <div id="screen-collection" class="screen screen-hidden">
+    <header class="screen-header">
+      <button class="header-back-btn" onclick="ScreenManager.showScreen(ScreenManager.SCREENS.HOME)">
+        <span>&#8592;</span>
       </button>
+      <h1 class="header-title">Collection</h1>
+      <div class="header-spacer"></div>
+    </header>
 
-      <!-- Current puzzle title -->
-      <div class="current-puzzle-title" id="current-puzzle-title"></div>
-      <div class="palette" id="palette">
-        <span class="palette-label">Colors:</span>
-      </div>
+    <main class="screen-content">
+      <div class="collection-screen" id="collection-screen"></div>
+    </main>
+  </div>
 
-      <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
-      <div class="mode-toggle">
-        <button id="pen-mode-btn" class="mode-btn active" onclick="CozyGarden.setPencilMode(false)">
-          Pen
-        </button>
-        <button id="pencil-mode-btn" class="mode-btn" onclick="CozyGarden.setPencilMode(true)">
-          Pencil
-        </button>
-      </div>
+  <!-- ============================================ -->
+  <!-- PUZZLE SCREEN (Gameplay) -->
+  <!-- ============================================ -->
+  <div id="screen-puzzle" class="screen screen-hidden">
+    <header class="screen-header">
+      <button class="header-back-btn" onclick="ScreenManager.showScreen(ScreenManager.SCREENS.COLLECTION)">
+        <span>&#8592;</span>
+      </button>
+      <h1 class="header-title" id="current-puzzle-title">Puzzle</h1>
+      <div class="header-spacer"></div>
+    </header>
 
-      <!-- Pencil batch actions (shown when pencil marks exist) -->
-      <div id="pencil-actions" class="pencil-actions">
-        <button class="pencil-action-btn" onclick="CozyGarden.clearAllPencilMarks()">
-          Clear Pencil
-        </button>
-        <button class="pencil-action-btn" onclick="CozyGarden.confirmAllPencilMarks()">
-          Confirm All
-        </button>
-      </div>
+    <main class="screen-content app-main">
+      <div class="game-container">
+        <div class="palette" id="palette">
+          <span class="palette-label">Colors:</span>
+        </div>
 
-      <div class="board-wrapper">
-        <div class="corner"></div>
-        <div class="col-clues" id="col-clues"></div>
-        <div id="row-clues-container"></div>
-        <div class="grid" id="grid"></div>
-      </div>
-
-      <div class="status" id="status">Select colors and fill the grid</div>
-
-      <div class="controls">
-        <!-- Undo/Redo -->
-        <div class="history-controls">
-          <button id="undo-btn" class="history-btn" onclick="CozyGarden.performUndo()" disabled title="Undo (Ctrl+Z)">
-            &#8630;
+        <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
+        <div class="mode-toggle">
+          <button id="pen-mode-btn" class="mode-btn active" onclick="CozyGarden.setPencilMode(false)">
+            Pen
           </button>
-          <button id="redo-btn" class="history-btn" onclick="CozyGarden.performRedo()" disabled title="Redo (Ctrl+Y)">
-            &#8631;
+          <button id="pencil-mode-btn" class="mode-btn" onclick="CozyGarden.setPencilMode(true)">
+            Pencil
           </button>
         </div>
 
-        <button onclick="CozyGarden.resetPuzzle()" class="btn btn-secondary">Reset</button>
-        <button onclick="CozyGarden.showSolution()" class="btn btn-secondary">Solution</button>
+        <!-- Pencil batch actions (shown when pencil marks exist) -->
+        <div id="pencil-actions" class="pencil-actions">
+          <button class="pencil-action-btn" onclick="CozyGarden.clearAllPencilMarks()">
+            Clear Pencil
+          </button>
+          <button class="pencil-action-btn" onclick="CozyGarden.confirmAllPencilMarks()">
+            Confirm All
+          </button>
+        </div>
+
+        <div class="board-wrapper">
+          <div class="corner"></div>
+          <div class="col-clues" id="col-clues"></div>
+          <div id="row-clues-container"></div>
+          <div class="grid" id="grid"></div>
+        </div>
+
+        <div class="status" id="status">Select colors and fill the grid</div>
+
+        <div class="controls">
+          <!-- Undo/Redo -->
+          <div class="history-controls">
+            <button id="undo-btn" class="history-btn" onclick="CozyGarden.performUndo()" disabled title="Undo (Ctrl+Z)">
+              &#8630;
+            </button>
+            <button id="redo-btn" class="history-btn" onclick="CozyGarden.performRedo()" disabled title="Redo (Ctrl+Y)">
+              &#8631;
+            </button>
+          </div>
+
+          <button onclick="CozyGarden.resetPuzzle()" class="btn btn-secondary">Reset</button>
+          <button onclick="CozyGarden.showSolution()" class="btn btn-secondary">Solution</button>
+        </div>
+
+        <div class="instructions">
+          <strong>How to play:</strong> Tap a color, then tap/drag to fill cells.
+          Long-press to mark X (empty). Use Pencil mode for uncertain guesses.<br>
+          <kbd>Ctrl+Z</kbd> undo, <kbd>P</kbd> toggle pencil mode, <kbd>1-9</kbd> select colors.
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- VICTORY SCREEN -->
+  <!-- ============================================ -->
+  <div id="screen-victory" class="screen screen-hidden">
+    <div class="victory-content">
+      <div class="victory-header">
+        <span class="victory-icon">&#127881;</span>
+        <h1 class="victory-title">Complete!</h1>
       </div>
 
-      <div class="instructions">
-        <strong>How to play:</strong> Tap a color, then tap/drag to fill cells.
-        Long-press to mark X (empty). Use Pencil mode for uncertain guesses.<br>
-        <kbd>Ctrl+Z</kbd> undo, <kbd>P</kbd> toggle pencil mode, <kbd>1-9</kbd> select colors.
+      <div class="victory-puzzle-display">
+        <div id="victory-image" class="victory-image"></div>
+        <h2 id="victory-puzzle-name" class="victory-puzzle-name">Puzzle Name</h2>
+      </div>
+
+      <div class="victory-stats">
+        <div class="victory-stat">
+          <span class="stat-label">Time</span>
+          <span class="stat-value" id="victory-time">0:00</span>
+        </div>
+      </div>
+
+      <div class="victory-actions">
+        <button id="victory-next-btn" class="victory-btn victory-btn-primary">
+          Next Puzzle <span>&#8594;</span>
+        </button>
+        <button id="victory-collection-btn" class="victory-btn">
+          Back to Collection
+        </button>
       </div>
     </div>
-  </main>
+  </div>
 
-  <footer class="app-footer">
-    <p class="footer-text">Solve puzzles. Grow your garden.</p>
-  </footer>
+  <!-- ============================================ -->
+  <!-- SETTINGS SCREEN -->
+  <!-- ============================================ -->
+  <div id="screen-settings" class="screen screen-hidden">
+    <header class="screen-header">
+      <button id="settings-back-btn" class="header-back-btn">
+        <span>&#8592;</span>
+      </button>
+      <h1 class="header-title">Settings</h1>
+      <div class="header-spacer"></div>
+    </header>
+
+    <main class="screen-content">
+      <div class="settings-content">
+        <div class="settings-group">
+          <h2 class="settings-group-title">Audio</h2>
+          <label class="settings-toggle">
+            <span class="toggle-label">Sound Effects</span>
+            <input type="checkbox" id="settings-sound" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="settings-toggle">
+            <span class="toggle-label">Music</span>
+            <input type="checkbox" id="settings-music" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-group">
+          <h2 class="settings-group-title">Feedback</h2>
+          <label class="settings-toggle">
+            <span class="toggle-label">Vibration</span>
+            <input type="checkbox" id="settings-vibration" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-group">
+          <h2 class="settings-group-title">Data</h2>
+          <button id="settings-reset-btn" class="settings-danger-btn">
+            Reset All Progress
+          </button>
+        </div>
+
+        <div class="settings-footer">
+          <p class="settings-version">Version 1.0.0</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TUTORIAL SCREEN -->
+  <!-- ============================================ -->
+  <div id="screen-tutorial" class="screen screen-hidden">
+    <div class="tutorial-content">
+      <button id="tutorial-skip-btn" class="tutorial-skip">Skip</button>
+
+      <div class="tutorial-steps">
+        <!-- Step 1 -->
+        <div class="tutorial-step active" data-step="1">
+          <div class="tutorial-illustration">
+            <span class="tutorial-emoji">&#127793;</span>
+          </div>
+          <h2 class="tutorial-heading">Welcome to Cozy Garden!</h2>
+          <p class="tutorial-text">
+            Solve colorful nonogram puzzles to reveal beautiful pixel art flowers and garden scenes.
+          </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="tutorial-step" data-step="2">
+          <div class="tutorial-illustration">
+            <span class="tutorial-emoji">&#128270;</span>
+          </div>
+          <h2 class="tutorial-heading">Read the Clues</h2>
+          <p class="tutorial-text">
+            Numbers on the edges tell you which cells to fill. Each number shows a group of consecutive colored cells.
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="tutorial-step" data-step="3">
+          <div class="tutorial-illustration">
+            <span class="tutorial-emoji">&#127912;</span>
+          </div>
+          <h2 class="tutorial-heading">Fill with Colors</h2>
+          <p class="tutorial-text">
+            Select a color from the palette, then tap or drag on the grid to fill cells. Long-press to mark cells as empty.
+          </p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="tutorial-step" data-step="4">
+          <div class="tutorial-illustration">
+            <span class="tutorial-emoji">&#127881;</span>
+          </div>
+          <h2 class="tutorial-heading">Reveal the Art!</h2>
+          <p class="tutorial-text">
+            When all cells are correctly filled, you'll reveal the hidden picture. Collect them all!
+          </p>
+        </div>
+      </div>
+
+      <div class="tutorial-nav">
+        <div class="tutorial-dots">
+          <span class="tutorial-dot active"></span>
+          <span class="tutorial-dot"></span>
+          <span class="tutorial-dot"></span>
+          <span class="tutorial-dot"></span>
+        </div>
+        <button id="tutorial-next-btn" class="tutorial-next-btn">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- STATS SCREEN -->
+  <!-- ============================================ -->
+  <div id="screen-stats" class="screen screen-hidden">
+    <header class="screen-header">
+      <button id="stats-back-btn" class="header-back-btn">
+        <span>&#8592;</span>
+      </button>
+      <h1 class="header-title">Statistics</h1>
+      <div class="header-spacer"></div>
+    </header>
+
+    <main class="screen-content">
+      <div class="stats-content">
+        <div class="stats-card">
+          <div class="stats-card-icon">&#127893;</div>
+          <div class="stats-card-value" id="stats-puzzles-solved">0</div>
+          <div class="stats-card-label">Puzzles Solved</div>
+        </div>
+
+        <div class="stats-card">
+          <div class="stats-card-icon">&#9202;</div>
+          <div class="stats-card-value" id="stats-total-time">0m</div>
+          <div class="stats-card-label">Total Time</div>
+        </div>
+
+        <div class="stats-placeholder">
+          <p>More statistics coming soon!</p>
+        </div>
+      </div>
+    </main>
+  </div>
 
   <!-- Scripts loaded in order -->
   <!-- Puzzle data (auto-generated) -->
@@ -122,6 +361,8 @@
   <script src="js/storage.js"></script>
   <!-- Undo/redo history -->
   <script src="js/history.js"></script>
+  <!-- Screen manager -->
+  <script src="js/screens.js"></script>
   <!-- Collection screen -->
   <script src="js/collection.js"></script>
   <!-- PWA & App lifecycle -->
