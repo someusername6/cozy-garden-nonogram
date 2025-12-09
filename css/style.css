@@ -1920,12 +1920,12 @@ body.showing-game .collection-screen {
   pointer-events: none;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: left 0.6s ease-out, top 0.6s ease-out, transform 0.6s ease-out, box-shadow 0.6s ease-out;
+  transform-origin: center center;
 }
 
 .flying-stamp.landed {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transform: scale(1);
 }
 
 /* Temporary blank state for target card during animation */

@@ -242,8 +242,8 @@ const ScreenManager = (function() {
         const victoryCanvas = imageEl ? imageEl.querySelector('canvas') : null;
 
         if (victoryCanvas) {
-          // Get the canvas position before transitioning
-          const startRect = victoryCanvas.getBoundingClientRect();
+          // Get the container position (200x200 box) for centering
+          const containerRect = imageEl.getBoundingClientRect();
 
           // Create a new canvas and copy the image content
           // (cloneNode doesn't copy canvas content)
@@ -253,11 +253,31 @@ const ScreenManager = (function() {
           const ctx = flyingStamp.getContext('2d');
           ctx.drawImage(victoryCanvas, 0, 0);
 
+          // Use canvas pixel dimensions for initial CSS size
+          const cssWidth = victoryCanvas.width;
+          const cssHeight = victoryCanvas.height;
+
+          // Scale to fit within container while preserving aspect ratio
+          const canvasAspect = victoryCanvas.width / victoryCanvas.height;
+          const containerSize = Math.min(containerRect.width, containerRect.height);
+          let targetSize;
+          if (canvasAspect > 1) {
+            targetSize = containerSize;
+          } else {
+            targetSize = containerSize * canvasAspect;
+          }
+          const initialScale = targetSize / cssWidth;
+
+          // Center the stamp within the container bounds
+          const centerX = containerRect.left + containerRect.width / 2;
+          const centerY = containerRect.top + containerRect.height / 2;
+
           flyingStamp.className = 'flying-stamp';
-          flyingStamp.style.left = startRect.left + 'px';
-          flyingStamp.style.top = startRect.top + 'px';
-          flyingStamp.style.width = startRect.width + 'px';
-          flyingStamp.style.height = startRect.height + 'px';
+          flyingStamp.style.left = (centerX - cssWidth / 2) + 'px';
+          flyingStamp.style.top = (centerY - cssHeight / 2) + 'px';
+          flyingStamp.style.width = cssWidth + 'px';
+          flyingStamp.style.height = cssHeight + 'px';
+          flyingStamp.style.transform = 'scale(' + initialScale + ')';
           document.body.appendChild(flyingStamp);
 
           // Go to collection with animation flag

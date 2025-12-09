@@ -514,12 +514,31 @@
         // Get target position after scroll settles
         const targetRect = preview.getBoundingClientRect();
 
-        // Animate to target position (match preview container exactly)
+        // Calculate scale factor to fit within target (preserving aspect ratio)
+        const currentWidth = parseFloat(flyingStamp.style.width);
+        const currentHeight = parseFloat(flyingStamp.style.height);
+        const stampAspect = currentWidth / currentHeight;
+
+        let targetWidth, targetHeight;
+        if (stampAspect > 1) {
+          targetWidth = targetRect.width;
+          targetHeight = targetRect.width / stampAspect;
+        } else {
+          targetHeight = targetRect.height;
+          targetWidth = targetRect.height * stampAspect;
+        }
+
+        const scale = targetWidth / currentWidth;
+
+        // Target center position
+        const targetCenterX = targetRect.left + targetRect.width / 2;
+        const targetCenterY = targetRect.top + targetRect.height / 2;
+
+        // Animate position to center and use transform for scaling (preserves aspect ratio)
         requestAnimationFrame(() => {
-          flyingStamp.style.left = targetRect.left + 'px';
-          flyingStamp.style.top = targetRect.top + 'px';
-          flyingStamp.style.width = targetRect.width + 'px';
-          flyingStamp.style.height = targetRect.height + 'px';
+          flyingStamp.style.left = (targetCenterX - currentWidth / 2) + 'px';
+          flyingStamp.style.top = (targetCenterY - currentHeight / 2) + 'px';
+          flyingStamp.style.transform = 'scale(' + scale + ')';
           flyingStamp.classList.add('landed');
         });
 

@@ -1315,11 +1315,29 @@
     const ctx = flyingStamp.getContext('2d');
     ctx.drawImage(progressCanvas, 0, 0);
 
+    // Start at the grid's visual size, preserving aspect ratio
+    const canvasAspect = progressCanvas.width / progressCanvas.height;
+    const gridAspect = startRect.width / startRect.height;
+    let cssWidth, cssHeight;
+    if (canvasAspect > gridAspect) {
+      // Canvas is wider than grid - fit to width
+      cssWidth = startRect.width;
+      cssHeight = startRect.width / canvasAspect;
+    } else {
+      // Canvas is taller than grid - fit to height
+      cssHeight = startRect.height;
+      cssWidth = startRect.height * canvasAspect;
+    }
+
+    // Center within the grid bounds
+    const offsetX = (startRect.width - cssWidth) / 2;
+    const offsetY = (startRect.height - cssHeight) / 2;
+
     flyingStamp.className = 'flying-stamp';
-    flyingStamp.style.left = startRect.left + 'px';
-    flyingStamp.style.top = startRect.top + 'px';
-    flyingStamp.style.width = startRect.width + 'px';
-    flyingStamp.style.height = startRect.height + 'px';
+    flyingStamp.style.left = (startRect.left + offsetX) + 'px';
+    flyingStamp.style.top = (startRect.top + offsetY) + 'px';
+    flyingStamp.style.width = cssWidth + 'px';
+    flyingStamp.style.height = cssHeight + 'px';
     document.body.appendChild(flyingStamp);
 
     // Save and navigate to collection with animation
