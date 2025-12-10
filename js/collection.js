@@ -51,6 +51,11 @@
     }
   }
 
+  // Get puzzle title, handling both concise (t) and verbose (title) formats
+  function getPuzzleTitle(puzzle) {
+    return puzzle.t || puzzle.title;
+  }
+
   // Parse puzzle metadata from title
   // Title format: "Name (WxH, difficulty)"
   function parsePuzzleTitle(title) {
@@ -74,7 +79,8 @@
 
   // Get puzzle ID from puzzle object
   function getPuzzleId(puzzle) {
-    return puzzle.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const title = getPuzzleTitle(puzzle);
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
 
   // Get storage instance
@@ -87,7 +93,7 @@
     const groups = {};
 
     puzzles.forEach((puzzle, index) => {
-      const meta = parsePuzzleTitle(puzzle.title);
+      const meta = parsePuzzleTitle(getPuzzleTitle(puzzle));
       const difficulty = meta.difficulty;
 
       if (!groups[difficulty]) {
@@ -111,7 +117,7 @@
     const groups = {};
 
     puzzleItems.forEach(item => {
-      const meta = parsePuzzleTitle(item.puzzle.title);
+      const meta = parsePuzzleTitle(getPuzzleTitle(item.puzzle));
       const difficulty = meta.difficulty;
 
       if (!groups[difficulty]) {
@@ -318,7 +324,7 @@
 
     if (searchFilter) {
       puzzleItems = puzzleItems.filter(item => {
-        const meta = parsePuzzleTitle(item.puzzle.title);
+        const meta = parsePuzzleTitle(getPuzzleTitle(item.puzzle));
         const name = meta.name.toLowerCase();
         return name.startsWith(searchFilter);
       });
@@ -513,7 +519,7 @@
 
       // Find puzzle index by ID
       for (let i = 0; i < this.puzzles.length; i++) {
-        const id = this.puzzles[i].title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        const id = getPuzzleId(this.puzzles[i]);
         if (id === puzzleId) {
           targetIndex = i;
           break;
@@ -618,7 +624,7 @@
 
           // Find the puzzle and create the mini solution or progress
           const puzzle = this.puzzles.find(p => {
-            const id = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            const id = getPuzzleId(p);
             return id === puzzleId;
           });
 

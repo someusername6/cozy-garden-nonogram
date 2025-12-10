@@ -16,9 +16,68 @@
   let dragCertain = true;  // Whether current drag creates certain or maybe cells
   let pencilMode = false;  // Pencil mode for uncertain marks
 
+  // Normalize puzzle from concise format to verbose format
+  // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
+  // Verbose: {title, width, height, row_clues, col_clues, color_map, solution} with 1-indexed colors
+  function normalizePuzzle(p) {
+    if (!p) return p;
+    // Already in verbose format
+    if (p.title !== undefined) return p;
+
+    // Convert hex color to RGB array
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16)
+      ] : [0, 0, 0];
+    }
+
+    // Convert clues from [[count, colorIdx], ...] to [{count, color}, ...]
+    // colorIdx is 0-indexed, convert to 1-indexed
+    function convertClues(clues) {
+      return clues.map(row => row.map(([count, colorIdx]) => ({
+        count: count,
+        color: colorIdx + 1
+      })));
+    }
+
+    // Convert palette from ["#hex", ...] to {1: [r,g,b], 2: [r,g,b], ...}
+    function convertPalette(palette) {
+      const colorMap = {};
+      palette.forEach((hex, idx) => {
+        colorMap[idx + 1] = hexToRgb(hex);
+      });
+      return colorMap;
+    }
+
+    // Convert solution from 0-indexed (-1 = empty) to 1-indexed (0 = empty)
+    function convertSolution(solution) {
+      return solution.map(row => row.map(c => c < 0 ? 0 : c + 1));
+    }
+
+    return {
+      title: p.t,
+      width: p.w,
+      height: p.h,
+      row_clues: convertClues(p.r),
+      col_clues: convertClues(p.c),
+      color_map: convertPalette(p.p),
+      solution: convertSolution(p.s)
+    };
+  }
+
+  // Cache for normalized puzzles
+  let normalizedPuzzles = null;
+
   // Get puzzles from global (loaded via script tag)
   function getPuzzles() {
-    return window.PUZZLE_DATA || [];
+    const raw = window.PUZZLE_DATA || [];
+    if (!normalizedPuzzles || normalizedPuzzles.length !== raw.length) {
+      normalizedPuzzles = raw.map(normalizePuzzle);
+    }
+    return normalizedPuzzles;
   }
 
   // === Cell State Helpers ===

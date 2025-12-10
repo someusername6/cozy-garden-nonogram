@@ -404,8 +404,9 @@ const ScreenManager = (function() {
 
           if (storage) {
             puzzles.forEach(puzzle => {
-              // Generate puzzle ID the same way collection.js does
-              const puzzleId = puzzle.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+              // Generate puzzle ID - handle both concise (t) and verbose (title) formats
+              const title = puzzle.t || puzzle.title;
+              const puzzleId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
               storage.completePuzzle(puzzleId);
             });
           }

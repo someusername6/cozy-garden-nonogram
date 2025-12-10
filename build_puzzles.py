@@ -393,21 +393,25 @@ def process_single_image(input_path: Path, output_path: Path, min_distance: floa
             result["score"] = diff.score
             result["status"] = "valid"
 
-            # Generate puzzle data for website
-            row_clues = [[{"count": c.count, "color": c.color} for c in row] for row in puzzle.row_clues]
-            col_clues = [[{"count": c.count, "color": c.color} for c in col] for col in puzzle.col_clues]
-            color_map_js = {str(k): list(v) for k, v in puzzle.color_map.items()}
+            # Generate puzzle data for website (concise format)
+            # Clues as [count, color] pairs, colors 0-indexed
+            row_clues = [[[c.count, c.color - 1] for c in row] for row in puzzle.row_clues]
+            col_clues = [[[c.count, c.color - 1] for c in col] for col in puzzle.col_clues]
+            # Palette as hex colors (e.g., "#ff00aa")
+            palette = ['#{:02x}{:02x}{:02x}'.format(*puzzle.color_map[i]) for i in sorted(puzzle.color_map.keys())]
+            # Solution with 0-indexed colors (-1 = empty)
+            solution_0indexed = [[c - 1 if c > 0 else -1 for c in row] for row in grid]
 
             display_name = get_display_name(input_path.stem)
 
             result["puzzle_data"] = {
-                "title": f"{display_name} ({puzzle.width}x{puzzle.height}, {diff.difficulty.value})",
-                "width": puzzle.width,
-                "height": puzzle.height,
-                "row_clues": row_clues,
-                "col_clues": col_clues,
-                "color_map": color_map_js,
-                "solution": grid
+                "t": f"{display_name} ({puzzle.width}x{puzzle.height}, {diff.difficulty.value})",
+                "w": puzzle.width,
+                "h": puzzle.height,
+                "r": row_clues,
+                "c": col_clues,
+                "p": palette,
+                "s": solution_0indexed
             }
         else:
             result["status"] = "invalid"
@@ -673,7 +677,7 @@ Examples:
                 if update_html(args.html, puzzle_data):
                     print(f"✓ Updated with {len(puzzle_data)} puzzles:")
                     for p in puzzle_data:
-                        print(f"  • {p['title']}")
+                        print(f"  • {p['t']}")
                 else:
                     print("✗ Failed to update HTML (PUZZLES constant not found)")
             else:
@@ -681,7 +685,7 @@ Examples:
                 if write_puzzle_data(args.output, puzzle_data):
                     print(f"✓ Written {len(puzzle_data)} puzzles:")
                     for p in puzzle_data:
-                        print(f"  • {p['title']}")
+                        print(f"  • {p['t']}")
                 else:
                     print("✗ Failed to write puzzle data")
         elif not puzzle_data:
