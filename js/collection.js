@@ -105,6 +105,30 @@
     return groups;
   }
 
+  // Group puzzles by difficulty, using pre-computed original indices
+  // puzzleItems is array of {puzzle, originalIndex}
+  function groupPuzzlesByDifficultyWithIndex(puzzleItems) {
+    const groups = {};
+
+    puzzleItems.forEach(item => {
+      const meta = parsePuzzleTitle(item.puzzle.title);
+      const difficulty = meta.difficulty;
+
+      if (!groups[difficulty]) {
+        groups[difficulty] = [];
+      }
+
+      groups[difficulty].push({
+        index: item.originalIndex,
+        puzzle: item.puzzle,
+        meta: meta,
+        id: getPuzzleId(item.puzzle)
+      });
+    });
+
+    return groups;
+  }
+
   // Sort difficulties in preferred order
   function getSortedDifficulties(groups) {
     const difficulties = Object.keys(groups);
@@ -286,19 +310,21 @@
   function renderCollection(container, puzzles, onPuzzleSelect, options = {}) {
     container.innerHTML = '';
 
-    // Filter puzzles by search term if provided
-    let filteredPuzzles = puzzles;
+    // Filter puzzles by search term if provided, preserving original indices
     const searchFilter = (options.searchFilter || '').toLowerCase().trim();
 
+    // Create array of {puzzle, originalIndex} to preserve indices through filtering
+    let puzzleItems = puzzles.map((puzzle, index) => ({ puzzle, originalIndex: index }));
+
     if (searchFilter) {
-      filteredPuzzles = puzzles.filter((puzzle, index) => {
-        const meta = parsePuzzleTitle(puzzle.title);
+      puzzleItems = puzzleItems.filter(item => {
+        const meta = parsePuzzleTitle(item.puzzle.title);
         const name = meta.name.toLowerCase();
         return name.startsWith(searchFilter);
       });
     }
 
-    const groups = groupPuzzlesByDifficulty(filteredPuzzles);
+    const groups = groupPuzzlesByDifficultyWithIndex(puzzleItems);
     const sortedDifficulties = getSortedDifficulties(groups);
     const storage = getStorage();
 
