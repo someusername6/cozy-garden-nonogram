@@ -151,12 +151,13 @@ Given no marketing experience and preference for minimal social interaction:
 ## Content Strategy
 
 ### Current State
-122 puzzles across 5 difficulty levels:
+123 puzzles across 6 difficulty levels:
 - Easy: 39 puzzles
 - Medium: 37 puzzles
 - Hard: 20 puzzles
 - Challenging: 17 puzzles
 - Expert: 9 puzzles
+- Master: 1 puzzle (placeholder - may be modified or removed)
 
 ### Puzzle Collection by Series
 Major flower series (3+ puzzles each):
@@ -202,7 +203,7 @@ The AI sprite → puzzle pipeline has limits but isn't exhausted. Options for fu
 | Hard | 20-50 | Yes |
 | Challenging | 50-200 | Yes |
 | Expert | 200-600 | Yes |
-| Master | 600+ | No (too hard) |
+| Master | 600+ | Yes (placeholder - revisit later) |
 
 ## Common Issues and Fixes
 

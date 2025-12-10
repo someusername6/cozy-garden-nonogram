@@ -527,9 +527,9 @@ Examples:
                         help="Maximum colors per puzzle (default: 6)")
     parser.add_argument("--timeout", type=int, default=10,
                         help="Timeout per image in seconds (default: 30)")
-    parser.add_argument("--difficulties", nargs="+", default=["easy", "medium", "hard", "challenging", "expert"],
+    parser.add_argument("--difficulties", nargs="+", default=["easy", "medium", "hard", "challenging", "expert", "master"],
                         choices=["trivial", "easy", "medium", "hard", "challenging", "expert", "master"],
-                        help="Difficulties to include in website (default: easy medium hard challenging expert)")
+                        help="Difficulties to include in website (default: easy medium hard challenging expert master)")
     parser.add_argument("--output", type=Path, default=Path("data/puzzles.js"),
                         help="Output puzzle data file (default: data/puzzles.js)")
     parser.add_argument("--html", type=Path, default=None,
