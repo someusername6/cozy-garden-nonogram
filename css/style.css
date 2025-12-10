@@ -1037,6 +1037,34 @@ body.is-installed {
 
 /* === Collection Screen === */
 
+.collection-search {
+  max-width: 800px;
+  margin: 0 auto 16px auto;
+  padding: 0 12px;
+}
+
+.collection-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  border: 1px solid var(--color-secondary-dark);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.collection-search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(76, 108, 74, 0.15);
+}
+
+.collection-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 .collection-screen {
   width: 100%;
   max-width: 800px;
@@ -1781,6 +1809,25 @@ body.showing-game .collection-screen {
 
 .settings-danger-btn:active {
   background: #d9534f;
+  color: white;
+}
+
+.settings-debug-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 2px solid #5bc0de;
+  border-radius: 8px;
+  background: transparent;
+  color: #5bc0de;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+
+.settings-debug-btn:active {
+  background: #5bc0de;
   color: white;
 }
 

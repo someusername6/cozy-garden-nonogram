@@ -282,38 +282,60 @@
 
   // Render the collection screen
   // options.blankPuzzleId: puzzle ID to render with blank placeholder (for stamp animation)
+  // options.searchFilter: string to filter puzzles by name prefix
   function renderCollection(container, puzzles, onPuzzleSelect, options = {}) {
     container.innerHTML = '';
 
-    const groups = groupPuzzlesByDifficulty(puzzles);
+    // Filter puzzles by search term if provided
+    let filteredPuzzles = puzzles;
+    const searchFilter = (options.searchFilter || '').toLowerCase().trim();
+
+    if (searchFilter) {
+      filteredPuzzles = puzzles.filter((puzzle, index) => {
+        const meta = parsePuzzleTitle(puzzle.title);
+        const name = meta.name.toLowerCase();
+        return name.startsWith(searchFilter);
+      });
+    }
+
+    const groups = groupPuzzlesByDifficulty(filteredPuzzles);
     const sortedDifficulties = getSortedDifficulties(groups);
     const storage = getStorage();
 
     // Get or calculate collapsed state
-    let collapsed = getCollapsedSections();
-    if (!collapsed) {
-      // Default: collapse all except first difficulty with incomplete puzzles
+    // When searching, expand all sections to show results
+    let collapsed;
+    if (searchFilter) {
       collapsed = {};
-      let foundIncomplete = false;
-
       sortedDifficulties.forEach(difficulty => {
-        const stats = getGroupStats(groups[difficulty]);
-        if (!foundIncomplete && stats.completed < stats.total) {
-          // First incomplete section - expand it
-          collapsed[difficulty] = false;
-          foundIncomplete = true;
-        } else {
-          // Collapse others
-          collapsed[difficulty] = true;
-        }
+        collapsed[difficulty] = false;
       });
+    } else {
+      collapsed = getCollapsedSections();
+      if (!collapsed) {
+        // Default: collapse all except first difficulty with incomplete puzzles
+        collapsed = {};
+        let foundIncomplete = false;
 
-      // If all complete, expand the first one
-      if (!foundIncomplete && sortedDifficulties.length > 0) {
-        collapsed[sortedDifficulties[0]] = false;
+        sortedDifficulties.forEach(difficulty => {
+          const stats = getGroupStats(groups[difficulty]);
+          if (!foundIncomplete && stats.completed < stats.total) {
+            // First incomplete section - expand it
+            collapsed[difficulty] = false;
+            foundIncomplete = true;
+          } else {
+            // Collapse others
+            collapsed[difficulty] = true;
+          }
+        });
+
+        // If all complete, expand the first one
+        if (!foundIncomplete && sortedDifficulties.length > 0) {
+          collapsed[sortedDifficulties[0]] = false;
+        }
+
+        saveCollapsedSections(collapsed);
       }
-
-      saveCollapsedSections(collapsed);
     }
 
     // Render each difficulty section
@@ -383,12 +405,23 @@
       this.puzzles = [];
       this.onPuzzleSelect = null;
       this.visible = true;
+      this.searchFilter = '';
+      this.searchInput = null;
     }
 
     init(containerId, puzzles, onPuzzleSelect) {
       this.container = document.getElementById(containerId);
       this.puzzles = puzzles;
       this.onPuzzleSelect = onPuzzleSelect;
+
+      // Set up search input
+      this.searchInput = document.getElementById('collection-search-input');
+      if (this.searchInput) {
+        this.searchInput.addEventListener('input', (e) => {
+          this.searchFilter = e.target.value;
+          this.render();
+        });
+      }
 
       if (this.container) {
         this.render();
@@ -399,17 +432,26 @@
 
     render(options = {}) {
       if (!this.container) return;
+      const renderOptions = {
+        ...options,
+        searchFilter: this.searchFilter
+      };
       renderCollection(this.container, this.puzzles, (index) => {
         if (this.onPuzzleSelect) {
           this.onPuzzleSelect(index);
         }
-      }, options);
+      }, renderOptions);
     }
 
     show() {
       if (this.container) {
         this.container.style.display = 'block';
         this.visible = true;
+        // Clear search filter when showing collection
+        this.searchFilter = '';
+        if (this.searchInput) {
+          this.searchInput.value = '';
+        }
         this.render(); // Re-render to update completion status
       }
     }

@@ -393,6 +393,33 @@ const ScreenManager = (function() {
       });
       resetBtn.setAttribute('data-initialized', 'true');
     }
+
+    // Solve all puzzles (debug)
+    const solveAllBtn = document.getElementById('settings-solve-all-btn');
+    if (solveAllBtn && !solveAllBtn.hasAttribute('data-initialized')) {
+      solveAllBtn.addEventListener('click', () => {
+        if (confirm('Mark all puzzles as solved? This is a debug feature.')) {
+          const puzzles = window.PUZZLE_DATA || [];
+          const storage = window.CozyStorage;
+
+          if (storage) {
+            puzzles.forEach(puzzle => {
+              // Generate puzzle ID the same way collection.js does
+              const puzzleId = puzzle.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+              storage.completePuzzle(puzzleId);
+            });
+          }
+
+          // Refresh collection if visible
+          if (window.CozyCollection) {
+            window.CozyCollection.refresh();
+          }
+
+          alert(`Marked ${puzzles.length} puzzles as solved!`);
+        }
+      });
+      solveAllBtn.setAttribute('data-initialized', 'true');
+    }
   }
 
   /**
