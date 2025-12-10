@@ -26,7 +26,7 @@ nonogram/
 ├── data/
 │   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA) - auto-generated, concise format
 ├── images/
-│   └── input/          # Source pixel art sprites (127 PNG files)
+│   └── input/          # Source pixel art sprites (122 PNG files)
 ├── build_puzzles.py    # Main content pipeline
 ├── solver.py           # Nonogram solver with uniqueness checking
 ├── validator.py        # Puzzle validation
@@ -163,8 +163,10 @@ Major flower series (3+ puzzles each):
 - Red tulip (8), Purple iris (8), Orange zinnia (8)
 - Yellow marigold (6), Red carnation (6), Pink peony bloom (6)
 - Red poppy (4), Potted flower (4), Pink rose (4), Orange marigold (4), Dandelion (4)
-- Yellow sunflower (3), Yellow daffodil (3), Wild pink (3), Violet (3)
+- Yellow sunflower (3), Yellow daffodil (3), Wild pink (3)
 - Ivory bloom (3), Coral rose (3), Bonsai (3), Bee (3)
+
+Smaller series (2 puzzles): Violet, Terracotta pot, Red camellia, Pink cosmos, Pink cherry blossom, Pink azalea, Magenta tulip, Daisy
 
 ### Expansion Approach
 1. Generate more puzzles using AI sprite pipeline
