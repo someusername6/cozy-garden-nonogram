@@ -4,7 +4,7 @@
 
 A colored nonogram puzzle game with a cozy garden theme. Players solve pixel art puzzles of flowers, plants, and garden elements.
 
-**Current Status:** Fully playable PWA with 127 puzzles across 5 difficulty levels.
+**Current Status:** Fully playable PWA with 122 puzzles across 5 difficulty levels.
 
 **Positioning:** The "Stardew Valley of nonograms" - cozy, quality-focused, zen. No timers, no pressure, no competitive features. Target audience is players seeking relaxation, not competition.
 
@@ -45,7 +45,7 @@ nonogram/
 ```bash
 python3 build_puzzles.py images/input --report report.txt
 ```
-This outputs puzzle data to `data/puzzles.js` by default (~180KB for 127 puzzles).
+This outputs puzzle data to `data/puzzles.js` by default (~175KB for 122 puzzles).
 
 ### View the game
 ```bash
@@ -151,21 +151,20 @@ Given no marketing experience and preference for minimal social interaction:
 ## Content Strategy
 
 ### Current State
-127 puzzles across 5 difficulty levels:
-- Easy: 41 puzzles
+122 puzzles across 5 difficulty levels:
+- Easy: 39 puzzles
 - Medium: 37 puzzles
-- Hard: 21 puzzles
-- Challenging: 19 puzzles
+- Hard: 20 puzzles
+- Challenging: 17 puzzles
 - Expert: 9 puzzles
 
 ### Puzzle Collection by Series
 Major flower series (3+ puzzles each):
-- Purple iris (9), Orange zinnia (8), Red tulip (7)
+- Red tulip (8), Purple iris (8), Orange zinnia (8)
 - Yellow marigold (6), Red carnation (6), Pink peony bloom (6)
-- Orange marigold (5), Yellow daffodil (4), Red poppy (4)
-- Pink rose (4), Dandelion (4), Potted flower (4)
-- Wild pink (3), Violet (3), Ivory bloom (3), Coral rose (3)
-- Bonsai (3), Bee (3)
+- Red poppy (4), Potted flower (4), Pink rose (4), Orange marigold (4), Dandelion (4)
+- Yellow sunflower (3), Yellow daffodil (3), Wild pink (3), Violet (3)
+- Ivory bloom (3), Coral rose (3), Bonsai (3), Bee (3)
 
 ### Expansion Approach
 1. Generate more puzzles using AI sprite pipeline
