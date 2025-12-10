@@ -4,7 +4,7 @@
 
 A colored nonogram puzzle game with a cozy garden theme. Players solve pixel art puzzles of flowers, plants, and garden elements.
 
-**Current Status:** Fully playable PWA with 84 puzzles across 5 difficulty levels.
+**Current Status:** Fully playable PWA with 127 puzzles across 5 difficulty levels.
 
 **Positioning:** The "Stardew Valley of nonograms" - cozy, quality-focused, zen. No timers, no pressure, no competitive features. Target audience is players seeking relaxation, not competition.
 
@@ -16,15 +16,17 @@ nonogram/
 ├── css/
 │   └── style.css       # Game styles (~1900 lines)
 ├── js/
-│   ├── game.js         # Core gameplay logic (IIFE pattern)
+│   ├── game.js         # Core gameplay logic (IIFE pattern) + puzzle normalization
 │   ├── screens.js      # Screen management (splash, home, collection, puzzle, victory, settings, tutorial)
-│   ├── collection.js   # Collection screen with puzzle cards
+│   ├── collection.js   # Collection screen with puzzle cards + search
 │   ├── storage.js      # LocalStorage persistence
 │   ├── history.js      # Undo/redo system
 │   ├── zoom.js         # Pinch-to-zoom for mobile
 │   └── app.js          # PWA initialization, offline handling
 ├── data/
-│   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA) - auto-generated
+│   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA) - auto-generated, concise format
+├── images/
+│   └── input/          # Source pixel art sprites (127 PNG files)
 ├── build_puzzles.py    # Main content pipeline
 ├── solver.py           # Nonogram solver with uniqueness checking
 ├── validator.py        # Puzzle validation
@@ -32,10 +34,6 @@ nonogram/
 ├── palette.py          # Color reduction and image processing
 ├── generator.py        # Puzzle generation from images
 ├── models.py           # Data models (Puzzle, Clue, etc.)
-├── test_images/        # Source 16x16 pixel art
-│   ├── flowers/        # Flower images
-│   ├── potted_plants/  # Plant images
-│   └── garden_elements/# Garden element images
 ├── GAME_DESIGN.md      # Full design document
 ├── prompts.txt         # Retrodiffusion prompts used
 └── report.txt          # Latest build report
@@ -45,9 +43,9 @@ nonogram/
 
 ### Build all puzzles and update website
 ```bash
-python build_puzzles.py test_images/flowers test_images/potted_plants test_images/garden_elements --report report.txt
+python3 build_puzzles.py images/input --report report.txt
 ```
-This outputs puzzle data to `data/puzzles.js` by default.
+This outputs puzzle data to `data/puzzles.js` by default (~180KB for 127 puzzles).
 
 ### View the game
 ```bash
@@ -64,10 +62,12 @@ open index.html
 - Undo/redo with full history
 - Progress persistence (localStorage)
 - Collection view with puzzle cards showing completion status and partial progress
+- Collection search (substring matching on puzzle names)
 - Victory screen with stamp collection animation
 - Stamp animation when returning from puzzle via back button
 - Tutorial for first-time users
 - Settings (sound/music/vibration toggles, reset progress)
+- Settings: "Solve All Puzzles" debug button (for testing)
 - PWA support (offline capable, installable)
 - Pinch-to-zoom on mobile
 - Crosshair hover effect on desktop
@@ -151,7 +151,21 @@ Given no marketing experience and preference for minimal social interaction:
 ## Content Strategy
 
 ### Current State
-84 puzzles is already substantial. Many premium puzzle games ship with less.
+127 puzzles across 5 difficulty levels:
+- Easy: 41 puzzles
+- Medium: 37 puzzles
+- Hard: 21 puzzles
+- Challenging: 19 puzzles
+- Expert: 9 puzzles
+
+### Puzzle Collection by Series
+Major flower series (3+ puzzles each):
+- Purple iris (9), Orange zinnia (8), Red tulip (7)
+- Yellow marigold (6), Red carnation (6), Pink peony bloom (6)
+- Orange marigold (5), Yellow daffodil (4), Red poppy (4)
+- Pink rose (4), Dandelion (4), Potted flower (4)
+- Wild pink (3), Violet (3), Ivory bloom (3), Coral rose (3)
+- Bonsai (3), Bee (3)
 
 ### Expansion Approach
 1. Generate more puzzles using AI sprite pipeline
@@ -229,6 +243,90 @@ See `prompts.txt` for example prompts. Tips:
 - Asymmetric designs work better for unique solutions
 - Strong color contrast helps pass color similarity checks
 - Simple silhouettes are more recognizable at small sizes
+
+## Puzzle Data Format
+
+The `data/puzzles.js` file uses a concise format to reduce file size (~33% smaller than verbose):
+
+```javascript
+// Concise format (what's stored)
+{
+  "t": "Pink Rose 1 (8x7, easy)",  // title
+  "w": 8, "h": 7,                   // dimensions
+  "r": [[[2,0],[3,1]], ...],       // row_clues: [count, colorIndex] pairs
+  "c": [[[1,0]], ...],             // col_clues
+  "p": ["#943129","#c57283","#eddbe1"], // palette as hex
+  "s": [[0,0,1,1,1,0,0], ...]      // solution: 0-indexed colors, -1 for empty
+}
+```
+
+The `normalizePuzzle()` function in `js/game.js` converts to verbose format at runtime:
+- Keys: t→title, w→width, h→height, r→row_clues, c→col_clues, p→color_map, s→solution
+- Colors: 0-indexed → 1-indexed
+- Palette: hex strings → RGB arrays in color_map object
+
+## Sprite Naming and Organization
+
+### Naming Convention
+Files in `images/input/` follow: `[color]_[subject]_[number].png`
+- Examples: `pink_rose_1.png`, `coral_rose_2.png`, `orange_zinnia_5.png`
+- Numbers indicate difficulty order within series (1 = easiest)
+- Single items have no number: `sunflower.png`, `red_rose.png`
+
+### Color Palette Unification
+Flower series should share consistent color palettes. Common pattern:
+
+```python
+from PIL import Image
+import colorsys
+
+def get_lightness(rgb):
+    r, g, b = rgb
+    _, l, _ = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    return l
+
+# Match colors by lightness between images
+# Sort source/target colors by lightness, then map 1:1
+```
+
+Example unified palettes:
+- **Coral rose**: dark green (40,80,45), green (85,140,75), medium coral (204,97,76), light coral (235,150,130)
+- **Wild pink**: brown (89,0,0), pink (255,14,227), light pink (255,155,255), white (255,255,255)
+
+### Common Color Operations
+```python
+# Remap a specific color
+old_color = (178, 155, 185)
+new_color = (235, 150, 130)
+img = Image.open(path).convert('RGBA')
+for y in range(img.height):
+    for x in range(img.width):
+        px = img.getpixel((x, y))
+        if px[3] > 0 and px[:3] == old_color:
+            img.putpixel((x, y), (*new_color, px[3]))
+img.save(path)
+
+# Detect color type by hue
+def is_green(rgb):
+    r, g, b = rgb
+    h, l, s = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    hue_deg = h * 360
+    return 60 < hue_deg < 180 and s > 0.1
+
+def is_pink(rgb):
+    r, g, b = rgb
+    h, l, s = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    hue_deg = h * 360
+    return ((hue_deg >= 300 or hue_deg <= 40) and s > 0.15 and r > g and r > b)
+```
+
+### Series Creation Workflow
+1. Generate or acquire source sprites
+2. Name files following convention
+3. Analyze colors: `get_colors()` to see palette
+4. Unify palette across series by lightness matching
+5. Run `python3 build_puzzles.py images/input` to rebuild
+6. Review difficulty scores in report, renumber if needed
 
 ## Known Issue: Pan when zoomed not working on mobile
 
