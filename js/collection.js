@@ -326,7 +326,7 @@
       puzzleItems = puzzleItems.filter(item => {
         const meta = parsePuzzleTitle(getPuzzleTitle(item.puzzle));
         const name = meta.name.toLowerCase();
-        return name.startsWith(searchFilter);
+        return name.includes(searchFilter);
       });
     }
 
