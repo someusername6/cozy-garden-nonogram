@@ -160,13 +160,13 @@ Given no marketing experience and preference for minimal social interaction:
 
 ### Puzzle Collection by Series
 Major flower series (3+ puzzles each):
-- Red tulip (8), Purple iris (8), Orange zinnia (8)
-- Yellow marigold (6), Red carnation (6), Pink peony bloom (6)
-- Red poppy (4), Potted flower (4), Pink rose (4), Orange marigold (4), Dandelion (4)
-- Yellow sunflower (3), Yellow daffodil (3), Wild pink (3)
+- Zinnia (8), Red tulip (8), Iris (8)
+- Yellow marigold (6), Peony bloom (6), Carnation (6)
+- Poppy (4), Potted flower (4), Pink rose (4), Orange marigold (4), Dandelion (4)
+- Yellow sunflower (3), Daffodil (3), Wild pink (3), Lily (3)
 - Ivory bloom (3), Coral rose (3), Bonsai (3), Bee (3)
 
-Smaller series (2 puzzles): Violet, Terracotta pot, Red camellia, Pink cosmos, Pink cherry blossom, Pink azalea, Magenta tulip, Daisy
+Smaller series (2 puzzles): Violet, Terracotta pot, Red camellia, Cosmos, Cherry blossom, Azalea, Magenta tulip, Daisy
 
 ### Expansion Approach
 1. Generate more puzzles using AI sprite pipeline
@@ -269,10 +269,11 @@ The `normalizePuzzle()` function in `js/game.js` converts to verbose format at r
 ## Sprite Naming and Organization
 
 ### Naming Convention
-Files in `images/input/` follow: `[color]_[subject]_[number].png`
-- Examples: `pink_rose_1.png`, `coral_rose_2.png`, `orange_zinnia_5.png`
+Files in `images/input/` follow: `[subject]_[number].png` or `[color]_[subject]_[number].png`
+- Examples: `zinnia_5.png`, `iris_3.png`, `pink_rose_1.png`, `coral_rose_2.png`
 - Numbers indicate difficulty order within series (1 = easiest)
 - Single items have no number: `sunflower.png`, `red_rose.png`
+- Color prefix only needed when multiple color variants exist (e.g., pink_rose vs coral_rose vs red_rose)
 
 ### Color Palette Unification
 Flower series should share consistent color palettes. Common pattern:
