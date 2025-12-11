@@ -6,7 +6,6 @@
 
   const App = {
     // State
-    deferredPrompt: null,
     isOnline: navigator.onLine,
     isInstalled: false,
     swRegistration: null,
@@ -18,7 +17,6 @@
       this.registerServiceWorker();
       this.setupEventListeners();
       this.setupOnlineStatus();
-      this.setupInstallPrompt();
 
       console.log('[App] Cozy Garden initialized');
     },
@@ -169,101 +167,6 @@
       const indicator = document.getElementById('offline-indicator');
       if (indicator) {
         indicator.classList.remove('visible');
-      }
-    },
-
-    // Check if install prompt was recently dismissed
-    wasInstallPromptDismissed() {
-      try {
-        const dismissed = localStorage.getItem('cozy_install_dismissed');
-        if (!dismissed) return false;
-        const dismissedTime = parseInt(dismissed, 10);
-        const sevenDays = 7 * 24 * 60 * 60 * 1000;
-        // Show again after 7 days
-        return (Date.now() - dismissedTime) < sevenDays;
-      } catch {
-        return false;
-      }
-    },
-
-    // Mark install prompt as dismissed
-    markInstallPromptDismissed() {
-      try {
-        localStorage.setItem('cozy_install_dismissed', Date.now().toString());
-      } catch {
-        // Ignore storage errors
-      }
-    },
-
-    // Setup install prompt
-    setupInstallPrompt() {
-      // Capture the install prompt event
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        this.deferredPrompt = e;
-        // Only show if not recently dismissed
-        if (!this.wasInstallPromptDismissed()) {
-          this.showInstallButton();
-        }
-        console.log('[App] Install prompt captured');
-      });
-
-      // Handle successful installation
-      window.addEventListener('appinstalled', () => {
-        this.isInstalled = true;
-        this.deferredPrompt = null;
-        this.hideInstallButton();
-        document.body.classList.add('is-installed');
-        console.log('[App] PWA installed successfully');
-      });
-    },
-
-    // Show install button
-    showInstallButton() {
-      let btn = document.getElementById('install-btn');
-      if (!btn) {
-        btn = document.createElement('button');
-        btn.id = 'install-btn';
-        btn.className = 'install-btn';
-        const span = document.createElement('span');
-        span.textContent = 'Install App';
-        btn.appendChild(span);
-        btn.addEventListener('click', () => this.promptInstall());
-
-        // Add to controls section if exists
-        const controls = document.querySelector('.controls');
-        if (controls) {
-          controls.appendChild(btn);
-        }
-      }
-      btn.style.display = 'inline-flex';
-    },
-
-    hideInstallButton() {
-      const btn = document.getElementById('install-btn');
-      if (btn) {
-        btn.style.display = 'none';
-      }
-    },
-
-    // Trigger install prompt
-    async promptInstall() {
-      if (!this.deferredPrompt) {
-        console.log('[App] No install prompt available');
-        return;
-      }
-
-      this.deferredPrompt.prompt();
-      const { outcome } = await this.deferredPrompt.userChoice;
-
-      console.log('[App] Install prompt outcome:', outcome);
-
-      if (outcome === 'accepted') {
-        this.deferredPrompt = null;
-      } else {
-        // User dismissed - track to avoid prompting again too soon
-        this.markInstallPromptDismissed();
-        this.hideInstallButton();
       }
     },
 

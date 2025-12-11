@@ -772,32 +772,6 @@ body.is-offline .app-header {
   margin-top: 36px;
 }
 
-/* Install Button */
-.install-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-primary-light);
-  color: var(--color-primary-dark);
-  border: none;
-  padding: 12px 20px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  font-family: inherit;
-  transition: all 0.2s;
-  min-height: 44px;
-}
-
-.install-btn:hover {
-  background: var(--color-accent);
-  transform: translateY(-1px);
-}
-
-.install-btn:active {
-  transform: scale(0.98);
-}
-
 /* Update Banner */
 .update-banner {
   position: fixed;
@@ -1056,10 +1030,6 @@ body.is-installed {
     background: var(--color-secondary);
   }
 
-  .install-btn:hover {
-    background: var(--color-primary);
-  }
-
   .theme-option:hover {
     background: transparent;
   }
@@ -1081,7 +1051,6 @@ body.is-installed {
 .mode-btn:focus-visible,
 .history-btn:focus-visible,
 .pencil-action-btn:focus-visible,
-.install-btn:focus-visible,
 .difficulty-tab:focus-visible,
 .tutorial-next-btn:focus-visible,
 .tutorial-skip:focus-visible,
