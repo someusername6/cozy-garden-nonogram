@@ -172,13 +172,39 @@
       }
     },
 
+    // Check if install prompt was recently dismissed
+    wasInstallPromptDismissed() {
+      try {
+        const dismissed = localStorage.getItem('cozy_install_dismissed');
+        if (!dismissed) return false;
+        const dismissedTime = parseInt(dismissed, 10);
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        // Show again after 7 days
+        return (Date.now() - dismissedTime) < sevenDays;
+      } catch {
+        return false;
+      }
+    },
+
+    // Mark install prompt as dismissed
+    markInstallPromptDismissed() {
+      try {
+        localStorage.setItem('cozy_install_dismissed', Date.now().toString());
+      } catch {
+        // Ignore storage errors
+      }
+    },
+
     // Setup install prompt
     setupInstallPrompt() {
       // Capture the install prompt event
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         this.deferredPrompt = e;
-        this.showInstallButton();
+        // Only show if not recently dismissed
+        if (!this.wasInstallPromptDismissed()) {
+          this.showInstallButton();
+        }
         console.log('[App] Install prompt captured');
       });
 
@@ -234,6 +260,10 @@
 
       if (outcome === 'accepted') {
         this.deferredPrompt = null;
+      } else {
+        // User dismissed - track to avoid prompting again too soon
+        this.markInstallPromptDismissed();
+        this.hideInstallButton();
       }
     },
 

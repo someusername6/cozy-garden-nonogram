@@ -185,14 +185,3 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Background sync for future features (e.g., cloud save)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-progress') {
-    event.waitUntil(syncProgress());
-  }
-});
-
-async function syncProgress() {
-  // Future: sync progress to cloud
-  console.log('[SW] Background sync triggered');
-}
