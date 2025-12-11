@@ -15,6 +15,11 @@
   let dragColor = null;
   let dragCertain = true;  // Whether current drag creates certain or maybe cells
   let pencilMode = false;  // Pencil mode for uncertain marks
+  let isLoadingPuzzle = false;  // Guard against concurrent puzzle loads
+
+  // Event handler references for cleanup (prevents memory leaks)
+  let mouseUpHandler = null;
+  let gridMouseLeaveHandler = null;
 
   // Normalize puzzle from concise format to verbose format
   // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
@@ -147,8 +152,14 @@
     const penBtn = document.getElementById('pen-mode-btn');
     const pencilBtn = document.getElementById('pencil-mode-btn');
 
-    if (penBtn) penBtn.classList.toggle('active', !pencilMode);
-    if (pencilBtn) pencilBtn.classList.toggle('active', pencilMode);
+    if (penBtn) {
+      penBtn.classList.toggle('active', !pencilMode);
+      penBtn.setAttribute('aria-pressed', String(!pencilMode));
+    }
+    if (pencilBtn) {
+      pencilBtn.classList.toggle('active', pencilMode);
+      pencilBtn.setAttribute('aria-pressed', String(pencilMode));
+    }
 
     document.body.classList.toggle('pencil-mode', pencilMode);
   }
@@ -391,87 +402,102 @@
   // === Core Game Functions ===
 
   function loadPuzzle(index, restoreGrid = null) {
-    const puzzles = getPuzzles();
-    const storage = getStorage();
-    const history = getHistory();
-
-    // Save current puzzle's grid before switching
-    if (index !== currentPuzzle && grid.length > 0 && puzzles[currentPuzzle] && storage) {
-      const currentPuzzleId = getPuzzleId(puzzles[currentPuzzle]);
-      storage.savePuzzleGrid(currentPuzzleId, grid);
+    // Guard against concurrent puzzle loads (race condition)
+    if (isLoadingPuzzle) {
+      console.warn('[Game] Puzzle already loading, ignoring request');
+      return;
     }
+    isLoadingPuzzle = true;
 
-    // Clear history when switching puzzles
-    if (history) history.clear();
+    try {
+      const puzzles = getPuzzles();
+      const storage = getStorage();
+      const history = getHistory();
 
-    currentPuzzle = index;
-    const puzzle = puzzles[index];
-    if (!puzzle) return;
-
-    const puzzleId = getPuzzleId(puzzle);
-
-    // Initialize or restore grid
-    let savedGrid = restoreGrid;
-    if (!savedGrid && storage) {
-      savedGrid = storage.getPuzzleGrid(puzzleId);
-    }
-
-    const hasRestoredGrid = savedGrid && savedGrid.length === puzzle.height;
-    if (hasRestoredGrid) {
-      // Deep copy and migrate format if needed
-      grid = savedGrid.map(row => row.map(cell => {
-        if (typeof cell === 'object' && 'value' in cell) {
-          return { value: cell.value, certain: cell.certain };
-        }
-        // Legacy format: raw value
-        return createCell(cell, true);
-      }));
-    } else {
-      // Create empty grid
-      grid = [];
-      for (let row = 0; row < puzzle.height; row++) {
-        grid.push([]);
-        for (let col = 0; col < puzzle.width; col++) {
-          grid[row][col] = createCell(null, true);
-        }
+      // Save current puzzle's grid before switching
+      if (index !== currentPuzzle && grid.length > 0 && puzzles[currentPuzzle] && storage) {
+        const currentPuzzleId = getPuzzleId(puzzles[currentPuzzle]);
+        storage.savePuzzleGrid(currentPuzzleId, grid);
       }
-    }
 
-    selectedColor = 1;
-    buildPalette(puzzle);
-    buildClues(puzzle);
-    buildGrid(puzzle);
-    updateCurrentPuzzleTitle();
+      // Clear history when switching puzzles
+      if (history) history.clear();
 
-    // Update cell visuals if grid was restored
-    if (hasRestoredGrid) {
-      for (let row = 0; row < puzzle.height; row++) {
-        for (let col = 0; col < puzzle.width; col++) {
-          const cell = getCell(row, col);
-          if (cell.value !== null) {
-            updateCellVisual(row, col, puzzle);
+      // Reset pencil mode when loading a new puzzle
+      pencilMode = false;
+      updatePencilModeUI();
+
+      currentPuzzle = index;
+      const puzzle = puzzles[index];
+      if (!puzzle) return;
+
+      const puzzleId = getPuzzleId(puzzle);
+
+      // Initialize or restore grid
+      let savedGrid = restoreGrid;
+      if (!savedGrid && storage) {
+        savedGrid = storage.getPuzzleGrid(puzzleId);
+      }
+
+      const hasRestoredGrid = savedGrid && savedGrid.length === puzzle.height;
+      if (hasRestoredGrid) {
+        // Deep copy and migrate format if needed
+        grid = savedGrid.map(row => row.map(cell => {
+          if (typeof cell === 'object' && 'value' in cell) {
+            return { value: cell.value, certain: cell.certain };
+          }
+          // Legacy format: raw value
+          return createCell(cell, true);
+        }));
+      } else {
+        // Create empty grid
+        grid = [];
+        for (let row = 0; row < puzzle.height; row++) {
+          grid.push([]);
+          for (let col = 0; col < puzzle.width; col++) {
+            grid[row][col] = createCell(null, true);
           }
         }
       }
+
+      selectedColor = 1;
+      buildPalette(puzzle);
+      buildClues(puzzle);
+      buildGrid(puzzle);
+      updateCurrentPuzzleTitle();
+
+      // Update cell visuals if grid was restored
+      if (hasRestoredGrid) {
+        for (let row = 0; row < puzzle.height; row++) {
+          for (let col = 0; col < puzzle.width; col++) {
+            const cell = getCell(row, col);
+            if (cell.value !== null) {
+              updateCellVisual(row, col, puzzle);
+            }
+          }
+        }
+      }
+
+      document.getElementById('status').textContent = 'Select colors and fill the grid';
+      document.getElementById('status').classList.remove('won');
+
+      const select = document.getElementById('puzzle-select-dropdown');
+      if (select) select.value = index;
+
+      const newDiff = getDifficulty(puzzle.title);
+      if (newDiff !== currentDifficulty) {
+        currentDifficulty = newDiff;
+        document.querySelectorAll('.difficulty-tab').forEach(tab => {
+          tab.classList.toggle('active', tab.textContent.toLowerCase() === newDiff);
+        });
+        updateDropdown();
+      }
+
+      updatePencilActionsVisibility();
+      updateClueSatisfaction(puzzle);
+    } finally {
+      isLoadingPuzzle = false;
     }
-
-    document.getElementById('status').textContent = 'Select colors and fill the grid';
-    document.getElementById('status').classList.remove('won');
-
-    const select = document.getElementById('puzzle-select-dropdown');
-    if (select) select.value = index;
-
-    const newDiff = getDifficulty(puzzle.title);
-    if (newDiff !== currentDifficulty) {
-      currentDifficulty = newDiff;
-      document.querySelectorAll('.difficulty-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.textContent.toLowerCase() === newDiff);
-      });
-      updateDropdown();
-    }
-
-    updatePencilActionsVisibility();
-    updateClueSatisfaction(puzzle);
   }
 
   function buildPalette(puzzle) {
@@ -638,8 +664,17 @@
     gridEl.innerHTML = '';
     gridEl.style.gridTemplateColumns = `repeat(${puzzle.width}, var(--cell-size))`;
 
+    // Clean up previous event listeners to prevent memory leaks
+    if (gridMouseLeaveHandler) {
+      gridEl.removeEventListener('mouseleave', gridMouseLeaveHandler);
+    }
+    if (mouseUpHandler) {
+      document.removeEventListener('mouseup', mouseUpHandler);
+    }
+
     // Clear highlight when leaving grid
-    gridEl.onmouseleave = () => clearCrosshairHighlight();
+    gridMouseLeaveHandler = () => clearCrosshairHighlight();
+    gridEl.addEventListener('mouseleave', gridMouseLeaveHandler);
 
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
@@ -647,6 +682,30 @@
         cell.className = 'cell';
         cell.dataset.row = row;
         cell.dataset.col = col;
+        // Accessibility: make cells keyboard accessible
+        cell.tabIndex = 0;
+        cell.setAttribute('role', 'gridcell');
+        cell.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}`);
+
+        // === Keyboard Events ===
+        cell.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const history = getHistory();
+            if (history) history.beginAction('fill');
+            fillCell(row, col, selectedColor, !pencilMode);
+            if (history) history.commitAction();
+            updatePencilActionsVisibility();
+          } else if (e.key === 'x' || e.key === 'X') {
+            // X key marks cell as empty
+            e.preventDefault();
+            const history = getHistory();
+            if (history) history.beginAction('fill');
+            fillCell(row, col, 0, !pencilMode);
+            if (history) history.commitAction();
+            updatePencilActionsVisibility();
+          }
+        };
 
         // === Mouse Events ===
         cell.onmousedown = (e) => {
@@ -776,7 +835,7 @@
     }
 
     // Mouse up handler (for mouse-based drag)
-    document.onmouseup = () => {
+    mouseUpHandler = () => {
       if (isDragging) {
         isDragging = false;
         dragColor = null;
@@ -787,6 +846,7 @@
         updatePencilActionsVisibility();
       }
     };
+    document.addEventListener('mouseup', mouseUpHandler);
   }
 
   function fillCell(row, col, newValue, newCertain, skipToggle) {

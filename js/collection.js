@@ -201,6 +201,18 @@
     card.className = 'puzzle-card' + (isCompleted ? ' completed' : '') + (hasPartialProgress ? ' in-progress' : '');
     card.dataset.puzzleIndex = item.index;
     card.dataset.puzzleId = item.id;
+    // Accessibility: make cards keyboard accessible
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `${item.meta.name}, ${item.meta.width} by ${item.meta.height}${isCompleted ? ', completed' : ''}`);
+
+    // Keyboard handler for accessibility
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick(item.index);
+      }
+    });
 
     // Puzzle preview (mini grid or icon)
     const preview = document.createElement('div');

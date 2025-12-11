@@ -977,6 +977,115 @@ body.is-installed {
   }
 }
 
+/* === Keyboard Navigation Focus Styles === */
+/* Visible focus indicators for accessibility */
+
+/* Default focus ring for all interactive elements */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Buttons */
+.btn:focus-visible,
+.home-btn:focus-visible,
+.victory-btn:focus-visible,
+.mode-btn:focus-visible,
+.history-btn:focus-visible,
+.pencil-action-btn:focus-visible,
+.install-btn:focus-visible,
+.difficulty-tab:focus-visible,
+.tutorial-next-btn:focus-visible,
+.tutorial-skip:focus-visible,
+.settings-danger-btn:focus-visible,
+.settings-debug-btn:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Color palette buttons */
+.color-btn:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+  transform: scale(1.15);
+}
+
+/* Header back buttons */
+.header-back-btn:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  background: var(--color-secondary);
+}
+
+/* Theme option buttons */
+.theme-option:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Puzzle cards in collection */
+.puzzle-card:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  transform: translateY(-2px);
+}
+
+/* Collection section headers (collapsible) */
+.collection-section-header:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Search input */
+.collection-search-input:focus-visible {
+  outline: none; /* Uses border-based focus indicator instead */
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(76, 108, 74, 0.2);
+}
+
+/* Grid cells - keyboard accessible */
+.cell:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: -3px;
+  z-index: 2;
+}
+
+/* Clue cells */
+.clue-cell:focus-visible,
+.row-clue-cell:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Settings toggle checkboxes (via label) */
+.settings-toggle:focus-within .toggle-slider {
+  box-shadow: 0 0 0 3px rgba(76, 108, 74, 0.3);
+}
+
+/* Update banner button */
+.update-banner button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Dark mode focus adjustments */
+html[data-theme="dark"] :focus-visible {
+  outline-color: var(--color-primary-light);
+}
+
+html[data-theme="dark"] .color-btn:focus-visible,
+html[data-theme="dark"] .cell:focus-visible,
+html[data-theme="dark"] .puzzle-card:focus-visible {
+  outline-color: var(--color-accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] :focus-visible {
+    outline-color: var(--color-primary-light);
+  }
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   :root {
@@ -986,6 +1095,11 @@ body.is-installed {
 
   .cell {
     border: 1px solid #000;
+  }
+
+  :focus-visible {
+    outline: 3px solid #000;
+    outline-offset: 2px;
   }
 }
 

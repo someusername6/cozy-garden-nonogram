@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#5c6b4a" id="theme-color-meta">
@@ -104,8 +104,8 @@
   <!-- ============================================ -->
   <div id="screen-collection" class="screen screen-hidden">
     <header class="screen-header">
-      <button class="header-back-btn" onclick="ScreenManager.showScreen(ScreenManager.SCREENS.HOME)">
-        <span>&#8592;</span>
+      <button class="header-back-btn" onclick="ScreenManager.showScreen(ScreenManager.SCREENS.HOME)" aria-label="Back to home">
+        <span aria-hidden="true">&#8592;</span>
       </button>
       <h1 class="header-title">Collection</h1>
       <div class="header-spacer"></div>
@@ -113,7 +113,7 @@
 
     <main class="screen-content">
       <div class="collection-search">
-        <input type="text" id="collection-search-input" class="collection-search-input" placeholder="Search puzzles..." autocomplete="off">
+        <input type="text" id="collection-search-input" class="collection-search-input" placeholder="Search puzzles..." autocomplete="off" aria-label="Search puzzles">
       </div>
       <div class="collection-screen" id="collection-screen"></div>
     </main>
@@ -124,8 +124,8 @@
   <!-- ============================================ -->
   <div id="screen-puzzle" class="screen screen-hidden">
     <header class="screen-header">
-      <button class="header-back-btn" onclick="CozyGarden.navigateToCollectionWithStamp()">
-        <span>&#8592;</span>
+      <button class="header-back-btn" onclick="CozyGarden.navigateToCollectionWithStamp()" aria-label="Back to collection">
+        <span aria-hidden="true">&#8592;</span>
       </button>
       <h1 class="header-title" id="current-puzzle-title">Puzzle</h1>
       <div class="header-spacer"></div>
@@ -138,11 +138,11 @@
         </div>
 
         <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
-        <div class="mode-toggle">
-          <button id="pen-mode-btn" class="mode-btn active" onclick="CozyGarden.setPencilMode(false)">
+        <div class="mode-toggle" role="group" aria-label="Drawing mode">
+          <button id="pen-mode-btn" class="mode-btn active" onclick="CozyGarden.setPencilMode(false)" aria-pressed="true" aria-label="Pen mode - certain marks">
             Pen
           </button>
-          <button id="pencil-mode-btn" class="mode-btn" onclick="CozyGarden.setPencilMode(true)">
+          <button id="pencil-mode-btn" class="mode-btn" onclick="CozyGarden.setPencilMode(true)" aria-pressed="false" aria-label="Pencil mode - uncertain marks">
             Pencil
           </button>
         </div>
@@ -159,12 +159,12 @@
 
         <div class="board-wrapper">
           <div class="corner"></div>
-          <div class="col-clues" id="col-clues"></div>
-          <div id="row-clues-container"></div>
-          <div class="grid" id="grid"></div>
+          <div class="col-clues" id="col-clues" role="group" aria-label="Column clues"></div>
+          <div id="row-clues-container" role="group" aria-label="Row clues"></div>
+          <div class="grid" id="grid" role="grid" aria-label="Puzzle grid"></div>
         </div>
 
-        <div class="status" id="status">Select colors and fill the grid</div>
+        <div class="status" id="status" role="status" aria-live="polite">Select colors and fill the grid</div>
 
         <div class="controls">
           <!-- Undo/Redo -->
