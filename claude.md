@@ -66,8 +66,9 @@ open index.html
 - Victory screen with stamp collection animation
 - Stamp animation when returning from puzzle via back button
 - Tutorial for first-time users
-- Settings (sound/music/vibration toggles, reset progress)
+- Settings (sound/music/vibration toggles, theme selection, reset progress)
 - Settings: "Solve All Puzzles" debug button (for testing)
+- Dark mode with cozy warm theme (Light/Dark/Auto options, respects system preference)
 - PWA support (offline capable, installable)
 - Pinch-to-zoom on mobile
 - Crosshair hover effect on desktop

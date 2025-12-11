@@ -2,8 +2,9 @@
 /* Mobile-first, PWA-ready stylesheet */
 
 /* === CSS Custom Properties === */
-:root {
-  /* Theme colors */
+:root,
+html[data-theme="light"] {
+  /* Theme colors - Light Mode (default) */
   --color-primary: #5c6b4a;
   --color-primary-light: #a8c686;
   --color-primary-dark: #3d4a2d;
@@ -25,6 +26,10 @@
   --color-text-light: #8b8578;
   --color-text-muted: #bbb5a6;
 
+  /* Additional UI colors */
+  --color-shadow: rgba(0, 0, 0, 0.15);
+  --color-overlay: rgba(0, 0, 0, 0.5);
+
   /* Spacing */
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -36,6 +41,60 @@
 
   /* Grid cell size (responsive) */
   --cell-size: 24px;
+}
+
+/* === Dark Mode Theme === */
+/* Cozy dark theme with warm browns, deep greens, and amber accents */
+html[data-theme="dark"] {
+  /* Theme colors - warm and cozy */
+  --color-primary: #8fb36d;
+  --color-primary-light: #5c7a4a;
+  --color-primary-dark: #b8d49a;
+  --color-secondary: #4a4036;
+  --color-secondary-dark: #5a5046;
+  --color-accent: #9bc77a;
+
+  /* Background colors - warm dark browns */
+  --color-bg-start: #2a2420;
+  --color-bg-end: #1e1a17;
+  --color-surface: #362f2a;
+  --color-cell: #3d3530;
+  --color-cell-hover: #4a413a;
+  --color-cell-empty: #2e2825;
+  --color-grid-border: #5a4d42;
+
+  /* Text colors - warm off-whites */
+  --color-text: #e8e0d8;
+  --color-text-light: #b8a89a;
+  --color-text-muted: #7a6d62;
+
+  /* Additional UI colors */
+  --color-shadow: rgba(0, 0, 0, 0.4);
+  --color-overlay: rgba(0, 0, 0, 0.7);
+}
+
+/* System preference detection (when theme is 'system') */
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --color-primary: #8fb36d;
+    --color-primary-light: #5c7a4a;
+    --color-primary-dark: #b8d49a;
+    --color-secondary: #4a4036;
+    --color-secondary-dark: #5a5046;
+    --color-accent: #9bc77a;
+    --color-bg-start: #2a2420;
+    --color-bg-end: #1e1a17;
+    --color-surface: #362f2a;
+    --color-cell: #3d3530;
+    --color-cell-hover: #4a413a;
+    --color-cell-empty: #2e2825;
+    --color-grid-border: #5a4d42;
+    --color-text: #e8e0d8;
+    --color-text-light: #b8a89a;
+    --color-text-muted: #7a6d62;
+    --color-shadow: rgba(0, 0, 0, 0.4);
+    --color-overlay: rgba(0, 0, 0, 0.7);
+  }
 }
 
 /* === Reset & Base === */
@@ -127,7 +186,7 @@ body {
 
 .difficulty-tab {
   background: var(--color-secondary);
-  color: #5c5240;
+  color: var(--color-text);
   border: none;
   padding: 8px 12px;
   border-radius: 15px 15px 0 0;
@@ -603,7 +662,7 @@ kbd {
 
 .btn {
   background: var(--color-secondary);
-  color: #5c5240;
+  color: var(--color-text);
   border: none;
   padding: 12px 20px;
   border-radius: 20px;
@@ -636,7 +695,7 @@ kbd {
 /* Legacy button support */
 .controls button {
   background: var(--color-secondary);
-  color: #5c5240;
+  color: var(--color-text);
   border: none;
   padding: 12px 20px;
   border-radius: 20px;
@@ -1792,6 +1851,62 @@ body.showing-game .collection-screen {
 
 .settings-toggle input:checked + .toggle-slider::after {
   transform: translateX(22px);
+}
+
+/* Theme Selector */
+.settings-theme-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.theme-options {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 2px solid var(--color-secondary-dark);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.theme-option:hover {
+  border-color: var(--color-primary-light);
+}
+
+.theme-option:active {
+  transform: scale(0.98);
+}
+
+.theme-option.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.theme-icon {
+  font-size: 1.3rem;
+  height: 1.4rem;
+  line-height: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-name {
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 .settings-danger-btn {

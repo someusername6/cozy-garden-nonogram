@@ -28,6 +28,9 @@ const ScreenManager = (function() {
    * Initialize screen manager
    */
   function init() {
+    // Apply saved theme immediately to prevent flash
+    initTheme();
+
     // Cache all screen elements
     Object.values(SCREENS).forEach(screenId => {
       screenElements[screenId] = document.getElementById(`screen-${screenId}`);
@@ -394,6 +397,36 @@ const ScreenManager = (function() {
       resetBtn.setAttribute('data-initialized', 'true');
     }
 
+    // Theme selection
+    const themeOptions = document.querySelectorAll('.theme-option');
+    const currentTheme = window.CozyStorage?.getSetting('theme') || 'system';
+
+    // Mark current theme as active
+    themeOptions.forEach(option => {
+      const theme = option.dataset.theme;
+      option.classList.toggle('active', theme === currentTheme);
+    });
+
+    // Add click handlers
+    themeOptions.forEach(option => {
+      if (!option.hasAttribute('data-initialized')) {
+        option.addEventListener('click', () => {
+          const theme = option.dataset.theme;
+
+          // Update active state
+          themeOptions.forEach(opt => opt.classList.remove('active'));
+          option.classList.add('active');
+
+          // Save and apply theme
+          if (window.CozyStorage) {
+            window.CozyStorage.setSetting('theme', theme);
+          }
+          applyTheme(theme);
+        });
+        option.setAttribute('data-initialized', 'true');
+      }
+    });
+
     // Solve all puzzles (debug)
     const solveAllBtn = document.getElementById('settings-solve-all-btn');
     if (solveAllBtn && !solveAllBtn.hasAttribute('data-initialized')) {
@@ -514,6 +547,42 @@ const ScreenManager = (function() {
     localStorage.setItem('cozy_garden_progress', JSON.stringify(progress));
   }
 
+  // ============================================
+  // Theme Management
+  // ============================================
+
+  /**
+   * Apply theme to the document
+   * @param {string} theme - 'light', 'dark', or 'system'
+   */
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // Update theme-color meta tag for browser/PWA chrome
+    const themeColorMeta = document.getElementById('theme-color-meta');
+    if (themeColorMeta) {
+      const isDark = theme === 'dark' ||
+        (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      themeColorMeta.setAttribute('content', isDark ? '#2a2420' : '#5c6b4a');
+    }
+  }
+
+  /**
+   * Initialize theme from saved preference or system default
+   */
+  function initTheme() {
+    const savedTheme = window.CozyStorage?.getSetting('theme') || 'system';
+    applyTheme(savedTheme);
+
+    // Listen for system preference changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const currentTheme = window.CozyStorage?.getSetting('theme') || 'system';
+      if (currentTheme === 'system') {
+        applyTheme('system'); // Re-apply to update meta tag
+      }
+    });
+  }
+
   // Public API
   return {
     init,
@@ -524,6 +593,8 @@ const ScreenManager = (function() {
     saveProgress,
     loadProgress,
     loadSettings,
+    applyTheme,
+    initTheme,
     SCREENS
   };
 })();
