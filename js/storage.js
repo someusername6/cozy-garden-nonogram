@@ -7,6 +7,18 @@
   const STORAGE_KEY = 'cozy_garden_data';
   const STORAGE_VERSION = 1;
 
+  // Validate that parsed data has the expected structure
+  function isValidStorageData(data) {
+    if (!data || typeof data !== 'object') return false;
+    // Must have version number
+    if (typeof data.version !== 'number') return false;
+    // Core objects must exist and be objects (or null for optional fields)
+    if (data.progress !== null && typeof data.progress !== 'object') return false;
+    if (data.settings !== null && typeof data.settings !== 'object') return false;
+    if (data.stats !== null && typeof data.stats !== 'object') return false;
+    return true;
+  }
+
   // Default data structure
   function getDefaultData() {
     return {
@@ -47,10 +59,18 @@
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-          this.data = JSON.parse(stored);
-          // Migrate if needed
-          if (this.data.version !== STORAGE_VERSION) {
-            this.data = this.migrate(this.data);
+          const parsed = JSON.parse(stored);
+          // Validate structure before using
+          if (!isValidStorageData(parsed)) {
+            console.warn('[Storage] Invalid data structure, using defaults');
+            this.data = getDefaultData();
+            this.save();
+          } else {
+            this.data = parsed;
+            // Migrate if needed
+            if (this.data.version !== STORAGE_VERSION) {
+              this.data = this.migrate(this.data);
+            }
           }
         } else {
           this.data = getDefaultData();

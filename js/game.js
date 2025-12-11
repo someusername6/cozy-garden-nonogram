@@ -28,6 +28,7 @@
 
   // === Constants ===
   const STAMP_CANVAS_SIZE = 180;  // Flying stamp preview size (matches victory screen)
+  const MAX_PUZZLE_DIMENSION = 32;  // Maximum puzzle width/height (security limit)
 
   // Normalize puzzle from concise format to verbose format
   // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
@@ -440,6 +441,13 @@
       currentPuzzle = index;
       const puzzle = puzzles[index];
       if (!puzzle) return;
+
+      // Validate puzzle dimensions (security: prevent DOM explosion)
+      if (puzzle.width > MAX_PUZZLE_DIMENSION || puzzle.height > MAX_PUZZLE_DIMENSION ||
+          puzzle.width < 1 || puzzle.height < 1) {
+        console.error(`[Game] Invalid puzzle dimensions: ${puzzle.width}x${puzzle.height}`);
+        return;
+      }
 
       const puzzleId = getPuzzleId(puzzle);
 
