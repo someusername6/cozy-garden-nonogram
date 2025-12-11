@@ -76,7 +76,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate puzzle data from processed images")
     parser.add_argument("input_dir", type=Path, help="Directory containing processed PNG images")
     parser.add_argument("--difficulties", nargs="+", default=["easy", "medium", "hard", "challenging"],
-                        choices=["trivial", "easy", "medium", "hard", "challenging", "expert"],
+                        choices=["easy", "medium", "hard", "challenging", "expert"],
                         help="Difficulties to include (default: easy medium hard challenging)")
     parser.add_argument("--output", "-o", type=Path, default=None, help="Output JSON file")
     parser.add_argument("--sort-by", choices=["difficulty", "name", "size"], default="difficulty",
@@ -106,7 +106,7 @@ def main():
             print(f"  ✗ {img_path.name} (invalid)")
 
     # Sort
-    difficulty_order = {"trivial": 0, "easy": 1, "medium": 2, "hard": 3, "challenging": 4, "expert": 5}
+    difficulty_order = {"easy": 0, "medium": 1, "hard": 2, "challenging": 3, "expert": 4}
     if args.sort_by == "difficulty":
         puzzles.sort(key=lambda p: (difficulty_order.get(p["difficulty"], 5), p["score"]))
     elif args.sort_by == "name":

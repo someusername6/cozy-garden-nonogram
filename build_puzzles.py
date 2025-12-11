@@ -468,7 +468,7 @@ def generate_report(results: list[dict], difficulties: list[str]) -> str:
         lines.append(f"\nVALID PUZZLES BY DIFFICULTY")
         lines.append("-" * 40)
 
-        for diff in ["trivial", "easy", "medium", "hard", "challenging", "expert", "master"]:
+        for diff in ["easy", "medium", "hard", "challenging", "expert", "master"]:
             diff_puzzles = [r for r in valid if r["difficulty"] == diff]
             if diff_puzzles:
                 marker = "✓" if diff in difficulties else "✗"
@@ -535,7 +535,7 @@ Examples:
     parser.add_argument("--timeout", type=int, default=10,
                         help="Timeout per image in seconds (default: 30)")
     parser.add_argument("--difficulties", nargs="+", default=["easy", "medium", "hard", "challenging", "expert", "master"],
-                        choices=["trivial", "easy", "medium", "hard", "challenging", "expert", "master"],
+                        choices=["easy", "medium", "hard", "challenging", "expert", "master"],
                         help="Difficulties to include in website (default: easy medium hard challenging expert master)")
     parser.add_argument("--output", type=Path, default=Path("data/puzzles.js"),
                         help="Output puzzle data file (default: data/puzzles.js)")
@@ -651,7 +651,7 @@ Examples:
     # Update HTML
     if True:  # Always prepare data, actual write controlled by args.no_update
         # Collect puzzle data for included difficulties
-        difficulty_order = {"trivial": 0, "easy": 1, "medium": 2, "hard": 3, "challenging": 4, "expert": 5, "master": 6}
+        difficulty_order = {"easy": 0, "medium": 1, "hard": 2, "challenging": 3, "expert": 4, "master": 5}
         puzzles = []
         for r in results:
             if r["status"] == "valid" and r["difficulty"] in args.difficulties and r["puzzle_data"]:

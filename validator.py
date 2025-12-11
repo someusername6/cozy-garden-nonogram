@@ -12,7 +12,7 @@ class ValidationResult(Enum):
     VALID_UNIQUE = "valid_unique"  # Exactly one solution
     VALID_MULTIPLE = "valid_multiple"  # Solvable but not unique
     UNSOLVABLE = "unsolvable"  # No valid solution exists
-    TRIVIAL = "trivial"  # Too easy (e.g., empty puzzle)
+    INVALID_EMPTY = "invalid_empty"  # Degenerate puzzle (zero size or all empty clues)
     TOO_COMPLEX = "too_complex"  # Solver timed out
 
 
@@ -39,7 +39,7 @@ def validate_puzzle(puzzle: Puzzle) -> ValidationReport:
     # Quick checks
     if puzzle.width == 0 or puzzle.height == 0:
         return ValidationReport(
-            result=ValidationResult.TRIVIAL,
+            result=ValidationResult.INVALID_EMPTY,
             solve_result=None,
             message="Empty puzzle (zero dimensions)"
         )
@@ -51,7 +51,7 @@ def validate_puzzle(puzzle: Puzzle) -> ValidationReport:
     )
     if all_empty:
         return ValidationReport(
-            result=ValidationResult.TRIVIAL,
+            result=ValidationResult.INVALID_EMPTY,
             solve_result=None,
             message="All clues empty (fully transparent image)"
         )

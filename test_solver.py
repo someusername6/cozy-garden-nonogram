@@ -147,7 +147,7 @@ class TestValidator:
             [0, 0],
         ])
         report = validate_puzzle(puzzle)
-        assert report.result == ValidationResult.TRIVIAL
+        assert report.result == ValidationResult.INVALID_EMPTY
 
     def test_simple_valid(self):
         # L-shape
@@ -163,14 +163,14 @@ class TestValidator:
 class TestDifficulty:
     """Test difficulty scoring."""
 
-    def test_trivial_puzzle(self):
-        # Small, simple puzzle
+    def test_simple_puzzle(self):
+        # Small, simple puzzle should be Easy
         puzzle = puzzle_from_array([
             [1, 1],
             [1, 1],
         ])
         report = calculate_difficulty(puzzle)
-        assert report.difficulty in [Difficulty.TRIVIAL, Difficulty.EASY]
+        assert report.difficulty == Difficulty.EASY
 
     def test_larger_puzzle_harder(self):
         # Larger puzzles should generally be harder

@@ -79,7 +79,6 @@ class SolverMetrics:
 
 class Difficulty(Enum):
     """Difficulty bucket for a puzzle."""
-    TRIVIAL = "trivial"
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"

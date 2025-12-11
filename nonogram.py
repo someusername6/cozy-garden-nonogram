@@ -97,7 +97,6 @@ def process_batch(
         List of valid PuzzleAnalysis objects
     """
     difficulty_order = [
-        Difficulty.TRIVIAL,
         Difficulty.EASY,
         Difficulty.MEDIUM,
         Difficulty.HARD,
