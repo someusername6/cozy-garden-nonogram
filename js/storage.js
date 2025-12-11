@@ -26,7 +26,7 @@
       progress: {}, // puzzleId -> { completed: bool, bestTime: ms, attempts: int }
       settings: {
         soundEnabled: true,
-        vibrationEnabled: true,
+        vibration: true,
         theme: 'light',
         showTimer: true,
         autoMarkComplete: true

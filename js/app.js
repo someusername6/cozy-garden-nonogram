@@ -243,7 +243,7 @@
 
     // Vibrate (if supported)
     vibrate(pattern = 50) {
-      if (navigator.vibrate && window.CozyStorage?.getSetting('vibrationEnabled')) {
+      if (navigator.vibrate && window.CozyStorage?.getSetting('vibration')) {
         navigator.vibrate(pattern);
       }
     }
