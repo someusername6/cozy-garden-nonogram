@@ -364,15 +364,11 @@ const ScreenManager = (function() {
    */
   function initSettingsScreen() {
     const backBtn = document.getElementById('settings-back-btn');
-    const soundToggle = document.getElementById('settings-sound');
-    const musicToggle = document.getElementById('settings-music');
     const vibrationToggle = document.getElementById('settings-vibration');
     const resetBtn = document.getElementById('settings-reset-btn');
 
     // Load current settings from CozyStorage (unified storage)
     const storage = window.CozyStorage;
-    if (soundToggle) soundToggle.checked = storage?.getSetting('sound') ?? true;
-    if (musicToggle) musicToggle.checked = storage?.getSetting('music') ?? true;
     if (vibrationToggle) vibrationToggle.checked = storage?.getSetting('vibration') ?? true;
 
     // Back button
@@ -382,16 +378,6 @@ const ScreenManager = (function() {
     }
 
     // Setting toggles - save to CozyStorage
-    if (soundToggle && !soundToggle.hasAttribute('data-initialized')) {
-      soundToggle.addEventListener('change', () => storage?.setSetting('sound', soundToggle.checked));
-      soundToggle.setAttribute('data-initialized', 'true');
-    }
-
-    if (musicToggle && !musicToggle.hasAttribute('data-initialized')) {
-      musicToggle.addEventListener('change', () => storage?.setSetting('music', musicToggle.checked));
-      musicToggle.setAttribute('data-initialized', 'true');
-    }
-
     if (vibrationToggle && !vibrationToggle.hasAttribute('data-initialized')) {
       vibrationToggle.addEventListener('change', () => storage?.setSetting('vibration', vibrationToggle.checked));
       vibrationToggle.setAttribute('data-initialized', 'true');

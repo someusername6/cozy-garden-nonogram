@@ -72,7 +72,6 @@ open index.html
 - Crosshair hover effect on desktop
 
 ### Not Yet Implemented
-- Sound effects
 - Daily puzzle feature
 - Pinch-to-zoom on mobile (pending redesign)
 
@@ -80,6 +79,7 @@ open index.html
 - **Cell touch targets below 44x44px**: This is intentional. Nonogram puzzles require precise cell-by-cell interaction, and larger cells would make puzzles impractical on mobile screens. This will be addressed when pinch-to-zoom is implemented, allowing users to zoom in for comfortable touch targets on larger puzzles. Do NOT flag this as an accessibility issue in code reviews.
 
 ### Deliberately Not Adding
+- **Sound effects/music**: Vibration feedback is sufficient. Sound adds complexity, drains battery, and most users disable it anyway. Users typically play in environments where sound is unwelcome (public, work).
 - **Hint system**: Doesn't fit the zen philosophy. Players already have pencil mode, undo/redo, clue satisfaction indicators, and "Show Solution" for when truly stuck. Hints would undermine the satisfaction of genuine solving.
 - **Timers or time tracking**: Contradicts the relaxation focus.
 - **Leaderboards or competitive features**: Not aligned with cozy positioning.

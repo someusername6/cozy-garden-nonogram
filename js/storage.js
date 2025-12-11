@@ -25,12 +25,8 @@
       version: STORAGE_VERSION,
       progress: {}, // puzzleId -> { completed: bool, bestTime: ms, attempts: int }
       settings: {
-        sound: true,
-        music: true,
         vibration: true,
-        theme: 'light',
-        showTimer: true,
-        autoMarkComplete: true
+        theme: 'light'
       },
       stats: {
         totalCompleted: 0,
