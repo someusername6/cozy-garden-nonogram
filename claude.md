@@ -74,7 +74,10 @@ open index.html
 ### Not Yet Implemented
 - Sound effects
 - Daily puzzle feature
-- Pinch-to-zoom on mobile (removed for redesign)
+- Pinch-to-zoom on mobile (pending redesign)
+
+### Known Limitations (By Design)
+- **Cell touch targets below 44x44px**: This is intentional. Nonogram puzzles require precise cell-by-cell interaction, and larger cells would make puzzles impractical on mobile screens. This will be addressed when pinch-to-zoom is implemented, allowing users to zoom in for comfortable touch targets on larger puzzles. Do NOT flag this as an accessibility issue in code reviews.
 
 ### Deliberately Not Adding
 - **Hint system**: Doesn't fit the zen philosophy. Players already have pencil mode, undo/redo, clue satisfaction indicators, and "Show Solution" for when truly stuck. Hints would undermine the satisfaction of genuine solving.

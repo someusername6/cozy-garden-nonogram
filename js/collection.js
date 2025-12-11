@@ -80,8 +80,13 @@
     };
   }
 
-  // Get puzzle ID from puzzle object
+  // Get puzzle ID from puzzle object (uses shared utility if available)
   function getPuzzleId(puzzle) {
+    // Use shared utility from CozyGarden if available for consistency
+    if (window.CozyGarden?.getPuzzleId) {
+      return window.CozyGarden.getPuzzleId(puzzle);
+    }
+    // Fallback for when game.js hasn't loaded yet
     const title = getPuzzleTitle(puzzle);
     return title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
@@ -473,6 +478,7 @@
       this.searchFilter = '';
       this.searchInput = null;
       this.searchInputHandler = null;  // Store handler reference for cleanup
+      this.searchDebounceTimeout = null;  // Debounce timer for search
     }
 
     init(containerId, puzzles, onPuzzleSelect) {
@@ -487,10 +493,14 @@
         if (this.searchInputHandler) {
           this.searchInput.removeEventListener('input', this.searchInputHandler);
         }
-        // Create and store new handler
+        // Create and store new handler (debounced to avoid excessive re-renders)
         this.searchInputHandler = (e) => {
           this.searchFilter = e.target.value;
-          this.render();
+          // Debounce render to avoid re-rendering on every keystroke
+          if (this.searchDebounceTimeout) {
+            clearTimeout(this.searchDebounceTimeout);
+          }
+          this.searchDebounceTimeout = setTimeout(() => this.render(), 150);
         };
         this.searchInput.addEventListener('input', this.searchInputHandler);
       }

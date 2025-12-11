@@ -467,9 +467,15 @@ const ScreenManager = (function() {
 
           if (storage) {
             puzzles.forEach(puzzle => {
-              // Generate puzzle ID - handle both concise (t) and verbose (title) formats
-              const title = puzzle.t || puzzle.title;
-              const puzzleId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+              // Use shared utility from CozyGarden if available for consistency
+              let puzzleId;
+              if (window.CozyGarden?.getPuzzleId) {
+                puzzleId = window.CozyGarden.getPuzzleId(puzzle);
+              } else {
+                // Fallback - handle both concise (t) and verbose (title) formats
+                const title = puzzle.t || puzzle.title;
+                puzzleId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+              }
               storage.completePuzzle(puzzleId);
             });
           }

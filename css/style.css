@@ -54,7 +54,11 @@ html[data-theme="light"] {
   /* Dynamic viewport height (set by JS) */
   --vh: 1vh;
 
-  /* Grid cell size (responsive) */
+  /* Grid cell size (responsive)
+   * NOTE: Cell size is intentionally below the 44x44px touch target guideline.
+   * Nonogram puzzles require precise cell interaction, and larger cells would
+   * make puzzles impractical on mobile. This will be resolved when pinch-to-zoom
+   * is implemented, allowing users to zoom for comfortable touch targets. */
   --cell-size: 24px;
 }
 
@@ -137,7 +141,8 @@ html {
 }
 
 body {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  /* System font stack with modern fallbacks for better cross-platform rendering */
+  font-family: 'Georgia', 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', 'Times New Roman', serif;
   background: linear-gradient(135deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
   color: var(--color-text);
   margin: 0;

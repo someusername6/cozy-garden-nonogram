@@ -34,9 +34,25 @@
   // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
   // Verbose: {title, width, height, row_clues, col_clues, color_map, solution} with 1-indexed colors
   function normalizePuzzle(p) {
-    if (!p) return p;
-    // Already in verbose format
-    if (p.title !== undefined) return p;
+    if (!p) return null;
+    // Already in verbose format - validate basic structure
+    if (p.title !== undefined) {
+      if (!p.width || !p.height || !p.row_clues || !p.col_clues || !p.color_map) {
+        console.warn('[Game] Invalid verbose puzzle format:', p.title);
+        return null;
+      }
+      return p;
+    }
+    // Validate concise format has required fields
+    if (!p.t || !p.w || !p.h || !p.r || !p.c || !p.p || !p.s) {
+      console.warn('[Game] Invalid concise puzzle format, missing required fields');
+      return null;
+    }
+    // Validate dimensions are within limits
+    if (p.w > MAX_PUZZLE_DIMENSION || p.h > MAX_PUZZLE_DIMENSION || p.w < 1 || p.h < 1) {
+      console.warn('[Game] Puzzle dimensions out of range:', p.w, 'x', p.h);
+      return null;
+    }
 
     // Convert hex color to RGB array
     function hexToRgb(hex) {
@@ -91,7 +107,8 @@
     const raw = window.PUZZLE_DATA || [];
     // Invalidate cache if raw data reference changed (not just length)
     if (!normalizedPuzzles || raw !== lastRawPuzzleData) {
-      normalizedPuzzles = raw.map(normalizePuzzle);
+      // Filter out invalid puzzles (normalizePuzzle returns null for invalid)
+      normalizedPuzzles = raw.map(normalizePuzzle).filter(p => p !== null);
       lastRawPuzzleData = raw;
     }
     return normalizedPuzzles;
@@ -529,14 +546,19 @@
     const eraser = document.createElement('button');
     eraser.className = 'color-btn eraser';
     eraser.title = 'Eraser';
+    eraser.setAttribute('aria-label', 'Eraser');
+    eraser.setAttribute('aria-pressed', selectedColor === 0 ? 'true' : 'false');
     eraser.onclick = () => selectColor(0);
     palette.appendChild(eraser);
 
     // Add color buttons
     Object.entries(puzzle.color_map).forEach(([colorId, colorRgb]) => {
       const btn = document.createElement('button');
-      btn.className = 'color-btn' + (parseInt(colorId) === selectedColor ? ' selected' : '');
+      const isSelected = parseInt(colorId) === selectedColor;
+      btn.className = 'color-btn' + (isSelected ? ' selected' : '');
       btn.style.background = rgb(colorRgb);
+      btn.setAttribute('aria-label', `Color ${colorId}`);
+      btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
       btn.onclick = () => selectColor(parseInt(colorId));
       palette.appendChild(btn);
     });
@@ -548,11 +570,14 @@
     const puzzle = puzzles[currentPuzzle];
 
     document.querySelectorAll('.color-btn').forEach((btn, idx) => {
+      let isSelected;
       if (idx === 0) {
-        btn.classList.toggle('selected', colorId === 0);
+        isSelected = colorId === 0;
       } else {
-        btn.classList.toggle('selected', parseInt(Object.keys(puzzle.color_map)[idx - 1]) === colorId);
+        isSelected = parseInt(Object.keys(puzzle.color_map)[idx - 1]) === colorId;
       }
+      btn.classList.toggle('selected', isSelected);
+      btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
     });
   }
 
@@ -693,28 +718,32 @@
     // Only clear if we had a previous highlight
     if (prevRow < 0 && prevCol < 0) return;
 
-    // Clear cell highlights using cache
-    for (let r = 0; r < cellElements.length; r++) {
-      const rowCells = cellElements[r];
-      if (!rowCells) continue;
-      for (let c = 0; c < rowCells.length; c++) {
-        const cellEl = rowCells[c];
+    // Clear only the previously highlighted row and column - O(n) instead of O(n²)
+    // Clear the highlighted row
+    if (prevRow >= 0 && cellElements[prevRow]) {
+      for (let c = 0; c < cellElements[prevRow].length; c++) {
+        const cellEl = cellElements[prevRow][c];
         if (cellEl) {
-          cellEl.classList.remove('highlight-row', 'highlight-col', 'highlight-cell');
+          cellEl.classList.remove('highlight-row', 'highlight-cell');
+        }
+      }
+    }
+    // Clear the highlighted column
+    if (prevCol >= 0) {
+      for (let r = 0; r < cellElements.length; r++) {
+        const cellEl = cellElements[r]?.[prevCol];
+        if (cellEl) {
+          cellEl.classList.remove('highlight-col');
         }
       }
     }
 
-    // Clear clue highlights using cache
-    for (let r = 0; r < rowClueElements.length; r++) {
-      if (rowClueElements[r]) {
-        rowClueElements[r].classList.remove('highlight-clue');
-      }
+    // Clear clue highlights (only the previously highlighted ones)
+    if (prevRow >= 0 && rowClueElements[prevRow]) {
+      rowClueElements[prevRow].classList.remove('highlight-clue');
     }
-    for (let c = 0; c < colClueElements.length; c++) {
-      if (colClueElements[c]) {
-        colClueElements[c].classList.remove('highlight-clue');
-      }
+    if (prevCol >= 0 && colClueElements[prevCol]) {
+      colClueElements[prevCol].classList.remove('highlight-clue');
     }
   }
 
@@ -1627,7 +1656,8 @@
     showCollection: showCollection,
     showGame: showGame,
     clearAllState: clearAllState,
-    navigateToCollectionWithStamp: navigateToCollectionWithStamp
+    navigateToCollectionWithStamp: navigateToCollectionWithStamp,
+    getPuzzleId: getPuzzleId  // Utility for generating consistent puzzle IDs
   };
 
   // Auto-initialize
