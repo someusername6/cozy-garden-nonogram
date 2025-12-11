@@ -472,10 +472,6 @@
 
     updatePencilActionsVisibility();
     updateClueSatisfaction(puzzle);
-
-    if (window.CozyZoom && window.CozyZoom.onPuzzleChange) {
-      window.CozyZoom.onPuzzleChange();
-    }
   }
 
   function buildPalette(puzzle) {

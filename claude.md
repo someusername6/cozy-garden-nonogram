@@ -21,7 +21,6 @@ nonogram/
 │   ├── collection.js   # Collection screen with puzzle cards + search
 │   ├── storage.js      # LocalStorage persistence
 │   ├── history.js      # Undo/redo system
-│   ├── zoom.js         # Pinch-to-zoom for mobile
 │   └── app.js          # PWA initialization, offline handling
 ├── data/
 │   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA) - auto-generated, concise format
@@ -70,12 +69,12 @@ open index.html
 - Settings: "Solve All Puzzles" debug button (for testing)
 - Dark mode with cozy warm theme (Light/Dark/Auto options, respects system preference)
 - PWA support (offline capable, installable)
-- Pinch-to-zoom on mobile
 - Crosshair hover effect on desktop
 
 ### Not Yet Implemented
 - Sound effects
 - Daily puzzle feature
+- Pinch-to-zoom on mobile (removed for redesign)
 
 ### Deliberately Not Adding
 - **Hint system**: Doesn't fit the zen philosophy. Players already have pencil mode, undo/redo, clue satisfaction indicators, and "Show Solution" for when truly stuck. Hints would undermine the satisfaction of genuine solving.
@@ -330,24 +329,3 @@ def is_pink(rgb):
 4. Unify palette across series by lightness matching
 5. Run `python3 build_puzzles.py images/input` to rebuild
 6. Review difficulty scores in report, renumber if needed
-
-## Known Issue: Pan when zoomed not working on mobile
-
-**Problem:** When zoomed in on a puzzle, dragging to pan causes the page to scroll instead of panning the puzzle.
-
-**Relevant files:**
-- `js/zoom.js` - handles pinch-to-zoom and pan via touch events
-- `js/game.js` - cell touch handlers use `stopPropagation()` to allow drawing
-- `css/style.css` - `.zoom-container` has `touch-action: none`, `.app-main` has `overflow-y: auto`
-
-**What was attempted (none worked):**
-1. Added epsilon (0.001) to float comparisons
-2. Added `e.preventDefault()` and `e.stopPropagation()` to touch handlers
-3. Changed touchstart listener from `passive: true` to `passive: false`
-4. Added `.app-main.zoom-locked` CSS class toggled by JS when zoomed
-
-**Next steps to investigate:**
-- Verify if `handleTouchStart` is being called via console.log
-- Check if touch events are captured elsewhere before reaching zoom-container
-- Consider using `document.addEventListener` with capture phase
-- Test on actual mobile device vs Chrome DevTools
