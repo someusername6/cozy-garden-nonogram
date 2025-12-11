@@ -472,6 +472,7 @@
       this.visible = true;
       this.searchFilter = '';
       this.searchInput = null;
+      this.searchInputHandler = null;  // Store handler reference for cleanup
     }
 
     init(containerId, puzzles, onPuzzleSelect) {
@@ -479,13 +480,19 @@
       this.puzzles = puzzles;
       this.onPuzzleSelect = onPuzzleSelect;
 
-      // Set up search input
+      // Set up search input (with cleanup to prevent memory leaks)
       this.searchInput = document.getElementById('collection-search-input');
       if (this.searchInput) {
-        this.searchInput.addEventListener('input', (e) => {
+        // Remove old handler if exists (prevents stacking on re-init)
+        if (this.searchInputHandler) {
+          this.searchInput.removeEventListener('input', this.searchInputHandler);
+        }
+        // Create and store new handler
+        this.searchInputHandler = (e) => {
           this.searchFilter = e.target.value;
           this.render();
-        });
+        };
+        this.searchInput.addEventListener('input', this.searchInputHandler);
       }
 
       if (this.container) {

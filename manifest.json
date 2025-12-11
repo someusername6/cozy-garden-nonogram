@@ -65,15 +65,6 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "assets/screenshots/gameplay.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Gameplay screenshot"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Continue Playing",

@@ -82,14 +82,17 @@
     };
   }
 
-  // Cache for normalized puzzles
+  // Cache for normalized puzzles (with reference tracking for invalidation)
   let normalizedPuzzles = null;
+  let lastRawPuzzleData = null;
 
   // Get puzzles from global (loaded via script tag)
   function getPuzzles() {
     const raw = window.PUZZLE_DATA || [];
-    if (!normalizedPuzzles || normalizedPuzzles.length !== raw.length) {
+    // Invalidate cache if raw data reference changed (not just length)
+    if (!normalizedPuzzles || raw !== lastRawPuzzleData) {
       normalizedPuzzles = raw.map(normalizePuzzle);
+      lastRawPuzzleData = raw;
     }
     return normalizedPuzzles;
   }
