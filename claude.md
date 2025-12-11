@@ -4,7 +4,7 @@
 
 A colored nonogram puzzle game with a cozy garden theme. Players solve pixel art puzzles of flowers, plants, and garden elements.
 
-**Current Status:** Fully playable PWA with 122 puzzles across 5 difficulty levels.
+**Current Status:** Fully playable PWA with 130 puzzles across 6 difficulty levels.
 
 **Positioning:** The "Stardew Valley of nonograms" - cozy, quality-focused, zen. No timers, no pressure, no competitive features. Target audience is players seeking relaxation, not competition.
 
@@ -26,7 +26,7 @@ nonogram/
 ├── data/
 │   └── puzzles.js      # Puzzle data (window.PUZZLE_DATA) - auto-generated, concise format
 ├── images/
-│   └── input/          # Source pixel art sprites (122 PNG files)
+│   └── input/          # Source pixel art sprites (130 PNG files)
 ├── build_puzzles.py    # Main content pipeline
 ├── solver.py           # Nonogram solver with uniqueness checking
 ├── validator.py        # Puzzle validation
@@ -153,8 +153,8 @@ Given no marketing experience and preference for minimal social interaction:
 ### Current State
 130 puzzles across 6 difficulty levels:
 - Easy: 38 puzzles
-- Medium: 38 puzzles
-- Hard: 22 puzzles
+- Medium: 39 puzzles
+- Hard: 21 puzzles
 - Challenging: 18 puzzles
 - Expert: 11 puzzles
 - Master: 3 puzzles (placeholder - may be modified or removed)
@@ -164,9 +164,9 @@ Major flower series (3+ puzzles each):
 - Red tulip (8), Iris (8), Zinnia (7), Carnation (7)
 - Peony bloom (6), Sunflower (5), Poppy (5)
 - Dahlia (4), Potted flower (4), Dandelion (4)
-- Chicory (3), Yellow marigold (3), Pink rose (3), Orange marigold (3), Phlox (3), Lily (3), Ivory bloom (3), Daffodil (3), Coral rose (3), Bonsai (3), Bee (3)
+- Chicory (3), Pink rose (3), Orange marigold (3), Phlox (3), Lily (3), Ivory bloom (3), Daffodil (3), Coral rose (3), Bonsai (3), Bee (3), Yellow marigold (3)
 
-Smaller series (2 puzzles): Violet, Terracotta pot, Red camellia, Cosmos, Cherry blossom, Azalea, Magenta tulip, Daisy
+Smaller series (2 puzzles): Daylily, Violet, Terracotta pot, Red camellia, Cosmos, Cherry blossom, Azalea, Magenta tulip, Daisy
 
 ### Expansion Approach
 1. Generate more puzzles using AI sprite pipeline
