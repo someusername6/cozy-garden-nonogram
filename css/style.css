@@ -63,7 +63,14 @@ html[data-theme="light"] {
 }
 
 /* === Dark Mode Theme === */
-/* Cozy dark theme with warm browns, deep greens, and amber accents */
+/* Cozy dark theme with warm browns, deep greens, and amber accents.
+ * NOTE: Dark mode variables appear in two places by necessity:
+ * 1. html[data-theme="dark"] - for explicit dark mode selection
+ * 2. @media (prefers-color-scheme: dark) html[data-theme="system"] - for
+ *    system preference detection (must work before/without JS)
+ * This duplication ensures dark mode works even if JS fails to load. */
+
+/* Explicit dark theme selection */
 html[data-theme="dark"] {
   /* Theme colors - warm and cozy */
   --color-primary: #8fb36d;
@@ -98,7 +105,9 @@ html[data-theme="dark"] {
   --color-highlight-strong: rgba(143, 179, 109, 0.25);
 }
 
-/* System preference detection (when theme is 'system') */
+/* System preference detection - applies dark theme when user prefers dark
+ * and has theme set to 'system'. This @media block is required to work
+ * before JS loads (prevents flash of light theme on dark-preferring systems). */
 @media (prefers-color-scheme: dark) {
   html[data-theme="system"] {
     --color-primary: #8fb36d;
@@ -156,9 +165,6 @@ body {
   padding-bottom: var(--safe-area-bottom);
   padding-left: var(--safe-area-left);
   padding-right: var(--safe-area-right);
-  /* Prevent text selection during gameplay */
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 /* === App Layout === */
@@ -304,6 +310,9 @@ body {
   grid-template-rows: auto auto;
   gap: 4px;
   touch-action: none; /* Prevent scrolling while drawing */
+  /* Prevent text selection during gameplay (scoped to game area only) */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .corner {
@@ -690,6 +699,9 @@ kbd {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
+  /* Prevent text selection on game controls */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .btn {
