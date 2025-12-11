@@ -1,6 +1,15 @@
 /* Cozy Garden - PWA Styles */
 /* Mobile-first, PWA-ready stylesheet */
 
+/*
+ * === Z-Index Scale ===
+ * 1     - Cell highlights, minor layering within components
+ * 2     - Focus states, active elements
+ * 10    - Section headers (sticky)
+ * 1000  - Fixed UI elements (offline indicator, install prompts, headers)
+ * 9999  - Modals, overlays, flying animations
+ */
+
 /* === CSS Custom Properties === */
 :root,
 html[data-theme="light"] {
@@ -29,6 +38,12 @@ html[data-theme="light"] {
   /* Additional UI colors */
   --color-shadow: rgba(0, 0, 0, 0.15);
   --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-danger: #d9534f;
+  --color-info: #5bc0de;
+  --color-warning: #ff9800;
+  --color-focus-ring: rgba(107, 142, 78, 0.2);
+  --color-highlight: rgba(92, 107, 74, 0.12);
+  --color-highlight-strong: rgba(92, 107, 74, 0.2);
 
   /* Spacing */
   --safe-area-top: env(safe-area-inset-top, 0px);
@@ -71,6 +86,12 @@ html[data-theme="dark"] {
   /* Additional UI colors */
   --color-shadow: rgba(0, 0, 0, 0.4);
   --color-overlay: rgba(0, 0, 0, 0.7);
+  --color-danger: #e57373;
+  --color-info: #4fc3f7;
+  --color-warning: #ffb74d;
+  --color-focus-ring: rgba(143, 179, 109, 0.3);
+  --color-highlight: rgba(143, 179, 109, 0.15);
+  --color-highlight-strong: rgba(143, 179, 109, 0.25);
 }
 
 /* System preference detection (when theme is 'system') */
@@ -94,6 +115,12 @@ html[data-theme="dark"] {
     --color-text-muted: #a09080;
     --color-shadow: rgba(0, 0, 0, 0.4);
     --color-overlay: rgba(0, 0, 0, 0.7);
+    --color-danger: #e57373;
+    --color-info: #4fc3f7;
+    --color-warning: #ffb74d;
+    --color-focus-ring: rgba(143, 179, 109, 0.3);
+    --color-highlight: rgba(143, 179, 109, 0.15);
+    --color-highlight-strong: rgba(143, 179, 109, 0.25);
   }
 }
 
@@ -692,28 +719,6 @@ kbd {
   background: var(--color-accent);
 }
 
-/* Legacy button support */
-.controls button {
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: none;
-  padding: 12px 20px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  font-family: inherit;
-  transition: all 0.2s;
-  min-height: 44px;
-}
-
-.controls button:hover {
-  background: var(--color-secondary-dark);
-}
-
-.controls button:active {
-  transform: scale(0.98);
-}
-
 /* === Instructions === */
 .instructions {
   text-align: center;
@@ -732,8 +737,8 @@ kbd {
   top: var(--safe-area-top);
   left: 0;
   right: 0;
-  background: #ff9800;
-  color: #fff;
+  background: var(--color-warning);
+  color: var(--color-surface);
   text-align: center;
   padding: 8px;
   font-size: 13px;
@@ -901,6 +906,53 @@ body.is-offline .app-header {
   }
 }
 
+/* Large screens (desktops) */
+@media (min-width: 1200px) {
+  :root {
+    --cell-size: 32px;
+  }
+
+  .game-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .clue-cell {
+    width: 28px;
+    height: 22px;
+    font-size: 13px;
+  }
+
+  .row-clue-cell {
+    min-width: 22px;
+    height: 26px;
+    font-size: 13px;
+  }
+
+  .board-wrapper {
+    gap: 4px;
+  }
+
+  .palette {
+    gap: 12px;
+  }
+
+  .color-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .btn {
+    padding: 14px 28px;
+    font-size: 1.1rem;
+  }
+
+  .instructions {
+    font-size: 15px;
+    max-width: 700px;
+  }
+}
+
 /* Landscape on mobile */
 @media (max-height: 500px) and (orientation: landscape) {
   .app-header {
@@ -963,8 +1015,7 @@ body.is-installed {
     transform: none;
   }
 
-  .btn:hover,
-  .controls button:hover {
+  .btn:hover {
     background: var(--color-secondary);
   }
 
@@ -974,6 +1025,26 @@ body.is-installed {
 
   .difficulty-tab.active:hover {
     background: var(--color-primary-light);
+  }
+
+  .mode-btn:hover:not(.active) {
+    background: var(--color-secondary);
+  }
+
+  .pencil-action-btn:hover {
+    background: var(--color-secondary);
+  }
+
+  .history-btn:hover:not(:disabled) {
+    background: var(--color-secondary);
+  }
+
+  .install-btn:hover {
+    background: var(--color-primary);
+  }
+
+  .theme-option:hover {
+    background: transparent;
   }
 }
 
@@ -1934,17 +2005,17 @@ body.showing-game .collection-screen {
   padding: 14px;
   font-size: 1rem;
   font-family: inherit;
-  border: 2px solid #d9534f;
+  border: 2px solid var(--color-danger);
   border-radius: 8px;
   background: transparent;
-  color: #d9534f;
+  color: var(--color-danger);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .settings-danger-btn:active {
-  background: #d9534f;
-  color: white;
+  background: var(--color-danger);
+  color: var(--color-surface);
 }
 
 .settings-debug-btn {
@@ -1952,18 +2023,18 @@ body.showing-game .collection-screen {
   padding: 14px;
   font-size: 1rem;
   font-family: inherit;
-  border: 2px solid #5bc0de;
+  border: 2px solid var(--color-info);
   border-radius: 8px;
   background: transparent;
-  color: #5bc0de;
+  color: var(--color-info);
   cursor: pointer;
   transition: all 0.2s;
   margin-top: 10px;
 }
 
 .settings-debug-btn:active {
-  background: #5bc0de;
-  color: white;
+  background: var(--color-info);
+  color: var(--color-surface);
 }
 
 .settings-footer {
