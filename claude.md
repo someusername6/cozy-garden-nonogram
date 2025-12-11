@@ -163,8 +163,8 @@ Given no marketing experience and preference for minimal social interaction:
 Major flower series (3+ puzzles each):
 - Red tulip (8), Iris (8), Zinnia (7), Carnation (7)
 - Peony bloom (6), Sunflower (5), Poppy (5)
-- Dahlia (4), Wild blue (4), Potted flower (4), Dandelion (4)
-- Yellow marigold (3), Pink rose (3), Orange marigold (3), Wild pink (3), Lily (3), Ivory bloom (3), Daffodil (3), Coral rose (3), Bonsai (3), Bee (3)
+- Dahlia (4), Potted flower (4), Dandelion (4)
+- Chicory (3), Yellow marigold (3), Pink rose (3), Orange marigold (3), Wild pink (3), Lily (3), Ivory bloom (3), Daffodil (3), Coral rose (3), Bonsai (3), Bee (3)
 
 Smaller series (2 puzzles): Violet, Terracotta pot, Red camellia, Cosmos, Cherry blossom, Azalea, Magenta tulip, Daisy
 
