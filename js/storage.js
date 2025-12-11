@@ -25,7 +25,8 @@
       version: STORAGE_VERSION,
       progress: {}, // puzzleId -> { completed: bool, bestTime: ms, attempts: int }
       settings: {
-        soundEnabled: true,
+        sound: true,
+        music: true,
         vibration: true,
         theme: 'light',
         showTimer: true,

@@ -369,11 +369,11 @@ const ScreenManager = (function() {
     const vibrationToggle = document.getElementById('settings-vibration');
     const resetBtn = document.getElementById('settings-reset-btn');
 
-    // Load current settings
-    const settings = loadSettings();
-    if (soundToggle) soundToggle.checked = settings.sound;
-    if (musicToggle) musicToggle.checked = settings.music;
-    if (vibrationToggle) vibrationToggle.checked = settings.vibration;
+    // Load current settings from CozyStorage (unified storage)
+    const storage = window.CozyStorage;
+    if (soundToggle) soundToggle.checked = storage?.getSetting('sound') ?? true;
+    if (musicToggle) musicToggle.checked = storage?.getSetting('music') ?? true;
+    if (vibrationToggle) vibrationToggle.checked = storage?.getSetting('vibration') ?? true;
 
     // Back button
     if (backBtn && !backBtn.hasAttribute('data-initialized')) {
@@ -381,19 +381,19 @@ const ScreenManager = (function() {
       backBtn.setAttribute('data-initialized', 'true');
     }
 
-    // Setting toggles
+    // Setting toggles - save to CozyStorage
     if (soundToggle && !soundToggle.hasAttribute('data-initialized')) {
-      soundToggle.addEventListener('change', () => saveSetting('sound', soundToggle.checked));
+      soundToggle.addEventListener('change', () => storage?.setSetting('sound', soundToggle.checked));
       soundToggle.setAttribute('data-initialized', 'true');
     }
 
     if (musicToggle && !musicToggle.hasAttribute('data-initialized')) {
-      musicToggle.addEventListener('change', () => saveSetting('music', musicToggle.checked));
+      musicToggle.addEventListener('change', () => storage?.setSetting('music', musicToggle.checked));
       musicToggle.setAttribute('data-initialized', 'true');
     }
 
     if (vibrationToggle && !vibrationToggle.hasAttribute('data-initialized')) {
-      vibrationToggle.addEventListener('change', () => saveSetting('vibration', vibrationToggle.checked));
+      vibrationToggle.addEventListener('change', () => storage?.setSetting('vibration', vibrationToggle.checked));
       vibrationToggle.setAttribute('data-initialized', 'true');
     }
 
@@ -546,24 +546,8 @@ const ScreenManager = (function() {
   }
 
   // ============================================
-  // Settings & Progress Persistence
+  // Progress Persistence (settings now use CozyStorage)
   // ============================================
-
-  function loadSettings() {
-    const defaults = { sound: true, music: true, vibration: true };
-    try {
-      const saved = localStorage.getItem('cozy_garden_settings');
-      return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
-    } catch {
-      return defaults;
-    }
-  }
-
-  function saveSetting(key, value) {
-    const settings = loadSettings();
-    settings[key] = value;
-    localStorage.setItem('cozy_garden_settings', JSON.stringify(settings));
-  }
 
   function loadProgress() {
     try {
@@ -628,7 +612,6 @@ const ScreenManager = (function() {
     getCurrentScreen,
     saveProgress,
     loadProgress,
-    loadSettings,
     applyTheme,
     initTheme,
     SCREENS
