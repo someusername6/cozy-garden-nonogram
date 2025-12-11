@@ -151,21 +151,20 @@ Given no marketing experience and preference for minimal social interaction:
 ## Content Strategy
 
 ### Current State
-123 puzzles across 6 difficulty levels:
-- Easy: 39 puzzles
-- Medium: 37 puzzles
-- Hard: 20 puzzles
-- Challenging: 17 puzzles
-- Expert: 9 puzzles
-- Master: 1 puzzle (placeholder - may be modified or removed)
+134 puzzles across 6 difficulty levels:
+- Easy: 41 puzzles
+- Medium: 39 puzzles
+- Hard: 22 puzzles
+- Challenging: 18 puzzles
+- Expert: 11 puzzles
+- Master: 3 puzzles (placeholder - may be modified or removed)
 
 ### Puzzle Collection by Series
 Major flower series (3+ puzzles each):
 - Zinnia (8), Red tulip (8), Iris (8)
-- Yellow marigold (6), Peony bloom (6), Carnation (6)
-- Poppy (4), Potted flower (4), Pink rose (4), Orange marigold (4), Dandelion (4)
-- Yellow sunflower (3), Daffodil (3), Wild pink (3), Lily (3)
-- Ivory bloom (3), Coral rose (3), Bonsai (3), Bee (3)
+- Carnation (7), Yellow marigold (6), Peony bloom (6)
+- Poppy (5), Yellow sunflower (4), Wild blue (4), Potted flower (4), Pink rose (4), Orange marigold (4), Dandelion (4)
+- Wild pink (3), Lily (3), Ivory bloom (3), Daffodil (3), Coral rose (3), Bonsai (3), Bee (3)
 
 Smaller series (2 puzzles): Violet, Terracotta pot, Red camellia, Cosmos, Cherry blossom, Azalea, Magenta tulip, Daisy
 
