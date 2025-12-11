@@ -1,226 +1,271 @@
 # Cozy Garden - Comprehensive Code Review Report
 
 **Date:** December 11, 2025
-**Reviewed by:** 4 specialized agents (JS Architecture, CSS/UI, Game Logic, Security)
+**Reviewed by:** 5 specialized agents (JS Architecture, CSS/UI, Game Logic, Security, PWA)
 
 ---
 
 ## Executive Summary
 
-The Cozy Garden codebase demonstrates **solid engineering fundamentals** with good separation of concerns, consistent coding patterns, and thoughtful feature implementation. The application is well-suited for its purpose as a cozy, offline-capable puzzle game.
+The Cozy Garden codebase demonstrates **solid engineering fundamentals** with clean architecture, thoughtful feature implementation, and good security practices. The application is well-suited for its purpose as a cozy, offline-capable puzzle game. However, there are critical issues that must be addressed before production deployment.
 
 ### Overall Scores by Category
 
 | Category | Score | Status |
 |----------|-------|--------|
-| JS Architecture & Patterns | 7/10 | Good foundation, some memory leaks |
-| CSS & UI/UX | 7.5/10 | Strong mobile-first, accessibility gaps |
-| Game Logic & Algorithms | 8.5/10 | Excellent solver and game mechanics |
-| Security | B+ | No critical vulnerabilities |
-| **Overall** | **7.5/10** | Production-ready with recommended fixes |
+| JS Architecture & Patterns | 8/10 | Strong patterns, minor memory leaks |
+| CSS & UI/UX | 7.5/10 | Good mobile-first, some contrast issues |
+| Game Logic & Algorithms | 8.5/10 | Excellent solver and mechanics |
+| Security | 8.5/10 | No critical vulnerabilities, good practices |
+| PWA & Offline | 7/10 | Good structure, critical caching bugs |
+| **Overall** | **7.9/10** | Production-ready after critical fixes |
 
 ---
 
 ## Critical Issues (Must Fix)
 
-### 1. Memory Leak: Global Event Listeners
-**File:** `js/game.js:779, 642`
-**Impact:** High - Memory leaks accumulate over time
+### 1. Service Worker References Non-Existent File
+**File:** `sw.js:18`
+**Impact:** PWA offline functionality completely broken
 
-The `document.onmouseup` and `gridEl.onmouseleave` handlers are reassigned every time `buildGrid()` is called without removing old handlers.
+The service worker caches `/js/zoom.js` which doesn't exist, causing installation to fail.
+
+**Fix:** Remove `/js/zoom.js` from STATIC_FILES array in sw.js.
+
+### 2. Missing screens.js in Service Worker Cache
+**File:** `sw.js:9-23`
+**Impact:** App navigation broken offline
+
+The critical `/js/screens.js` file (19KB) is not included in STATIC_FILES.
+
+**Fix:** Add `'/js/screens.js',` to the STATIC_FILES array.
+
+### 3. Missing Screenshot Asset
+**File:** `manifest.json:68-76`
+**Impact:** PWA installation may fail validation
+
+Manifest references `/assets/screenshots/gameplay.png` which doesn't exist.
+
+**Fix:** Create the screenshot or remove the screenshots array from manifest.
+
+### 4. Memory Leak in Collection Search
+**File:** `js/collection.js:483-489`
+**Impact:** Memory accumulation over time
+
+Event listener added on every `init()` call without cleanup.
 
 **Fix:**
 ```javascript
-let mouseUpHandler = null;
-
-function buildGrid(puzzle) {
-  if (mouseUpHandler) {
-    document.removeEventListener('mouseup', mouseUpHandler);
-  }
-  mouseUpHandler = () => { /* handler code */ };
-  document.addEventListener('mouseup', mouseUpHandler);
+if (this.searchInputHandler) {
+  this.searchInput.removeEventListener('input', this.searchInputHandler);
 }
+this.searchInputHandler = (e) => { /* ... */ };
+this.searchInput.addEventListener('input', this.searchInputHandler);
 ```
 
-### 2. Race Condition: Puzzle Loading
-**File:** `js/game.js:393-475`
-**Impact:** High - Data corruption on rapid puzzle switches
+### 5. Unbounded normalizedPuzzles Cache
+**File:** `js/game.js:85-95`
+**Impact:** Memory leak if puzzle data changes
 
-No guard against rapid consecutive `loadPuzzle()` calls could cause grid state corruption.
+The `normalizedPuzzles` cache is never cleared.
 
-**Fix:** Add loading flag or debounce mechanism.
-
-### 3. Keyboard Navigation Broken
-**File:** `css/style.css`, `index.html`
-**Impact:** Critical for accessibility
-
-- No visible focus indicators on interactive elements
-- Grid cells not keyboard accessible (missing `tabindex`)
-- Color palette buttons lack focus states
-
-**Fix:** Add `:focus-visible` styles and `tabindex="0"` to interactive elements.
-
-### 4. ARIA Attributes Missing
-**File:** `index.html`
-**Impact:** Critical for screen reader users
-
-Missing `role="button"`, `aria-label`, `aria-pressed`, and `aria-live` attributes throughout.
-
-### 5. User Scalability Disabled (WCAG Violation)
-**File:** `index.html:5`
-**Impact:** Accessibility violation
-
-```html
-<meta name="viewport" content="... user-scalable=no ...">
-```
-
-**Fix:** Remove `user-scalable=no` and `maximum-scale=1.0`.
+**Fix:** Add cache invalidation or use WeakMap.
 
 ---
 
 ## Major Issues (Should Fix)
 
-### 6. Storage Error Recovery
-**File:** `js/storage.js:48-62`
-**Impact:** Silent data loss, corrupted data persists
-
-The catch block doesn't save default data to overwrite corruption.
-
-**Fix:** Add `this.save()` in the catch block.
-
-### 7. Color Contrast Issues (Dark Mode)
-**File:** `css/style.css`
+### 6. Dark Mode Color Contrast Failure
+**File:** `css/style.css:82-84`
 **Impact:** WCAG AA failure
 
-- `--color-text-muted` (#7a6d62 on #2a2420) = 2.1:1 ratio (needs 4.5:1)
-- `--color-text-light` (#b8a89a on #362f2a) = 3.8:1 ratio
+`--color-text-muted: #a09080` on dark backgrounds has ~3.4:1 ratio (needs 4.5:1).
 
-**Fix:** Increase contrast values.
+**Fix:** Change to `#b5a595` for adequate contrast.
 
-### 8. Code Duplication: Cell Format Conversion
-**Files:** `js/storage.js`, `js/game.js`
-**Impact:** Maintainability
+### 7. Grid Not Fully Keyboard Accessible
+**Files:** `index.html`, `js/game.js`
+**Impact:** Screen reader users cannot play
 
-Grid format conversion logic duplicated in 5+ places.
+Grid uses `role="grid"` but lacks proper `role="gridcell"` on cells and arrow key navigation.
 
-**Fix:** Extract to shared utility function.
+**Fix:** Implement full keyboard navigation with arrow keys and Enter/Space handlers.
 
-### 9. Inefficient DOM Querying
-**File:** `js/game.js:840-876, 925-973`
-**Impact:** Performance on large puzzles
+### 8. innerHTML Usage Creates XSS Risk
+**Files:** `js/app.js:79-82`, `js/game.js:1367`
+**Impact:** Potential XSS if data is ever external
 
-`querySelector` called repeatedly in loops instead of caching elements.
+Multiple uses of `innerHTML` with inline onclick handlers.
 
-**Fix:** Build a cell element cache during `buildGrid()`.
+**Fix:** Use `textContent` and `addEventListener` instead.
 
-### 10. Missing Error Boundaries: Canvas Rendering
-**File:** `js/collection.js:252-311`
-**Impact:** Potential crashes
+### 9. No Debouncing on Window Resize
+**File:** `js/app.js:117-119`
+**Impact:** Performance degradation during resize
 
-No error handling for canvas context failures or malformed color data.
+Resize handler fires on every pixel change.
 
-### 11. Inline Event Handlers
-**File:** `index.html` (39 instances)
-**Impact:** CSP violations, maintainability
+**Fix:**
+```javascript
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => this.handleResize(), 150);
+});
+```
 
-All `onclick` attributes should be converted to `addEventListener()`.
+### 10. Document Keyboard Listener Never Removed
+**File:** `js/game.js:1221-1257`
+**Impact:** Listener persists for application lifetime
 
-### 12. Touch Target Sizes
-**File:** `css/style.css`
-**Impact:** Accessibility
+Keyboard shortcut listener added to document but never cleaned up.
 
-Clue cells fall below 44×44px minimum touch target.
+**Fix:** Store reference and expose cleanup method.
+
+### 11. Shortcut URL Not Handled
+**File:** `manifest.json:77-85`
+**Impact:** "Continue Playing" shortcut does nothing
+
+Manifest defines shortcut with `/?action=continue` but no code handles it.
+
+**Fix:** Add URL parameter handling in app initialization.
+
+### 12. Missing Script Defer Attributes
+**File:** `index.html:362-375`
+**Impact:** Blocks initial render
+
+Six JavaScript files loaded synchronously without defer/async.
+
+**Fix:** Add `defer` attribute to all script tags.
+
+### 13. Duplicate Puzzle ID Generation
+**Files:** `js/game.js:139`, `js/collection.js:84`, `js/screens.js:451`
+**Impact:** Maintainability issue
+
+Same regex transformation duplicated in 3 places.
+
+**Fix:** Create shared utility function.
+
+### 14. Install Button Only Works on Puzzle Screen
+**File:** `js/app.js:182-198`
+**Impact:** Install prompt may be lost
+
+Install button appends to `.controls` which only exists on puzzle screen.
+
+**Fix:** Insert button in globally accessible location.
+
+### 15. No iOS Splash Screens
+**File:** `index.html`
+**Impact:** Generic white screen on iOS launch
+
+No `apple-touch-startup-image` meta tags defined.
+
+**Fix:** Generate and add iOS splash screens for common device sizes.
 
 ---
 
 ## Minor Issues (Nice to Have)
 
 ### Code Quality
-- **Inconsistent null checks** - Mix of `!obj`, `obj !== null`, and optional chaining
-- **Magic numbers** - Canvas sizes (80, 180) should be constants
-- **Screen history never cleared** - `screenHistory` array grows unbounded
-- **Variable naming** - `getCell()` creates cells if none exist (misleading)
-- **totalPuzzles calculation bug** - `js/screens.js:194` assumes wrong data structure
+- **Inconsistent module pattern** in screens.js (uses intermediate constant)
+- **Silent canvas failures** return null without user feedback
+- **Puzzle data validation** missing in normalizePuzzle()
+- **Screen history** never explicitly cleared on forward navigation
+- **Full collection re-renders** on every search keystroke
+- **Crosshair highlight** clears all cells O(n²) instead of affected O(n)
 
 ### CSS
-- **Hardcoded colors** - Several colors not using CSS variables
-- **Redundant CSS rules** - Duplicate button styling (~52 lines)
-- **Z-index scale undocumented** - Values range from 1 to 9999
-- **Hover effects on touch devices** - Some hover effects not disabled
-- **No large screen breakpoint** - No optimizations for >1200px
+- **Touch targets** for clue cells below 44x44px recommended minimum
+- **Color buttons** have no text labels or aria-pressed state
+- **Dark mode variables** duplicated in two places
+- **user-select: none** on entire body prevents any text selection
+- **Font stack** missing modern system font fallbacks
 
-### Python Pipeline
-- **Solver metrics incomplete** - `edge_uses`, `gap_uses`, `cross_reference_uses` never set
-- **TRIVIAL difficulty not handled** - Score < 3 should be TRIVIAL, not EASY
-- **MIN_COLOR_DISTANCE undocumented** - Value 35 has no explanation
+### PWA
+- **Cache versioning** requires manual bumps
+- **Background sync** placeholder code never used
+- **Update banner** uses inline onclick handlers
+- **No install prompt tracking** - prompts again every session
+- **Puzzles.js not preloaded** despite being largest asset (182KB)
 
-### Security (Minor Hardening)
-- **No Content Security Policy** - Add CSP meta tag
-- **LocalStorage data validation** - Add structural validation after JSON.parse
-- **Puzzle data validation** - Add runtime dimension limits
+### Security
+- **CSP uses 'unsafe-inline'** (documented - needed for theme detection)
+- **Console logging** could be disabled in production
+- **No localStorage size monitoring** for quota management
 
 ---
 
 ## Positive Observations
 
 ### Architecture
-- **IIFE pattern used consistently** - Clean module isolation
-- **Clear separation of concerns** - Each module has single responsibility
-- **Good module communication** - Custom events for decoupled interaction
-- **Zero third-party dependencies** - Minimal attack surface
+- **IIFE pattern** used consistently across all modules
+- **Clean module communication** via CustomEvent
+- **Excellent DOM caching** for performance
+- **Zero third-party dependencies** - minimal attack surface
+- **'use strict'** mode in all files
 
 ### Game Logic
-- **Solver correctness** - Properly handles colored nonograms
-- **Win detection** - Efficient clue-based validation
-- **Undo/redo system** - Well-designed with action grouping
-- **Pencil mode implementation** - Clean uncertain/certain state system
+- **Solver correctness** - properly handles colored nonograms with arrangement enumeration
+- **Win detection** - efficient clue-based validation
+- **Undo/redo system** - sophisticated action grouping for drag operations
+- **Pen/pencil modes** - clean certain/uncertain state separation
+- **Race condition guard** - isLoadingPuzzle prevents concurrent loads
 
 ### UI/UX
-- **Mobile-first design** - Proper progressive enhancement
-- **Dark mode implementation** - Comprehensive with system preference detection
-- **PWA support** - Offline capable, installable
-- **Reduced motion support** - Respects user preferences
+- **Mobile-first design** with good progressive enhancement
+- **Comprehensive dark mode** with system preference detection
+- **Reduced motion support** respects user preferences
+- **High contrast mode** support included
+- **Safe area insets** for notched devices
 
 ### Security
-- **No eval() or Function constructor** - Eliminates XSS vectors
-- **Safe DOM manipulation** - Uses `textContent`, not `innerHTML` with user data
-- **No sensitive data stored** - Only game progress in localStorage
-- **Proper input sanitization** - Safe search functionality
+- **No eval() or Function constructor**
+- **Safe DOM manipulation** - mostly textContent
+- **Data validation** - isValidStorageData() checks structure
+- **Dimension validation** - MAX_PUZZLE_DIMENSION prevents DoS
+- **Defensive deep copying** prevents reference manipulation
+
+### PWA
+- **Good caching strategies** - cache-first, network-first, stale-while-revalidate
+- **Proper update mechanism** - skipWaiting + clients.claim
+- **Clean cache management** - old caches deleted on activation
+- **iOS PWA support** - proper meta tags and standalone detection
 
 ---
 
 ## Priority Action Items
 
 ### Immediate (Before Launch)
-1. Fix memory leak in event listeners
-2. Add loading guard to `loadPuzzle()`
-3. Add focus-visible styles for keyboard navigation
-4. Add basic ARIA attributes to interactive elements
-5. Remove `user-scalable=no` from viewport
-6. Fix storage error recovery (save defaults on corruption)
-7. Fix color contrast in dark mode
+1. Remove `/js/zoom.js` from sw.js STATIC_FILES
+2. Add `/js/screens.js` to sw.js STATIC_FILES
+3. Create gameplay screenshot or remove from manifest
+4. Fix collection.js search input memory leak
+5. Fix dark mode text contrast
 
 ### High Priority (Soon After)
-8. Extract cell format conversion to shared utilities
-9. Cache DOM elements instead of repeated querySelector
-10. Add error boundaries to canvas rendering
-11. Convert inline onclick handlers to addEventListener
-12. Increase touch target sizes for clue cells
+6. Implement keyboard navigation for puzzle grid
+7. Replace innerHTML with safe DOM manipulation
+8. Add debouncing to resize handler
+9. Add defer to script tags
+10. Add puzzles.js to preload, remove zoom.js preload
+11. Fix install button placement
+12. Handle `/?action=continue` shortcut URL
 
 ### Medium Priority (Next Release)
-13. Standardize null checking patterns
-14. Extract magic numbers to constants
-15. Add CSP meta tag
-16. Add puzzle data dimension validation
-17. Add runtime localStorage structure validation
-18. Document z-index scale
+13. Consolidate duplicate puzzle ID logic
+14. Add iOS splash screens
+15. Implement install prompt dismissal tracking
+16. Clear normalizedPuzzles cache appropriately
+17. Optimize crosshair highlight to O(n)
+18. Debounce collection search rendering
 
 ### Low Priority (Backlog)
-19. Remove dead code (getVersion method)
-20. Clean up screen history on forward navigation
-21. Add large screen breakpoint (>1200px)
-22. Implement missing solver technique tracking
-23. Add unicode normalization to search
+19. Remove background sync placeholder code
+20. Add production logging wrapper
+21. Increase touch target sizes
+22. Add error placeholders for failed canvas renders
+23. Implement localStorage quota monitoring
+24. Add hosting configuration for compression
 
 ---
 
@@ -229,19 +274,23 @@ Clue cells fall below 44×44px minimum touch target.
 ### Automated
 - Run axe DevTools for accessibility audit
 - Lighthouse audit for PWA and performance
-- Add unit tests for game logic (currently 0% coverage)
+- Test service worker installation in clean browser profile
+- Validate manifest.json with PWA validators
 
 ### Manual
 - Navigate entire app with keyboard only
 - Test with screen reader (VoiceOver/NVDA)
+- Test offline mode by disabling network
 - Test on iOS device with notch
-- Test offline mode
 - Test with browser zoom at 200%
+- Test dark mode on various screens
+- Test PWA installation on Android and iOS
 
-### User Testing
-- Low vision users (color contrast)
-- Motor impairment users (touch targets)
-- Screen reader users (ARIA labels)
+### Device Testing
+- iPhone with notch (safe area insets)
+- iPad (landscape mode, larger touch targets)
+- Android phone (PWA installation flow)
+- Low-end device (performance with large puzzles)
 
 ---
 
@@ -249,24 +298,25 @@ Clue cells fall below 44×44px minimum touch target.
 
 | Metric | Value |
 |--------|-------|
-| Total Files Reviewed | 16 (6 JS, 1 CSS, 1 HTML, 8 Python) |
-| Total Lines Analyzed | ~5,500 |
+| Total Files Reviewed | 18 (7 JS, 1 CSS, 1 HTML, 8 Python, 1 Manifest) |
+| Total Lines Analyzed | ~6,500 |
 | Critical Issues | 5 |
-| Major Issues | 7 |
-| Minor Issues | 15+ |
-| Memory Leaks Identified | 2 |
-| Race Conditions | 1 |
-| WCAG Violations | 4 |
-| Test Coverage | 0% |
+| Major Issues | 10 |
+| Minor Issues | 20+ |
+| Memory Leaks Identified | 3 |
+| WCAG Violations | 2 |
+| PWA Blocking Issues | 3 |
 
 ---
 
 ## Conclusion
 
-The Cozy Garden codebase is **production-ready** with the critical issues addressed. The architecture is sound, the game logic is correct, and the security posture is good. The main areas needing attention are:
+The Cozy Garden codebase is **nearly production-ready** with strong architectural foundations. The main blockers are:
 
-1. **Memory management** - Event listener cleanup
-2. **Accessibility** - Keyboard navigation and ARIA support
-3. **Error handling** - Storage and canvas rendering resilience
+1. **Service worker caching bugs** - Fix the missing/non-existent file references
+2. **Accessibility gaps** - Keyboard navigation and color contrast
+3. **Memory management** - A few event listeners need cleanup
 
-Once the critical and high-priority issues are fixed, this will be a high-quality, accessible, and maintainable PWA.
+Once the 5 critical issues and top 10 major issues are addressed, this will be a high-quality, accessible, and maintainable PWA. The codebase shows thoughtful engineering with excellent patterns that should be preserved.
+
+**Estimated effort for critical/major fixes:** 4-6 hours
