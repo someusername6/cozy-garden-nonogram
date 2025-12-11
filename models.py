@@ -42,27 +42,38 @@ class CellState(Enum):
 
 @dataclass
 class SolverMetrics:
-    """Metrics collected during solving for difficulty scoring."""
-    total_steps: int = 0  # Total logical deductions
-    cells_solved: int = 0  # Cells determined
-    overlap_uses: int = 0  # Simple overlap technique
-    edge_uses: int = 0  # Edge constraint technique
-    gap_uses: int = 0  # Gap analysis technique
-    cross_reference_uses: int = 0  # Needed info from perpendicular lines
-    stuck_count: int = 0  # Times no single-line progress was made
+    """
+    Metrics collected during solving for difficulty scoring.
+
+    Note: The solver uses arrangement enumeration which implicitly handles
+    overlap, edge, and gap analysis in one unified approach. These techniques
+    aren't tracked separately because the algorithm doesn't distinguish between
+    them - it simply finds all valid arrangements and intersects them.
+
+    The stuck_count metric serves as a proxy for cross-reference complexity:
+    when the solver can't make progress on any single line, it indicates that
+    information from perpendicular lines is needed.
+    """
+    total_steps: int = 0  # Total line-solving attempts
+    cells_solved: int = 0  # Total cells determined
+    overlap_uses: int = 0  # Lines where progress was made
+    stuck_count: int = 0  # Iterations with no single-line progress (needs cross-reference)
     backtrack_depth: int = 0  # Max depth of guessing tree
     backtrack_count: int = 0  # Number of guesses made
 
     def max_technique_level(self) -> int:
-        """Return the highest technique level required."""
+        """
+        Return the highest technique level required.
+
+        Levels:
+            1 - Simple overlap (single-line deduction sufficient)
+            2 - Cross-reference (needed info from perpendicular lines)
+            3 - Backtracking/guessing (logic alone insufficient)
+        """
         if self.backtrack_count > 0:
-            return 5  # Backtracking/guessing
-        if self.cross_reference_uses > 0:
-            return 4  # Cross-reference
-        if self.gap_uses > 0:
-            return 3  # Gap analysis
-        if self.edge_uses > 0:
-            return 2  # Edge logic
+            return 3  # Backtracking/guessing
+        if self.stuck_count > 0:
+            return 2  # Cross-reference needed
         return 1  # Simple overlap only
 
 

@@ -65,12 +65,11 @@ def calculate_difficulty(puzzle: Puzzle, metrics: SolverMetrics | None = None) -
     factors["clue_fragmentation"] = clue_factor
 
     # Factor 5: Technique level required
+    # Levels: 1=simple overlap, 2=cross-reference, 3=backtracking
     technique_weights = {
         1: 0.5,   # Simple overlap only
-        2: 1.0,   # Edge logic
-        3: 1.5,   # Gap analysis
-        4: 2.5,   # Cross-reference
-        5: 4.0,   # Backtracking
+        2: 2.0,   # Cross-reference (needs perpendicular line info)
+        3: 4.0,   # Backtracking/guessing
     }
     technique_level = metrics.max_technique_level()
     technique_factor = technique_weights.get(technique_level, 1.0)
@@ -138,9 +137,7 @@ def estimate_difficulty_structural(puzzle: Puzzle) -> Difficulty:
     # Simple heuristic
     structural_score = size * (0.5 + avg_clues * 0.2)
 
-    if structural_score < 20:
-        return Difficulty.TRIVIAL
-    elif structural_score < 50:
+    if structural_score < 50:
         return Difficulty.EASY
     elif structural_score < 100:
         return Difficulty.MEDIUM

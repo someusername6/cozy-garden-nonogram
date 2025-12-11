@@ -44,7 +44,14 @@ from validator import validate_puzzle
 from difficulty import calculate_difficulty
 
 
-# Minimum perceptual distance between any two colors in the final palette
+# Minimum perceptual distance between any two colors in the final palette.
+# Uses weighted Euclidean distance: sqrt(0.30*dR² + 0.59*dG² + 0.11*dB²)
+# where weights reflect human color perception (green > red > blue).
+# Value of 35 balances distinguishability vs palette variety:
+# - Lower values (25-30): More colors allowed, but some may look similar
+# - Higher values (40-50): Fewer colors, but all clearly distinct
+# Empirically tuned: 35 ensures colors are distinguishable on typical displays
+# while allowing enough palette variety for detailed pixel art.
 MIN_COLOR_DISTANCE = 35
 
 # Per-image max color overrides (image stem -> max colors)
