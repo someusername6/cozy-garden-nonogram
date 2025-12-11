@@ -1,77 +1,253 @@
 # Cozy Garden - Retrodiffusion Prompts (16x16 sprites)
+# Model: rd_plus__low_res at 16x16
 # Theme: Flowers, plants, and garden elements
-# Tip: Asymmetric designs work better for unique puzzle solutions
+# Tips:
+#   - Asymmetric designs work better for unique puzzle solutions
+#   - Strong color contrast helps pass color similarity checks
+#   - Simple silhouettes are more recognizable at small sizes
+#   - 3-6 colors per sprite works best
 
-# Flowers
-1. pink cherry blossom branch with buds
-2. purple lavender sprig
-3. red poppy flower side view
-4. orange marigold bloom
-5. blue morning glory vine
-6. yellow daffodil with stem
-7. white lily flower
-8. pink peony bloom
-9. red carnation flower
-10. purple iris flower
+# =============================================================================
+# PRIORITY 1: Expand underrepresented flower series
+# =============================================================================
 
-# Potted Plants
-11. terracotta pot with small cactus
-12. hanging basket with trailing ivy
-13. ceramic pot with fern fronds
-14. window box with mixed herbs
-15. bonsai tree in pot
+# Daylily series (currently 2) - distinctive trumpet shape
+1. orange daylily flower bloom side view
+2. red daylily with yellow center trumpet shape
+3. peach daylily flower with curved petals
 
-# Garden Elements
-16. wooden watering can
-17. garden trowel with dirt
-18. seed packet with flowers
-19. bird on garden fence
-20. butterfly on leaf
-21. ladybug on stem
-22. snail on mushroom
-23. garden gnome
-24. stone lantern with moss
+# Violet series (currently 2)
+4. purple violet flower cluster with heart leaves
+5. white violet with purple center small bloom
 
-# Fruits and Vegetables
-25. tomato plant with fruit
-26. strawberry with leaves
-27. carrot with greens
-28. pumpkin with vine
-29. sunflower with seeds
-30. corn stalk
+# Azalea series (currently 2)
+6. pink azalea bloom cluster
+7. red azalea flowers on branch
+8. white azalea with pink edges
 
-# More Flowers
-31. red tulip with green leaves
-32. pink rose bloom side view
-33. purple violet cluster
-34. orange zinnia flower top view
-35. blue hydrangea flower ball
-36. yellow dandelion with stem
-37. white daisy with yellow center
-38. pink cosmos flower
+# Cosmos series (currently 2)
+9. white cosmos flower with yellow center
+10. orange cosmos bloom side view
 
-# More Vegetables
-39. orange pumpkin with curly vine
-40. purple eggplant with stem
-41. red bell pepper
-42. pink radish with green tops
-43. green pea pod open with peas
-44. bundle of orange carrots
-45. yellow onion with roots
+# Daisy series (currently 2)
+11. pink gerbera daisy large bloom
+12. white shasta daisy with stem
 
-# More Garden Elements
-46. metal watering can with spout
-47. wooden wheelbarrow with flowers
-48. pair of garden gloves
-49. terracotta bird bath with water
-50. stack of flower pots
-51. garden fork in soil
-52. woven basket with vegetables
+# =============================================================================
+# PRIORITY 2: Missing common garden flowers
+# =============================================================================
 
-# More Critters
-53. green frog on lily pad
-54. red ladybug on green leaf
-55. blue dragonfly with wings spread
-56. orange caterpillar on branch
-57. pink earthworm in dirt
-58. yellow and black bumblebee on flower
+# Pansy - distinctive "face" pattern
+13. purple and yellow pansy flower face
+14. blue pansy with white center
+15. orange and brown pansy bloom
+
+# Begonia
+16. red begonia flower cluster
+17. pink begonia with waxy leaves
+
+# Geranium
+18. red geranium flower ball cluster
+19. pink geranium bloom with round leaves
+
+# Petunia
+20. purple petunia trumpet flower
+21. pink and white striped petunia
+
+# Snapdragon
+22. pink snapdragon flower spike
+23. yellow snapdragon blooms on stem
+
+# Foxglove
+24. purple foxglove bell flowers on tall stem
+25. pink foxglove with spotted interior
+
+# Hollyhock
+26. pink hollyhock flower large bloom
+27. red hollyhock on tall stem
+
+# Clematis
+28. purple clematis star shaped flower
+29. white clematis with yellow center
+
+# Sweet pea
+30. pink sweet pea delicate flowers
+31. purple and white sweet pea blooms
+
+# Wisteria
+32. purple wisteria hanging flower cluster
+33. white wisteria cascading blooms
+
+# Forget-me-not
+34. blue forget me not tiny flower cluster
+35. pink forget me not small blooms
+
+# Primrose
+36. yellow primrose flower with green leaves
+37. pink primrose cluster bloom
+
+# Crocus
+38. purple crocus spring flower
+39. yellow crocus emerging from ground
+40. white crocus with orange center
+
+# Hyacinth
+41. purple hyacinth flower spike fragrant
+42. pink hyacinth dense bloom cluster
+43. white hyacinth spring bulb flower
+
+# Bluebell
+44. blue bluebell nodding flower bells
+45. purple bluebell woodland flower
+
+# Ranunculus
+46. pink ranunculus layered petals rose like
+47. orange ranunculus full bloom
+48. white ranunculus wedding flower
+
+# =============================================================================
+# PRIORITY 3: Garden creatures (currently only bee + snail)
+# =============================================================================
+
+# Butterflies
+49. orange monarch butterfly wings spread
+50. blue morpho butterfly side view
+51. yellow swallowtail butterfly on flower
+52. white cabbage butterfly simple
+
+# Ladybugs
+53. red ladybug with black spots on leaf
+54. orange ladybug crawling side view
+
+# Dragonflies
+55. blue dragonfly wings spread top view
+56. green dragonfly on reed
+
+# Caterpillars
+57. green caterpillar on leaf munching
+58. monarch caterpillar striped yellow black
+
+# Other insects
+59. green grasshopper side view
+60. brown cricket on stem
+61. firefly with glowing tail
+
+# Birds (small, simple)
+62. red cardinal bird perched
+63. blue jay bird side view
+64. yellow finch small bird
+65. brown sparrow simple
+66. green hummingbird at flower
+67. robin with red breast
+
+# Other garden creatures
+68. brown garden toad
+69. green tree frog on leaf
+70. small brown rabbit sitting
+71. grey squirrel with acorn
+72. hedgehog curled up
+
+# =============================================================================
+# PRIORITY 4: Herbs and succulents
+# =============================================================================
+
+# Herbs
+73. green basil plant with leaves
+74. purple lavender in terracotta pot
+75. green rosemary sprig
+76. mint plant bushy green
+77. thyme small herb plant
+78. sage grey green leaves
+79. parsley curly green bunch
+80. chives with purple flowers
+
+# Succulents
+81. green echeveria rosette succulent
+82. pink succulent flower rosette
+83. jade plant small potted
+84. aloe vera in pot
+85. string of pearls trailing plant
+86. hens and chicks succulent cluster
+
+# Small cacti
+87. round cactus with pink flower
+88. small saguaro cactus
+89. prickly pear cactus segment
+
+# =============================================================================
+# PRIORITY 5: Garden tools and elements
+# =============================================================================
+
+# Tools
+90. red watering can with spout
+91. wooden handled trowel
+92. garden pruning shears
+93. terracotta flower pot stack
+94. woven garden basket
+95. seed packet with flower picture
+
+# Garden structures
+96. wooden birdhouse on pole
+97. stone bird bath with water
+98. garden lantern glowing
+99. wooden garden gate
+100. picket fence section white
+
+# Decorative
+101. garden gnome red hat
+102. ceramic mushroom garden ornament
+103. gazing ball on pedestal
+104. wind chime simple
+105. garden stepping stone round
+
+# =============================================================================
+# PRIORITY 6: Seasonal and fruits
+# =============================================================================
+
+# Spring
+106. bird nest with eggs blue
+107. baby chick hatching
+108. rain boots with flowers
+
+# Summer
+109. red strawberry with leaves
+110. ripe tomato on vine
+111. watermelon slice
+
+# Autumn
+112. orange pumpkin with stem
+113. red apple with leaf
+114. acorn with oak leaf
+115. colorful autumn leaf maple
+
+# Winter/Holiday
+116. pinecone brown detailed
+117. holly with red berries
+118. poinsettia red flower
+
+# =============================================================================
+# NOTES ON CURRENT COLLECTION GAPS
+# =============================================================================
+#
+# Well-represented (5+ puzzles): iris, red_tulip, carnation, zinnia,
+#   peony_bloom, poppy, sunflower
+#
+# Medium series (3-4): dahlia, dandelion, potted_flower, bee, bonsai,
+#   chicory, coral_rose, daffodil, ivory_bloom, lily, orange_marigold,
+#   phlox, pink_rose, yellow_marigold
+#
+# Could use expansion (2 puzzles): azalea, cherry_blossom, cosmos, daisy,
+#   daylily, magenta_tulip, red_camellia, terracota_pot, violet
+#
+# Color gaps by difficulty:
+#   - Easy: needs more blue
+#   - Challenging: needs more red
+#   - Expert: needs more orange
+#   - Master: needs blue, orange, pink, purple
+#
+# Thematic gaps:
+#   - Very few creatures (only bee, snail)
+#   - No herbs or succulents
+#   - No garden tools successfully generated
+#   - No seasonal elements
+#   - Missing many common garden flowers (pansy, begonia, etc.)
