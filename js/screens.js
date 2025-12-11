@@ -166,6 +166,27 @@ const ScreenManager = (function() {
   function initSplashScreen() {
     // Simulate loading (in real app, load assets here)
     setTimeout(() => {
+      // Check for ?action=continue URL parameter (PWA shortcut)
+      const urlParams = new URLSearchParams(window.location.search);
+      const action = urlParams.get('action');
+
+      if (action === 'continue') {
+        // Clear URL parameter to avoid repeating on refresh
+        const cleanUrl = window.location.pathname + window.location.hash;
+        history.replaceState(null, '', cleanUrl);
+
+        // Try to resume last session
+        const storage = window.CozyStorage;
+        if (storage) {
+          const session = storage.getSession();
+          if (session && typeof session.puzzleIndex === 'number') {
+            showScreen(SCREENS.PUZZLE, { puzzleId: session.puzzleIndex });
+            return;
+          }
+        }
+        // No session to resume, fall through to normal flow
+      }
+
       // Check if first time user
       const hasPlayedBefore = localStorage.getItem('cozy_garden_played');
 

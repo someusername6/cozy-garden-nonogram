@@ -10,6 +10,7 @@
     isOnline: navigator.onLine,
     isInstalled: false,
     swRegistration: null,
+    resizeTimeout: null,
 
     // Initialize the app
     init() {
@@ -73,14 +74,24 @@
 
     // Show update notification
     showUpdateNotification() {
-      // Create a simple update banner
+      // Create a simple update banner (using DOM methods for CSP compliance)
       const banner = document.createElement('div');
       banner.className = 'update-banner';
-      banner.innerHTML = `
-        <span>A new version is available!</span>
-        <button onclick="CozyApp.applyUpdate()">Update</button>
-        <button onclick="this.parentElement.remove()">Later</button>
-      `;
+
+      const span = document.createElement('span');
+      span.textContent = 'A new version is available!';
+
+      const updateBtn = document.createElement('button');
+      updateBtn.textContent = 'Update';
+      updateBtn.addEventListener('click', () => this.applyUpdate());
+
+      const laterBtn = document.createElement('button');
+      laterBtn.textContent = 'Later';
+      laterBtn.addEventListener('click', () => banner.remove());
+
+      banner.appendChild(span);
+      banner.appendChild(updateBtn);
+      banner.appendChild(laterBtn);
       document.body.appendChild(banner);
     },
 
@@ -113,9 +124,12 @@
         setTimeout(() => this.handleResize(), 100);
       });
 
-      // Handle resize
+      // Handle resize (debounced to avoid excessive calls)
       window.addEventListener('resize', () => {
-        this.handleResize();
+        if (this.resizeTimeout) {
+          clearTimeout(this.resizeTimeout);
+        }
+        this.resizeTimeout = setTimeout(() => this.handleResize(), 100);
       });
     },
 
@@ -185,8 +199,10 @@
         btn = document.createElement('button');
         btn.id = 'install-btn';
         btn.className = 'install-btn';
-        btn.innerHTML = '<span>Install App</span>';
-        btn.onclick = () => this.promptInstall();
+        const span = document.createElement('span');
+        span.textContent = 'Install App';
+        btn.appendChild(span);
+        btn.addEventListener('click', () => this.promptInstall());
 
         // Add to controls section if exists
         const controls = document.querySelector('.controls');

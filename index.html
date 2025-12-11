@@ -358,20 +358,20 @@
   </div>
 
 
-  <!-- Scripts loaded in order -->
+  <!-- Scripts loaded in order (defer ensures execution order is preserved) -->
   <!-- Puzzle data (auto-generated) -->
-  <script src="data/puzzles.js"></script>
+  <script defer src="data/puzzles.js"></script>
   <!-- Storage layer -->
-  <script src="js/storage.js"></script>
+  <script defer src="js/storage.js"></script>
   <!-- Undo/redo history -->
-  <script src="js/history.js"></script>
+  <script defer src="js/history.js"></script>
   <!-- Screen manager -->
-  <script src="js/screens.js"></script>
+  <script defer src="js/screens.js"></script>
   <!-- Collection screen -->
-  <script src="js/collection.js"></script>
+  <script defer src="js/collection.js"></script>
   <!-- PWA & App lifecycle -->
-  <script src="js/app.js"></script>
+  <script defer src="js/app.js"></script>
   <!-- Game logic -->
-  <script src="js/game.js"></script>
+  <script defer src="js/game.js"></script>
 </body>
 </html>
