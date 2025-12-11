@@ -26,6 +26,9 @@
   let rowClueElements = [];  // rowClueElements[row]
   let colClueElements = [];  // colClueElements[col]
 
+  // === Constants ===
+  const STAMP_CANVAS_SIZE = 180;  // Flying stamp preview size (matches victory screen)
+
   // Normalize puzzle from concise format to verbose format
   // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
   // Verbose: {title, width, height, row_clues, col_clues, color_map, solution} with 1-indexed colors
@@ -96,6 +99,8 @@
     return { value: value, certain: certain };
   }
 
+  // Get cell state at position, returning default empty cell if none exists.
+  // Note: Returns a copy/default, does NOT create cell in grid. Use setCellDirect to modify.
   function getCell(row, col) {
     const cell = grid[row]?.[col];
     if (!cell) return createCell();
@@ -1484,8 +1489,7 @@
     const height = puzzle.height;
     const width = puzzle.width;
     const maxDim = Math.max(width, height);
-    const targetSize = 180;
-    const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
+    const cellSize = Math.max(2, Math.floor(STAMP_CANVAS_SIZE / maxDim));
 
     const canvas = document.createElement('canvas');
     canvas.width = width * cellSize;

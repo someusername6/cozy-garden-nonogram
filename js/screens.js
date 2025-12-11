@@ -5,6 +5,10 @@
 const ScreenManager = (function() {
   'use strict';
 
+  // === Constants ===
+  const VICTORY_CANVAS_SIZE = 180;  // Victory screen puzzle preview size
+  const MAX_SCREEN_HISTORY = 10;    // Limit history to prevent unbounded growth
+
   // Screen definitions
   const SCREENS = {
     SPLASH: 'splash',
@@ -69,9 +73,13 @@ const ScreenManager = (function() {
     targetScreen.classList.remove('screen-hidden');
     targetScreen.classList.add('screen-active');
 
-    // Track history for back navigation
+    // Track history for back navigation (with limit to prevent unbounded growth)
     if (addToHistory && currentScreen !== null) {
       screenHistory.push(currentScreen);
+      // Trim history if it exceeds max length
+      if (screenHistory.length > MAX_SCREEN_HISTORY) {
+        screenHistory = screenHistory.slice(-MAX_SCREEN_HISTORY);
+      }
       history.pushState({ screen: screenId }, '', `#${screenId}`);
     }
 
@@ -191,7 +199,8 @@ const ScreenManager = (function() {
     // Update progress display
     if (progressEl && window.PUZZLE_DATA) {
       const progress = loadProgress();
-      const totalPuzzles = Object.values(window.PUZZLE_DATA).flat().length;
+      // PUZZLE_DATA is a flat array, not an object
+      const totalPuzzles = Array.isArray(window.PUZZLE_DATA) ? window.PUZZLE_DATA.length : 0;
       const solvedCount = progress.solved ? progress.solved.length : 0;
       progressEl.textContent = `${solvedCount} / ${totalPuzzles} puzzles solved`;
     }
@@ -306,8 +315,8 @@ const ScreenManager = (function() {
     const height = solution.length;
     const width = solution[0] ? solution[0].length : height;
     const maxDim = Math.max(width, height);
-    // Target 180px to fit within 200px container with padding for rounded corners
-    const targetSize = 180;
+    // Fit within container with padding for rounded corners
+    const targetSize = VICTORY_CANVAS_SIZE;
     const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
 
     const canvas = document.createElement('canvas');

@@ -4,6 +4,9 @@
 (function() {
   'use strict';
 
+  // === Constants ===
+  const MINI_CANVAS_SIZE = 80;  // Preview thumbnail size (CSS scales down)
+
   // Difficulty display order (derived from puzzles, but with preferred ordering)
   const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'challenging', 'expert'];
 
@@ -264,8 +267,7 @@
   function createMiniSolution(puzzle) {
     try {
       const canvas = document.createElement('canvas');
-      const size = 80; // Preview size (larger for better quality, CSS scales down)
-      const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
+      const cellSize = Math.max(2, Math.floor(MINI_CANVAS_SIZE / Math.max(puzzle.width, puzzle.height)));
 
       canvas.width = puzzle.width * cellSize;
       canvas.height = puzzle.height * cellSize;
@@ -302,8 +304,7 @@
   function createMiniProgress(puzzle, savedGrid) {
     try {
       const canvas = document.createElement('canvas');
-      const size = 80; // Preview size (larger for better quality, CSS scales down)
-      const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
+      const cellSize = Math.max(2, Math.floor(MINI_CANVAS_SIZE / Math.max(puzzle.width, puzzle.height)));
 
       canvas.width = puzzle.width * cellSize;
       canvas.height = puzzle.height * cellSize;
