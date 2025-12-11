@@ -104,7 +104,7 @@
   <!-- ============================================ -->
   <div id="screen-collection" class="screen screen-hidden">
     <header class="screen-header">
-      <button class="header-back-btn" onclick="ScreenManager.showScreen(ScreenManager.SCREENS.HOME)" aria-label="Back to home">
+      <button class="header-back-btn" aria-label="Back to home">
         <span aria-hidden="true">&#8592;</span>
       </button>
       <h1 class="header-title">Collection</h1>
@@ -124,7 +124,7 @@
   <!-- ============================================ -->
   <div id="screen-puzzle" class="screen screen-hidden">
     <header class="screen-header">
-      <button class="header-back-btn" onclick="CozyGarden.navigateToCollectionWithStamp()" aria-label="Back to collection">
+      <button class="header-back-btn" aria-label="Back to collection">
         <span aria-hidden="true">&#8592;</span>
       </button>
       <h1 class="header-title" id="current-puzzle-title">Puzzle</h1>
@@ -139,20 +139,20 @@
 
         <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
         <div class="mode-toggle" role="group" aria-label="Drawing mode">
-          <button id="pen-mode-btn" class="mode-btn active" onclick="CozyGarden.setPencilMode(false)" aria-pressed="true" aria-label="Pen mode - certain marks">
+          <button id="pen-mode-btn" class="mode-btn active" aria-pressed="true" aria-label="Pen mode - certain marks">
             Pen
           </button>
-          <button id="pencil-mode-btn" class="mode-btn" onclick="CozyGarden.setPencilMode(true)" aria-pressed="false" aria-label="Pencil mode - uncertain marks">
+          <button id="pencil-mode-btn" class="mode-btn" aria-pressed="false" aria-label="Pencil mode - uncertain marks">
             Pencil
           </button>
         </div>
 
         <!-- Pencil batch actions (shown when pencil marks exist) -->
         <div id="pencil-actions" class="pencil-actions">
-          <button class="pencil-action-btn" onclick="CozyGarden.clearAllPencilMarks()">
+          <button class="pencil-action-btn">
             Clear Pencil
           </button>
-          <button class="pencil-action-btn" onclick="CozyGarden.confirmAllPencilMarks()">
+          <button class="pencil-action-btn">
             Confirm All
           </button>
         </div>
@@ -169,16 +169,16 @@
         <div class="controls">
           <!-- Undo/Redo -->
           <div class="history-controls">
-            <button id="undo-btn" class="history-btn" onclick="CozyGarden.performUndo()" disabled title="Undo (Ctrl+Z)">
+            <button id="undo-btn" class="history-btn" disabled title="Undo (Ctrl+Z)">
               &#8630;
             </button>
-            <button id="redo-btn" class="history-btn" onclick="CozyGarden.performRedo()" disabled title="Redo (Ctrl+Y)">
+            <button id="redo-btn" class="history-btn" disabled title="Redo (Ctrl+Y)">
               &#8631;
             </button>
           </div>
 
-          <button onclick="CozyGarden.resetPuzzle()" class="btn btn-secondary">Reset</button>
-          <button onclick="CozyGarden.showSolution()" class="btn btn-secondary">Solution</button>
+          <button class="btn btn-secondary">Reset</button>
+          <button class="btn btn-secondary">Solution</button>
         </div>
 
         <div class="instructions">

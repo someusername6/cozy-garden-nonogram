@@ -21,6 +21,11 @@
   let mouseUpHandler = null;
   let gridMouseLeaveHandler = null;
 
+  // DOM element cache for performance (avoids repeated querySelector calls)
+  let cellElements = [];  // 2D array: cellElements[row][col]
+  let rowClueElements = [];  // rowClueElements[row]
+  let colClueElements = [];  // colClueElements[col]
+
   // Normalize puzzle from concise format to verbose format
   // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
   // Verbose: {title, width, height, row_clues, col_clues, color_map, solution} with 1-indexed colors
@@ -536,6 +541,10 @@
   }
 
   function buildClues(puzzle) {
+    // Initialize clue element caches
+    colClueElements = [];
+    rowClueElements = [];
+
     // Column clues
     const colCluesEl = document.getElementById('col-clues');
     colCluesEl.innerHTML = '';
@@ -565,6 +574,8 @@
         });
       }
 
+      // Cache for fast lookup
+      colClueElements[colIndex] = col;
       colCluesEl.appendChild(col);
     });
 
@@ -597,6 +608,8 @@
         });
       }
 
+      // Cache for fast lookup
+      rowClueElements[rowIndex] = rowClues;
       rowContainer.appendChild(rowClues);
     });
   }
@@ -623,40 +636,70 @@
     currentHoverCol = col;
 
     if (row < 0 || col < 0) return;
+    if (!cellElements[row]) return;
 
-    // Highlight cells in same row and column
-    document.querySelectorAll('.cell').forEach(cell => {
-      const cellRow = parseInt(cell.dataset.row);
-      const cellCol = parseInt(cell.dataset.col);
+    // Highlight cells in same row (using cache)
+    const rowCells = cellElements[row];
+    if (rowCells) {
+      for (let c = 0; c < rowCells.length; c++) {
+        const cellEl = rowCells[c];
+        if (cellEl) {
+          cellEl.classList.add('highlight-row');
+          if (c === col) {
+            cellEl.classList.add('highlight-cell');
+          }
+        }
+      }
+    }
 
-      if (cellRow === row && cellCol === col) {
-        cell.classList.add('highlight-cell');
+    // Highlight cells in same column (using cache)
+    for (let r = 0; r < cellElements.length; r++) {
+      if (r !== row && cellElements[r]?.[col]) {
+        cellElements[r][col].classList.add('highlight-col');
       }
-      if (cellRow === row) {
-        cell.classList.add('highlight-row');
-      }
-      if (cellCol === col) {
-        cell.classList.add('highlight-col');
-      }
-    });
+    }
 
-    // Highlight corresponding clues
-    const rowClue = document.querySelector(`.row-clues[data-row="${row}"]`);
-    const colClue = document.querySelector(`.col-clue[data-col="${col}"]`);
-    if (rowClue) rowClue.classList.add('highlight-clue');
-    if (colClue) colClue.classList.add('highlight-clue');
+    // Highlight corresponding clues (using cache)
+    if (rowClueElements[row]) {
+      rowClueElements[row].classList.add('highlight-clue');
+    }
+    if (colClueElements[col]) {
+      colClueElements[col].classList.add('highlight-clue');
+    }
   }
 
   function clearCrosshairHighlight() {
+    const prevRow = currentHoverRow;
+    const prevCol = currentHoverCol;
     currentHoverRow = -1;
     currentHoverCol = -1;
 
-    document.querySelectorAll('.highlight-row, .highlight-col, .highlight-cell').forEach(el => {
-      el.classList.remove('highlight-row', 'highlight-col', 'highlight-cell');
-    });
-    document.querySelectorAll('.highlight-clue').forEach(el => {
-      el.classList.remove('highlight-clue');
-    });
+    // Only clear if we had a previous highlight
+    if (prevRow < 0 && prevCol < 0) return;
+
+    // Clear cell highlights using cache
+    for (let r = 0; r < cellElements.length; r++) {
+      const rowCells = cellElements[r];
+      if (!rowCells) continue;
+      for (let c = 0; c < rowCells.length; c++) {
+        const cellEl = rowCells[c];
+        if (cellEl) {
+          cellEl.classList.remove('highlight-row', 'highlight-col', 'highlight-cell');
+        }
+      }
+    }
+
+    // Clear clue highlights using cache
+    for (let r = 0; r < rowClueElements.length; r++) {
+      if (rowClueElements[r]) {
+        rowClueElements[r].classList.remove('highlight-clue');
+      }
+    }
+    for (let c = 0; c < colClueElements.length; c++) {
+      if (colClueElements[c]) {
+        colClueElements[c].classList.remove('highlight-clue');
+      }
+    }
   }
 
   function buildGrid(puzzle) {
@@ -670,6 +713,12 @@
     }
     if (mouseUpHandler) {
       document.removeEventListener('mouseup', mouseUpHandler);
+    }
+
+    // Initialize cell element cache
+    cellElements = [];
+    for (let r = 0; r < puzzle.height; r++) {
+      cellElements[r] = [];
     }
 
     // Clear highlight when leaving grid
@@ -830,6 +879,8 @@
           if (history) history.cancelAction();
         };
 
+        // Cache the cell element for fast lookup
+        cellElements[row][col] = cell;
         gridEl.appendChild(cell);
       }
     }
@@ -898,7 +949,8 @@
   }
 
   function updateCellVisual(row, col, puzzle) {
-    const cellEl = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    // Use cached element for performance
+    const cellEl = cellElements[row]?.[col];
     if (!cellEl) return;
 
     const cell = getCell(row, col);
@@ -1002,7 +1054,8 @@
       const runs = extractRuns(cleanValues);
       const isSatisfied = !hasUncertain && runsMatchClues(runs, puzzle.row_clues[row]);
 
-      const rowClueEl = document.querySelector(`.row-clues[data-row="${row}"]`);
+      // Use cached element for performance
+      const rowClueEl = rowClueElements[row];
       if (rowClueEl) {
         rowClueEl.classList.toggle('satisfied', isSatisfied);
       }
@@ -1025,7 +1078,8 @@
       const runs = extractRuns(cleanValues);
       const isSatisfied = !hasUncertain && runsMatchClues(runs, puzzle.col_clues[col]);
 
-      const colClueEl = document.querySelector(`.col-clue[data-col="${col}"]`);
+      // Use cached element for performance
+      const colClueEl = colClueElements[col];
       if (colClueEl) {
         colClueEl.classList.toggle('satisfied', isSatisfied);
       }
@@ -1303,8 +1357,68 @@
 
   // === Initialization ===
 
+  // Setup button event listeners (replaces inline onclick handlers for CSP compliance)
+  function setupButtonListeners() {
+    // Puzzle screen controls
+    const penModeBtn = document.getElementById('pen-mode-btn');
+    const pencilModeBtn = document.getElementById('pencil-mode-btn');
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+
+    if (penModeBtn) {
+      penModeBtn.addEventListener('click', () => setPencilMode(false));
+    }
+    if (pencilModeBtn) {
+      pencilModeBtn.addEventListener('click', () => setPencilMode(true));
+    }
+    if (undoBtn) {
+      undoBtn.addEventListener('click', performUndo);
+    }
+    if (redoBtn) {
+      redoBtn.addEventListener('click', performRedo);
+    }
+
+    // Pencil action buttons
+    const clearPencilBtn = document.querySelector('.pencil-action-btn:first-child');
+    const confirmPencilBtn = document.querySelector('.pencil-action-btn:last-child');
+
+    if (clearPencilBtn) {
+      clearPencilBtn.addEventListener('click', clearAllPencilMarks);
+    }
+    if (confirmPencilBtn) {
+      confirmPencilBtn.addEventListener('click', confirmAllPencilMarks);
+    }
+
+    // Control buttons (Reset, Solution)
+    const controlBtns = document.querySelectorAll('.controls .btn-secondary');
+    controlBtns.forEach(btn => {
+      if (btn.textContent.includes('Reset')) {
+        btn.addEventListener('click', resetPuzzle);
+      } else if (btn.textContent.includes('Solution')) {
+        btn.addEventListener('click', showSolution);
+      }
+    });
+
+    // Back button on puzzle screen
+    const puzzleBackBtn = document.querySelector('#screen-puzzle .header-back-btn');
+    if (puzzleBackBtn) {
+      puzzleBackBtn.addEventListener('click', navigateToCollectionWithStamp);
+    }
+
+    // Back button on collection screen (handled by ScreenManager)
+    const collectionBackBtn = document.querySelector('#screen-collection .header-back-btn');
+    if (collectionBackBtn) {
+      collectionBackBtn.addEventListener('click', () => {
+        if (window.ScreenManager) {
+          window.ScreenManager.showScreen(window.ScreenManager.SCREENS.HOME);
+        }
+      });
+    }
+  }
+
   function init() {
     setupKeyboardShortcuts();
+    setupButtonListeners();
 
     // Initialize history UI
     const history = getHistory();

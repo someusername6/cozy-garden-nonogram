@@ -262,64 +262,84 @@
 
   // Create mini solution preview (scaled down)
   function createMiniSolution(puzzle) {
-    const canvas = document.createElement('canvas');
-    const size = 80; // Preview size (larger for better quality, CSS scales down)
-    const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
+    try {
+      const canvas = document.createElement('canvas');
+      const size = 80; // Preview size (larger for better quality, CSS scales down)
+      const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
 
-    canvas.width = puzzle.width * cellSize;
-    canvas.height = puzzle.height * cellSize;
-    canvas.className = 'puzzle-mini-canvas';
+      canvas.width = puzzle.width * cellSize;
+      canvas.height = puzzle.height * cellSize;
+      canvas.className = 'puzzle-mini-canvas';
 
-    const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.warn('[Collection] Canvas 2D context not available');
+        return null;
+      }
 
-    // Draw solution
-    for (let row = 0; row < puzzle.height; row++) {
-      for (let col = 0; col < puzzle.width; col++) {
-        const value = puzzle.solution[row][col];
-        if (value > 0) {
-          const color = puzzle.color_map[value];
-          ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-          ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+      // Draw solution
+      for (let row = 0; row < puzzle.height; row++) {
+        for (let col = 0; col < puzzle.width; col++) {
+          const value = puzzle.solution?.[row]?.[col];
+          if (value > 0) {
+            const color = puzzle.color_map?.[value];
+            if (color && Array.isArray(color) && color.length >= 3) {
+              ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+              ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            }
+          }
         }
       }
-    }
 
-    return canvas;
+      return canvas;
+    } catch (e) {
+      console.error('[Collection] Error creating mini solution:', e);
+      return null;
+    }
   }
 
   // Create mini progress preview (partial grid state)
   function createMiniProgress(puzzle, savedGrid) {
-    const canvas = document.createElement('canvas');
-    const size = 80; // Preview size (larger for better quality, CSS scales down)
-    const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
+    try {
+      const canvas = document.createElement('canvas');
+      const size = 80; // Preview size (larger for better quality, CSS scales down)
+      const cellSize = Math.max(2, Math.floor(size / Math.max(puzzle.width, puzzle.height)));
 
-    canvas.width = puzzle.width * cellSize;
-    canvas.height = puzzle.height * cellSize;
-    canvas.className = 'puzzle-mini-canvas';
+      canvas.width = puzzle.width * cellSize;
+      canvas.height = puzzle.height * cellSize;
+      canvas.className = 'puzzle-mini-canvas';
 
-    const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.warn('[Collection] Canvas 2D context not available');
+        return null;
+      }
 
-    // Draw light grid background
-    ctx.fillStyle = '#f0ede5';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Draw light grid background
+      ctx.fillStyle = '#f0ede5';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw saved progress
-    for (let row = 0; row < puzzle.height; row++) {
-      for (let col = 0; col < puzzle.width; col++) {
-        const cell = savedGrid[row]?.[col];
-        const value = (typeof cell === 'object' && cell !== null) ? cell.value : cell;
+      // Draw saved progress
+      for (let row = 0; row < puzzle.height; row++) {
+        for (let col = 0; col < puzzle.width; col++) {
+          const cell = savedGrid?.[row]?.[col];
+          const value = (typeof cell === 'object' && cell !== null) ? cell.value : cell;
 
-        if (value !== null && value > 0) {
-          const color = puzzle.color_map[value];
-          if (color) {
-            ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+          if (value !== null && value > 0) {
+            const color = puzzle.color_map?.[value];
+            if (color && Array.isArray(color) && color.length >= 3) {
+              ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+              ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            }
           }
         }
       }
-    }
 
-    return canvas;
+      return canvas;
+    } catch (e) {
+      console.error('[Collection] Error creating mini progress:', e);
+      return null;
+    }
   }
 
   // Render the collection screen

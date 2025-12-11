@@ -63,10 +63,10 @@ html[data-theme="dark"] {
   --color-cell-empty: #2e2825;
   --color-grid-border: #5a4d42;
 
-  /* Text colors - warm off-whites */
+  /* Text colors - warm off-whites (WCAG AA compliant) */
   --color-text: #e8e0d8;
-  --color-text-light: #b8a89a;
-  --color-text-muted: #7a6d62;
+  --color-text-light: #cfc0b0;
+  --color-text-muted: #a09080;
 
   /* Additional UI colors */
   --color-shadow: rgba(0, 0, 0, 0.4);
@@ -90,8 +90,8 @@ html[data-theme="dark"] {
     --color-cell-empty: #2e2825;
     --color-grid-border: #5a4d42;
     --color-text: #e8e0d8;
-    --color-text-light: #b8a89a;
-    --color-text-muted: #7a6d62;
+    --color-text-light: #cfc0b0;
+    --color-text-muted: #a09080;
     --color-shadow: rgba(0, 0, 0, 0.4);
     --color-overlay: rgba(0, 0, 0, 0.7);
   }

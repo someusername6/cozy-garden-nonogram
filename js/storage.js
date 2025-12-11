@@ -59,6 +59,8 @@
       } catch (e) {
         console.warn('[Storage] Failed to load, using defaults:', e);
         this.data = getDefaultData();
+        // Save defaults to overwrite corrupted data
+        this.save();
       }
       return this;
     }
