@@ -977,6 +977,11 @@ kbd {
   z-index: 1;
 }
 
+.btn-hold:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* === Help Button === */
 .help-btn {
   font-weight: bold;

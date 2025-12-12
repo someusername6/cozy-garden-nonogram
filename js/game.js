@@ -288,6 +288,53 @@
     return window.CozyHistory || null;
   }
 
+  // Check if the puzzle grid is completely empty (all cells null)
+  function isPuzzleEmpty() {
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return true;
+
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        if (cell.value !== null) return false;
+      }
+    }
+    return true;
+  }
+
+  // Check if the puzzle matches the solution exactly
+  function isPuzzleSolved() {
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return false;
+
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        const solutionValue = puzzle.solution[row][col];
+        if (cell.value !== solutionValue || !cell.certain) return false;
+      }
+    }
+    return true;
+  }
+
+  // Update disabled state of hold-to-confirm buttons
+  function updateHoldButtonStates() {
+    const resetBtn = document.getElementById('reset-btn');
+    const solutionBtn = document.getElementById('solution-btn');
+
+    if (resetBtn) {
+      const empty = isPuzzleEmpty();
+      resetBtn.disabled = empty;
+      resetBtn.setAttribute('aria-label', empty ? 'Reset (puzzle is empty)' : 'Hold to reset puzzle');
+    }
+
+    if (solutionBtn) {
+      const solved = isPuzzleSolved();
+      solutionBtn.disabled = solved;
+      solutionBtn.setAttribute('aria-label', solved ? 'Solution (already shown)' : 'Hold to reveal solution');
+    }
+  }
+
   // === Screen Reader Announcements ===
 
   /**
@@ -553,6 +600,7 @@
 
     updatePencilActionsVisibility();
     updateClueSatisfaction(puzzle);
+    updateHoldButtonStates();
     saveSession();
   }
 
@@ -575,6 +623,7 @@
 
     updatePencilActionsVisibility();
     updateClueSatisfaction(puzzle);
+    updateHoldButtonStates();
     checkWin(puzzle);
     saveSession();
   }
@@ -786,6 +835,9 @@
 
       // Show help modal on first-ever puzzle load
       maybeShowFirstTimeHelp();
+
+      // Update hold button states based on puzzle state
+      updateHoldButtonStates();
     } finally {
       isLoadingPuzzle = false;
     }
@@ -1410,6 +1462,7 @@
     if (window.CozyApp) window.CozyApp.vibrate(10);
 
     updateClueSatisfaction(puzzle);
+    updateHoldButtonStates();
     checkWin(puzzle);
     saveSession();
   }
@@ -1653,6 +1706,9 @@
       // Update pencil actions visibility
       updatePencilActionsVisibility();
     }
+
+    // Always update button states (even if no changes, puzzle could be empty now)
+    updateHoldButtonStates();
   }
 
   function showSolution() {
@@ -1699,6 +1755,7 @@
 
     showToast('Solution revealed', 'info');
     updatePencilActionsVisibility();
+    updateHoldButtonStates();
   }
 
   // === Keyboard Shortcuts ===
@@ -1879,6 +1936,9 @@
       if (e.type === 'touchstart') {
         e.preventDefault();
       }
+
+      // Don't start hold if button is disabled
+      if (btn.disabled) return;
 
       if (isHolding) return;
       isHolding = true;
