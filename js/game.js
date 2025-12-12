@@ -835,6 +835,17 @@
     if (modeMenu) {
       palette.appendChild(modeMenu);
     }
+
+    // Add class based on button count for responsive sizing
+    // 8 buttons (6 colors + eraser + menu) need smaller sizes on phones
+    const buttonCount = palette.querySelectorAll('.color-btn, .palette-menu-btn').length;
+    palette.classList.remove('palette-8-buttons', 'palette-7-buttons');
+    if (buttonCount >= 8) {
+      palette.classList.add('palette-8-buttons');
+    } else if (buttonCount === 7) {
+      palette.classList.add('palette-7-buttons');
+    }
+    // 6 or fewer buttons can use full 44px size on all screens
   }
 
   function selectColor(colorId) {

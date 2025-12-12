@@ -555,6 +555,7 @@ body {
   transition: all 0.2s;
   color: var(--color-text-light);
   position: relative;
+  box-sizing: border-box; /* Include border in width/height */
 }
 
 .palette-menu-btn:hover {
@@ -776,13 +777,13 @@ kbd {
 /* === Palette === */
 .palette {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 12px;
   background: var(--color-surface);
   border-radius: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Force single row on all screen sizes */
   justify-content: center;
   position: relative; /* For popover positioning */
 }
@@ -801,6 +802,7 @@ kbd {
   cursor: pointer;
   transition: transform 0.1s, border-color 0.1s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box; /* Include border in width/height */
   /* Touch-friendly minimum size */
   min-width: 44px;
   min-height: 44px;
@@ -1490,17 +1492,60 @@ html[data-theme="dark"] .confirm-modal-btn-primary {
 
 /* === Responsive Adjustments === */
 
-/* Medium phones (iPhone SE, etc.) - reduce color button size to fit all on one row */
-@media (max-width: 390px) {
-  .palette {
-    gap: 6px;
+/*
+ * Palette sizing based on button count:
+ * - 6 or fewer buttons: 44px on all screens
+ * - 7 buttons: 44px on all screens (fits at 358px)
+ * - 8 buttons: responsive sizes (40px/38px on phones)
+ */
+
+/* Medium phones with 8 buttons (380-429px) - 40px buttons, 5px gaps */
+@media (max-width: 429px) {
+  .palette.palette-8-buttons {
+    padding: 10px;
+    gap: 5px;
   }
 
-  .color-btn {
+  .palette.palette-8-buttons .color-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    flex-shrink: 0;
+  }
+
+  .palette.palette-8-buttons .palette-menu-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    flex-shrink: 0;
+  }
+}
+
+/* Small phones with 8 buttons (≤379px, iPhone SE) - 38px buttons, 4px gaps */
+@media (max-width: 379px) {
+  .palette.palette-8-buttons {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .palette.palette-8-buttons .color-btn {
     width: 38px;
     height: 38px;
-    min-width: 38px;
-    min-height: 38px;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .palette.palette-8-buttons .palette-menu-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .palette.palette-8-buttons .color-btn.eraser::after {
+    font-size: 16px;
   }
 }
 
@@ -1526,15 +1571,27 @@ html[data-theme="dark"] .confirm-modal-btn-primary {
   }
 
   .palette {
-    padding: 10px 12px;
-    gap: 6px;
+    padding: 8px 10px;
+    gap: 4px;
   }
 
   .color-btn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  .palette-menu-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .menu-icon-svg {
+    width: 14px;
+    height: 14px;
   }
 }
 
