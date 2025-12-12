@@ -971,6 +971,10 @@ kbd {
   width: 0;
 }
 
+.btn-hold.hold-complete .btn-hold-fill {
+  transition: none;
+}
+
 .btn-hold-text {
   position: relative;
   z-index: 1;

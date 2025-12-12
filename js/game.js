@@ -1946,8 +1946,12 @@
 
       holdTimer = setTimeout(() => {
         if (isHolding) {
+          // Mark as completed for instant hide (no animation)
+          btn.classList.add('hold-complete');
           cancelHold();
           onConfirm();
+          // Remove completed class after a tick
+          setTimeout(() => btn.classList.remove('hold-complete'), 50);
         }
       }, HOLD_DURATION);
     }
