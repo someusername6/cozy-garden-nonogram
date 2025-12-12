@@ -1255,9 +1255,9 @@
     const puzzle = getPuzzles()[currentPuzzle];
     if (!puzzle) return;
 
-    // Reset zoom to show full solution
+    // Zoom to fit to show full solution
     if (window.CozyZoom) {
-      window.CozyZoom.resetZoom();
+      window.CozyZoom.zoomToFit();
     }
 
     // Clear history - showing solution is not undoable

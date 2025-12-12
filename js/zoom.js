@@ -577,10 +577,18 @@
   }
 
   function resetZoom(animate = true) {
-    if (animate && currentZoom !== DEFAULT_ZOOM) {
-      // Animate back to default
+    const targetZoom = DEFAULT_ZOOM;
+    animateToZoom(targetZoom, animate);
+  }
+
+  function zoomToFit(animate = true) {
+    const targetZoom = calculateFitZoom();
+    animateToZoom(targetZoom, animate);
+  }
+
+  function animateToZoom(targetZoom, animate = true) {
+    if (animate && currentZoom !== targetZoom) {
       const startZoom = currentZoom;
-      const targetZoom = DEFAULT_ZOOM;
       const duration = 200;
       const startTime = performance.now();
 
@@ -599,7 +607,7 @@
 
       requestAnimationFrame(animateZoom);
     } else {
-      applyZoom(DEFAULT_ZOOM, false);
+      applyZoom(targetZoom, false);
     }
   }
 
@@ -610,6 +618,7 @@
     initForPuzzle,
     destroy,
     resetZoom,
+    zoomToFit,
 
     getZoom: () => currentZoom,
     setZoom: (level, animate = true) => applyZoom(level, !animate),
