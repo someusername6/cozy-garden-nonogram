@@ -959,7 +959,6 @@ kbd {
   background: #ff0000;
   opacity: 0.6;
   pointer-events: none;
-  border-radius: inherit;
 }
 
 .btn-hold.holding .btn-hold-fill {
