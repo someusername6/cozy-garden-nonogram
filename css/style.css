@@ -622,6 +622,16 @@ body.pencil-mode .mode-toggle {
   cursor: not-allowed;
 }
 
+.history-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-text);
+}
+
+.redo-icon {
+  transform: scaleX(-1);
+}
+
 /* === Keyboard Shortcuts Hint === */
 kbd {
   display: inline-block;
