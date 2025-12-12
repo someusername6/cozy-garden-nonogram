@@ -817,8 +817,11 @@ kbd {
 }
 
 .color-btn.selected {
-  border-color: var(--color-primary);
+  border-color: transparent;
   transform: scale(1.15);
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 5px var(--color-primary);
 }
 
 .color-btn.eraser {
