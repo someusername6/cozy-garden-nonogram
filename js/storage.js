@@ -302,6 +302,7 @@
     }
 
     setFlag(key, value = true) {
+      if (!this.data.flags) this.data.flags = {};
       this.data.flags[key] = value;
       this.save();
     }
@@ -313,6 +314,7 @@
     }
 
     setUIState(key, value) {
+      if (!this.data.uiState) this.data.uiState = {};
       this.data.uiState[key] = value;
       this.save();
     }
