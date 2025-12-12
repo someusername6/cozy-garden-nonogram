@@ -30,6 +30,7 @@
   const STAMP_CANVAS_SIZE = 180;  // Flying stamp preview size (matches victory screen)
   const MAX_PUZZLE_DIMENSION = 32;  // Maximum puzzle width/height (security limit)
   const TOAST_DURATION = 2500;  // ms to show toast notifications
+  const HELP_SHOWN_KEY = 'cozy_garden_help_shown';  // localStorage key for first-time help
 
   // === Toast Notification ===
   let toastTimeout = null;
@@ -61,6 +62,97 @@
     if (toast) {
       clearTimeout(toastTimeout);
       toast.classList.remove('visible');
+    }
+  }
+
+  // === Help Modal ===
+
+  function isTouchDevice() {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  }
+
+  function populateHelpContent() {
+    const helpList = document.getElementById('help-list');
+    if (!helpList) return;
+
+    const isTouch = isTouchDevice();
+
+    // Build help content based on device type
+    let items = [
+      '<li><strong>Select a color</strong> from the palette, then tap cells to fill them</li>',
+      '<li><strong>Drag</strong> across cells to fill multiple at once</li>',
+      '<li><strong>Long-press</strong> a cell to mark it ✕ (definitely empty)</li>',
+      '<li><strong>Pencil mode</strong> marks uncertain guesses — confirm or clear them later</li>'
+    ];
+
+    // Add zoom hint for larger puzzles on touch devices
+    if (isTouch) {
+      items.push('<li><strong>Pinch to zoom</strong> on larger puzzles for easier tapping</li>');
+    }
+
+    // Add keyboard shortcuts section for non-touch devices
+    if (!isTouch) {
+      items.push('<li class="help-section-title">Keyboard Shortcuts</li>');
+      items.push('<li><strong>Ctrl+Z</strong> / <strong>Ctrl+Y</strong> — Undo / Redo</li>');
+      items.push('<li><strong>P</strong> — Toggle pencil mode</li>');
+      items.push('<li><strong>1-9</strong> — Select color by number</li>');
+      items.push('<li><strong>+</strong> / <strong>-</strong> — Zoom in / out</li>');
+    }
+
+    helpList.innerHTML = items.join('');
+  }
+
+  function showHelpModal() {
+    const modal = document.getElementById('help-modal');
+    if (!modal) return;
+
+    populateHelpContent();
+    modal.classList.add('visible');
+    document.body.style.overflow = 'hidden'; // Prevent background scroll
+  }
+
+  function hideHelpModal() {
+    const modal = document.getElementById('help-modal');
+    if (!modal) return;
+
+    modal.classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  function setupHelpModal() {
+    const helpBtn = document.getElementById('help-btn');
+    const modal = document.getElementById('help-modal');
+    const backdrop = modal?.querySelector('.help-modal-backdrop');
+    const closeBtn = modal?.querySelector('.help-modal-close');
+
+    if (helpBtn) {
+      helpBtn.addEventListener('click', showHelpModal);
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener('click', hideHelpModal);
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', hideHelpModal);
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal?.classList.contains('visible')) {
+        hideHelpModal();
+      }
+    });
+  }
+
+  function maybeShowFirstTimeHelp() {
+    // Show help modal automatically on first visit
+    if (!localStorage.getItem(HELP_SHOWN_KEY)) {
+      // Small delay so the puzzle renders first
+      setTimeout(() => {
+        showHelpModal();
+        localStorage.setItem(HELP_SHOWN_KEY, 'true');
+      }, 500);
     }
   }
 
@@ -572,6 +664,9 @@
       if (window.CozyZoom) {
         window.CozyZoom.initForPuzzle(puzzle);
       }
+
+      // Show help modal on first-ever puzzle load
+      maybeShowFirstTimeHelp();
     } finally {
       isLoadingPuzzle = false;
     }
@@ -579,7 +674,7 @@
 
   function buildPalette(puzzle) {
     const palette = document.getElementById('palette');
-    palette.innerHTML = '<span class="palette-label">Colors:</span>';
+    palette.innerHTML = '';
 
     // Add eraser
     const eraser = document.createElement('button');
@@ -697,9 +792,6 @@
   // === Crosshair Hover Effect ===
   let currentHoverRow = -1;
   let currentHoverCol = -1;
-
-  // Detect touch device to disable crosshair (causes issues with touch)
-  const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   function updateCrosshairHighlight(row, col) {
     // Skip on touch devices
@@ -1559,6 +1651,7 @@
   function init() {
     setupKeyboardShortcuts();
     setupButtonListeners();
+    setupHelpModal();
 
     // Initialize history UI
     const history = getHistory();

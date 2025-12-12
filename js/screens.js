@@ -250,18 +250,6 @@ const ScreenManager = (function() {
       window.CozyZoom.init();
     }
 
-    // Collapse instructions for returning users (those who have completed at least one puzzle)
-    const instructionsEl = document.getElementById('instructions-details');
-    if (instructionsEl && window.CozyStorage) {
-      const stats = window.CozyStorage.getStats();
-      if (stats.totalCompleted > 0) {
-        instructionsEl.removeAttribute('open');
-      } else {
-        // Show expanded for first-time users
-        instructionsEl.setAttribute('open', '');
-      }
-    }
-
     // Puzzle screen initialization is handled by game.js
     // data should contain { puzzleId: string }
     window.dispatchEvent(new CustomEvent('screen:puzzle', { detail: data }));

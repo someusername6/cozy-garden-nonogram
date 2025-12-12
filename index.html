@@ -135,9 +135,7 @@
 
     <main class="screen-content app-main">
       <div class="game-container">
-        <div class="palette" id="palette" aria-label="Color palette">
-          <span class="palette-label visually-hidden">Colors:</span>
-        </div>
+        <div class="palette" id="palette" aria-label="Color palette"></div>
 
         <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
         <div class="mode-toggle" role="group" aria-label="Drawing mode">
@@ -203,16 +201,20 @@
 
           <button class="btn btn-secondary">Reset</button>
           <button class="btn btn-secondary">Solution</button>
+          <button id="help-btn" class="btn btn-secondary help-btn" title="How to play" aria-label="How to play">?</button>
         </div>
 
-        <details class="instructions-collapsible" id="instructions-details">
-          <summary class="instructions-summary">How to play</summary>
-          <div class="instructions-content">
-            Tap a color, then tap/drag to fill cells.
-            Long-press to mark X (empty). Use Pencil mode for uncertain guesses.<br>
-            <kbd>Ctrl+Z</kbd> undo, <kbd>P</kbd> toggle pencil mode, <kbd>1-9</kbd> select colors.
+        <!-- Help Modal -->
+        <div id="help-modal" class="help-modal" role="dialog" aria-labelledby="help-modal-title" aria-modal="true">
+          <div class="help-modal-backdrop"></div>
+          <div class="help-modal-content">
+            <button class="help-modal-close" aria-label="Close">&times;</button>
+            <h2 id="help-modal-title">How to Play</h2>
+            <ul class="help-list" id="help-list">
+              <!-- Content populated by JS based on device type -->
+            </ul>
           </div>
-        </details>
+        </div>
       </div>
     </main>
   </div>
