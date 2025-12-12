@@ -293,6 +293,7 @@
   function setPencilMode(enabled) {
     pencilMode = enabled;
     updatePencilModeUI();
+    closeModeMenu(); // Close menu after selection
   }
 
   function togglePencilMode() {
@@ -302,17 +303,90 @@
   function updatePencilModeUI() {
     const penBtn = document.getElementById('pen-mode-btn');
     const pencilBtn = document.getElementById('pencil-mode-btn');
+    const menuBtn = document.getElementById('palette-menu-btn');
 
     if (penBtn) {
       penBtn.classList.toggle('active', !pencilMode);
-      penBtn.setAttribute('aria-pressed', String(!pencilMode));
+      penBtn.setAttribute('aria-checked', String(!pencilMode));
     }
     if (pencilBtn) {
       pencilBtn.classList.toggle('active', pencilMode);
-      pencilBtn.setAttribute('aria-pressed', String(pencilMode));
+      pencilBtn.setAttribute('aria-checked', String(pencilMode));
+    }
+
+    // Update menu button icon based on mode
+    if (menuBtn) {
+      const svg = menuBtn.querySelector('.menu-icon-svg');
+      if (svg) {
+        // Remove stroke, use fill for these icons
+        svg.removeAttribute('stroke');
+        svg.removeAttribute('stroke-width');
+        svg.setAttribute('fill', 'currentColor');
+        if (pencilMode) {
+          // Pencil icon (dashed lines indicate uncertainty)
+          svg.innerHTML = '<path d="M19.07 13.88L13 19.94l-1.41-1.41 6.07-6.06 1.41 1.41zm-5.66-5.66l-6.06 6.07-1.42-1.41 6.07-6.07 1.41 1.41zM17.66 5.99l-2.34 2.34 1.41 1.41 2.34-2.34-1.41-1.41zM3 18v3h3l.01-.01L3 18zm3-3l-1 1 3 3 1-1-3-3z" opacity="0.5"/><path d="M9.17 16.17L7.76 17.59l3.54 3.54 1.41-1.41-3.54-3.55zm10.6-10.6l-3.53-3.54-1.42 1.42 3.54 3.53 1.41-1.41z"/>';
+        } else {
+          // Solid pen icon
+          svg.innerHTML = '<path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/>';
+        }
+      }
     }
 
     document.body.classList.toggle('pencil-mode', pencilMode);
+  }
+
+  // === Mode Menu ===
+
+  function toggleModeMenu() {
+    const menu = document.getElementById('mode-menu');
+    const menuBtn = document.getElementById('palette-menu-btn');
+    if (!menu || !menuBtn) return;
+
+    const isOpen = menu.classList.contains('open');
+    if (isOpen) {
+      closeModeMenu();
+    } else {
+      openModeMenu();
+    }
+  }
+
+  function openModeMenu() {
+    const menu = document.getElementById('mode-menu');
+    const menuBtn = document.getElementById('palette-menu-btn');
+    if (!menu || !menuBtn) return;
+
+    menu.classList.add('open');
+    menuBtn.classList.add('menu-open');
+    menuBtn.setAttribute('aria-expanded', 'true');
+
+    // Close menu when clicking outside
+    setTimeout(() => {
+      document.addEventListener('click', handleMenuOutsideClick);
+    }, 0);
+  }
+
+  function closeModeMenu() {
+    const menu = document.getElementById('mode-menu');
+    const menuBtn = document.getElementById('palette-menu-btn');
+    if (!menu) return;
+
+    menu.classList.remove('open');
+    if (menuBtn) {
+      menuBtn.classList.remove('menu-open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    document.removeEventListener('click', handleMenuOutsideClick);
+  }
+
+  function handleMenuOutsideClick(e) {
+    const menu = document.getElementById('mode-menu');
+    const menuBtn = document.getElementById('palette-menu-btn');
+    if (!menu || !menuBtn) return;
+
+    if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+      closeModeMenu();
+    }
   }
 
   // Check if there are any pencil marks on the grid
@@ -331,10 +405,41 @@
     return false;
   }
 
+  // Count pencil marks for badge display
+  function countPencilMarks() {
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return 0;
+
+    let count = 0;
+    for (let row = 0; row < puzzle.height; row++) {
+      for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        if (!cell.certain && cell.value !== null) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
   function updatePencilActionsVisibility() {
-    const pencilActions = document.getElementById('pencil-actions');
-    if (pencilActions) {
-      pencilActions.style.display = hasPencilMarks() ? 'flex' : 'none';
+    const pencilActionsSection = document.getElementById('pencil-actions-section');
+    const menuBtn = document.getElementById('palette-menu-btn');
+    const hasMarks = hasPencilMarks();
+    const markCount = hasMarks ? countPencilMarks() : 0;
+
+    // Show/hide pencil actions in menu
+    if (pencilActionsSection) {
+      pencilActionsSection.classList.toggle('has-marks', hasMarks);
+    }
+
+    // Update menu button badge
+    if (menuBtn) {
+      menuBtn.classList.toggle('has-pencil-marks', hasMarks);
+      const badge = menuBtn.querySelector('.pencil-badge');
+      if (badge) {
+        badge.textContent = markCount > 99 ? '99+' : String(markCount);
+      }
     }
   }
 
@@ -672,6 +777,15 @@
 
   function buildPalette(puzzle) {
     const palette = document.getElementById('palette');
+
+    // Preserve mode menu before clearing (it may have been appended previously)
+    const existingMenu = document.getElementById('mode-menu');
+    const menuParent = existingMenu ? existingMenu.parentNode : null;
+    if (existingMenu && palette.contains(existingMenu)) {
+      // Temporarily move menu out so it's not destroyed by innerHTML = ''
+      document.body.appendChild(existingMenu);
+    }
+
     palette.innerHTML = '';
 
     // Add eraser
@@ -680,7 +794,7 @@
     eraser.title = 'Eraser';
     eraser.setAttribute('aria-label', 'Eraser');
     eraser.setAttribute('aria-pressed', selectedColor === 0 ? 'true' : 'false');
-    eraser.onclick = () => selectColor(0);
+    eraser.addEventListener('click', () => selectColor(0));
     palette.appendChild(eraser);
 
     // Add color buttons
@@ -691,9 +805,36 @@
       btn.style.background = rgb(colorRgb);
       btn.setAttribute('aria-label', `Color ${colorId}`);
       btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-      btn.onclick = () => selectColor(parseInt(colorId));
+      btn.addEventListener('click', () => selectColor(parseInt(colorId)));
       palette.appendChild(btn);
     });
+
+    // Add mode menu button at end of palette
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'palette-menu-btn';
+    menuBtn.id = 'palette-menu-btn';
+    menuBtn.title = 'Drawing mode';
+    menuBtn.setAttribute('aria-label', 'Drawing mode menu');
+    menuBtn.setAttribute('aria-haspopup', 'true');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    // Start with pen icon (default mode)
+    menuBtn.innerHTML = `
+      <svg class="menu-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/>
+      </svg>
+      <span class="pencil-badge">0</span>
+    `;
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleModeMenu();
+    });
+    palette.appendChild(menuBtn);
+
+    // Move mode menu inside palette for proper positioning
+    const modeMenu = document.getElementById('mode-menu');
+    if (modeMenu) {
+      palette.appendChild(modeMenu);
+    }
   }
 
   function selectColor(colorId) {
@@ -1704,7 +1845,7 @@
 
   // Setup button event listeners (replaces inline onclick handlers for CSP compliance)
   function setupButtonListeners() {
-    // Puzzle screen controls
+    // Mode menu buttons
     const penModeBtn = document.getElementById('pen-mode-btn');
     const pencilModeBtn = document.getElementById('pencil-mode-btn');
     const undoBtn = document.getElementById('undo-btn');
@@ -1723,15 +1864,21 @@
       redoBtn.addEventListener('click', performRedo);
     }
 
-    // Pencil action buttons
-    const clearPencilBtn = document.querySelector('.pencil-action-btn:first-child');
-    const confirmPencilBtn = document.querySelector('.pencil-action-btn:last-child');
+    // Pencil action buttons (in mode menu)
+    const clearPencilBtn = document.getElementById('clear-pencil-btn');
+    const confirmPencilBtn = document.getElementById('confirm-pencil-btn');
 
     if (clearPencilBtn) {
-      clearPencilBtn.addEventListener('click', clearAllPencilMarks);
+      clearPencilBtn.addEventListener('click', () => {
+        clearAllPencilMarks();
+        closeModeMenu();
+      });
     }
     if (confirmPencilBtn) {
-      confirmPencilBtn.addEventListener('click', confirmAllPencilMarks);
+      confirmPencilBtn.addEventListener('click', () => {
+        confirmAllPencilMarks();
+        closeModeMenu();
+      });
     }
 
     // Control buttons (Reset, Solution)

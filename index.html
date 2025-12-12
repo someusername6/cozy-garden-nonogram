@@ -136,26 +136,46 @@
 
     <main class="screen-content app-main">
       <div class="game-container">
-        <div class="palette" id="palette" aria-label="Color palette"></div>
-
-        <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
-        <div class="mode-toggle" role="group" aria-label="Drawing mode">
-          <button id="pen-mode-btn" class="mode-btn active" aria-pressed="true" aria-label="Pen mode - certain marks">
-            Pen
-          </button>
-          <button id="pencil-mode-btn" class="mode-btn" aria-pressed="false" aria-label="Pencil mode - uncertain marks">
-            Pencil
-          </button>
+        <div class="palette" id="palette" aria-label="Color palette">
+          <!-- Color buttons populated by JS -->
+          <!-- Menu button added at end by JS -->
         </div>
 
-        <!-- Pencil batch actions (shown when pencil marks exist) -->
-        <div id="pencil-actions" class="pencil-actions">
-          <button class="pencil-action-btn">
-            Clear Pencil
-          </button>
-          <button class="pencil-action-btn">
-            Confirm All
-          </button>
+        <!-- Mode menu popover -->
+        <div id="mode-menu" class="mode-menu" role="menu" aria-label="Drawing mode options">
+          <div class="mode-menu-section">
+            <button id="pen-mode-btn" class="mode-menu-item active" role="menuitemradio" aria-checked="true">
+              <svg class="mode-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/>
+              </svg>
+              <span>Pen</span>
+              <span class="mode-hint">Certain</span>
+            </button>
+            <button id="pencil-mode-btn" class="mode-menu-item" role="menuitemradio" aria-checked="false">
+              <svg class="mode-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.07 13.88L13 19.94l-1.41-1.41 6.07-6.06 1.41 1.41zm-5.66-5.66l-6.06 6.07-1.42-1.41 6.07-6.07 1.41 1.41zM17.66 5.99l-2.34 2.34 1.41 1.41 2.34-2.34-1.41-1.41zM3 18v3h3l.01-.01L3 18zm3-3l-1 1 3 3 1-1-3-3zm6.24-8.83l-1.41 1.41 1.41 1.42 1.42-1.42-1.42-1.41zM6.34 14.49l1.41-1.41-1.41-1.42-1.42 1.42 1.42 1.41z" opacity="0.6"/>
+                <path d="M9.17 16.17L7.76 17.59l3.54 3.54 1.41-1.41-3.54-3.55zm10.6-10.6l-3.53-3.54-1.42 1.42 3.54 3.53 1.41-1.41z"/>
+              </svg>
+              <span>Pencil</span>
+              <span class="mode-hint">Maybe</span>
+            </button>
+          </div>
+          <div id="pencil-actions-section" class="mode-menu-section pencil-actions-section">
+            <button id="clear-pencil-btn" class="mode-menu-item mode-menu-action">
+              <svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              <span>Clear pencil marks</span>
+            </button>
+            <button id="confirm-pencil-btn" class="mode-menu-item mode-menu-action">
+              <svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span>Confirm all as certain</span>
+            </button>
+          </div>
         </div>
 
         <!-- Zoomable/Scrollable puzzle area -->
