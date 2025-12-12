@@ -1745,7 +1745,12 @@ html[data-theme="dark"] .puzzle-card:focus-visible {
 .collection-search {
   max-width: 800px;
   margin: 0 auto 16px auto;
-  padding: 0 12px;
+  padding: 12px;
+  /* Sticky search bar while scrolling */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
 }
 
 .collection-search-input {
