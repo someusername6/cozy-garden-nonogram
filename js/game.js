@@ -113,6 +113,12 @@
     populateHelpContent();
     modal.classList.add('visible');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
+
+    // Focus close button for accessibility
+    const closeBtn = modal.querySelector('.help-modal-close');
+    if (closeBtn) {
+      setTimeout(() => closeBtn.focus(), 100);
+    }
   }
 
   function hideHelpModal() {
@@ -141,10 +147,26 @@
       closeBtn.addEventListener('click', hideHelpModal);
     }
 
-    // Close on Escape key
+    // Keyboard handling for modal
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modal?.classList.contains('visible')) {
+      if (!modal?.classList.contains('visible')) return;
+
+      // Close on Escape key
+      if (e.key === 'Escape') {
         hideHelpModal();
+        return;
+      }
+
+      // Focus trap: keep Tab within modal
+      if (e.key === 'Tab') {
+        // Only one focusable element (close button), so always keep focus there
+        if (document.activeElement !== closeBtn) {
+          e.preventDefault();
+          closeBtn?.focus();
+        } else {
+          // Already on close button, prevent Tab from leaving
+          e.preventDefault();
+        }
       }
     });
   }
