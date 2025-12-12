@@ -1,12 +1,11 @@
 // Cozy Garden - PWA Application Module
-// Handles PWA lifecycle, install prompt, and offline status
+// Handles PWA lifecycle and service worker
 
 (function() {
   'use strict';
 
   const App = {
     // State
-    isOnline: navigator.onLine,
     isInstalled: false,
     swRegistration: null,
     resizeTimeout: null,
@@ -16,7 +15,6 @@
       this.checkInstallState();
       this.registerServiceWorker();
       this.setupEventListeners();
-      this.setupOnlineStatus();
 
       console.log('[App] Cozy Garden initialized');
     },
@@ -129,45 +127,6 @@
         }
         this.resizeTimeout = setTimeout(() => this.handleResize(), 100);
       });
-    },
-
-    // Setup online/offline status
-    setupOnlineStatus() {
-      const updateOnlineStatus = () => {
-        this.isOnline = navigator.onLine;
-        document.body.classList.toggle('is-offline', !this.isOnline);
-
-        if (!this.isOnline) {
-          this.showOfflineIndicator();
-        } else {
-          this.hideOfflineIndicator();
-        }
-      };
-
-      window.addEventListener('online', updateOnlineStatus);
-      window.addEventListener('offline', updateOnlineStatus);
-
-      // Initial check
-      updateOnlineStatus();
-    },
-
-    showOfflineIndicator() {
-      let indicator = document.getElementById('offline-indicator');
-      if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = 'offline-indicator';
-        indicator.className = 'offline-indicator';
-        indicator.textContent = 'Playing offline';
-        document.body.appendChild(indicator);
-      }
-      indicator.classList.add('visible');
-    },
-
-    hideOfflineIndicator() {
-      const indicator = document.getElementById('offline-indicator');
-      if (indicator) {
-        indicator.classList.remove('visible');
-      }
     },
 
     // App focus handler

@@ -6,7 +6,7 @@
  * 1     - Cell highlights, minor layering within components
  * 2     - Focus states, active elements
  * 10    - Section headers (sticky)
- * 1000  - Fixed UI elements (offline indicator, install prompts, headers)
+ * 1000  - Fixed UI elements (update banner, headers)
  * 9999  - Modals, overlays, flying animations
  */
 
@@ -1060,30 +1060,6 @@ kbd {
 }
 
 /* === PWA-Specific Styles === */
-
-/* Offline Indicator */
-.offline-indicator {
-  position: fixed;
-  top: var(--safe-area-top);
-  left: 0;
-  right: 0;
-  background: var(--color-warning);
-  color: var(--color-surface);
-  text-align: center;
-  padding: 8px;
-  font-size: 13px;
-  z-index: 1000;
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
-}
-
-.offline-indicator.visible {
-  transform: translateY(0);
-}
-
-body.is-offline .app-header {
-  margin-top: 36px;
-}
 
 /* Update Banner */
 .update-banner {
