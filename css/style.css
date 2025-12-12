@@ -956,8 +956,8 @@ kbd {
   left: 0;
   height: 100%;
   width: 0;
-  background: #e53935;
-  opacity: 0.55;
+  background: #ff0000;
+  opacity: 0.6;
   pointer-events: none;
   border-radius: inherit;
 }
