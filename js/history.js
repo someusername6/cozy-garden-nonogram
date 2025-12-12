@@ -4,7 +4,8 @@
 (function() {
   'use strict';
 
-  const MAX_HISTORY = 50;
+  // === Shared Utilities ===
+  const { CONFIG } = window.CozyUtils;
 
   let undoStack = [];
   let redoStack = [];
@@ -93,7 +94,7 @@
           undoStack.push(pendingAction);
 
           // Trim history if too long
-          if (undoStack.length > MAX_HISTORY) {
+          if (undoStack.length > CONFIG.MAX_HISTORY) {
             undoStack.shift();
           }
 
@@ -134,7 +135,7 @@
       };
 
       undoStack.push(action);
-      if (undoStack.length > MAX_HISTORY) {
+      if (undoStack.length > CONFIG.MAX_HISTORY) {
         undoStack.shift();
       }
       redoStack = [];

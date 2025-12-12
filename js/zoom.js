@@ -4,10 +4,11 @@
 (function() {
   'use strict';
 
+  // === Shared Utilities ===
+  const { CONFIG } = window.CozyUtils;
+
   // === Constants ===
   const ABSOLUTE_MIN_ZOOM = 0.35; // Absolute floor for zoom (safety)
-  const MAX_ZOOM = 3.0;           // Maximum zoom level
-  const COMFORTABLE_ZOOM = 2.0;   // ~44px cells at this level
   const DEFAULT_ZOOM = 1.0;       // Starting zoom level
   const FIT_ZOOM_BUFFER = 0.97;   // 3% buffer so fit isn't too tight
   const DOUBLE_TAP_DELAY = 300;   // ms between taps for double-tap
@@ -76,7 +77,7 @@
 
     const oldZoom = currentZoom;
     const effectiveMinZoom = getEffectiveMinZoom();
-    const newZoom = clamp(level, effectiveMinZoom, MAX_ZOOM);
+    const newZoom = clamp(level, effectiveMinZoom, CONFIG.MAX_ZOOM);
 
     // Calculate center point to preserve scroll position
     let centerX, centerY;
@@ -120,7 +121,7 @@
     const effectiveMinZoom = getEffectiveMinZoom();
 
     if (zoomInBtn) {
-      zoomInBtn.disabled = currentZoom >= MAX_ZOOM;
+      zoomInBtn.disabled = currentZoom >= CONFIG.MAX_ZOOM;
     }
     if (zoomOutBtn) {
       zoomOutBtn.disabled = currentZoom <= effectiveMinZoom;
@@ -184,7 +185,7 @@
     const fitZoom = Math.min(fitZoomX, fitZoomY);
 
     // Apply buffer so fit isn't too tight, then clamp to valid range
-    const result = clamp(fitZoom * FIT_ZOOM_BUFFER, ABSOLUTE_MIN_ZOOM, MAX_ZOOM);
+    const result = clamp(fitZoom * FIT_ZOOM_BUFFER, ABSOLUTE_MIN_ZOOM, CONFIG.MAX_ZOOM);
 
     // Cache the result
     cachedFitZoom = result;
@@ -223,7 +224,7 @@
       const distance = getDistance(e.touches[0], e.touches[1]);
       const scale = distance / pinchStartDistance;
       const effectiveMinZoom = getEffectiveMinZoom();
-      const newZoom = clamp(baseZoom * scale, effectiveMinZoom, MAX_ZOOM);
+      const newZoom = clamp(baseZoom * scale, effectiveMinZoom, CONFIG.MAX_ZOOM);
 
       // Apply zoom directly (cell-resize approach)
       if (Math.abs(newZoom - currentZoom) > 0.05) {
@@ -265,7 +266,7 @@
       applyZoom(calculateFitZoom(), true);
     } else {
       // At default → zoom to comfortable level
-      applyZoom(COMFORTABLE_ZOOM, true);
+      applyZoom(CONFIG.COMFORTABLE_ZOOM, true);
     }
   }
 
@@ -632,12 +633,8 @@
     onCellTouchEnd,
 
     // Get effective min zoom for current puzzle
-    getEffectiveMinZoom,
-
-    // Constants for reference
-    ABSOLUTE_MIN_ZOOM,
-    MAX_ZOOM,
-    COMFORTABLE_ZOOM
+    getEffectiveMinZoom
+    // Note: MAX_ZOOM and COMFORTABLE_ZOOM available via CozyUtils.CONFIG
   };
 
 })();

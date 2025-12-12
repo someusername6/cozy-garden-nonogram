@@ -4,8 +4,8 @@
 (function() {
   'use strict';
 
-  // === Constants ===
-  const MINI_CANVAS_SIZE = 80;  // Preview thumbnail size (CSS scales down)
+  // === Shared Utilities ===
+  const { CONFIG, getPuzzleId, getPuzzleTitle, parsePuzzleTitle } = window.CozyUtils;
 
   // Difficulty display order (derived from puzzles, but with preferred ordering)
   const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'challenging', 'expert'];
@@ -44,43 +44,6 @@
     if (chevron) {
       chevron.textContent = !isCollapsed ? '\u25B6' : '\u25BC';
     }
-  }
-
-  // Get puzzle title, handling both concise (t) and verbose (title) formats
-  function getPuzzleTitle(puzzle) {
-    return puzzle.t || puzzle.title;
-  }
-
-  // Parse puzzle metadata from title
-  // Title format: "Name (WxH, difficulty)"
-  function parsePuzzleTitle(title) {
-    const match = title.match(/^(.+?)\s*\((\d+)x(\d+),\s*(\w+)\)$/i);
-    if (match) {
-      return {
-        name: match[1].trim(),
-        width: parseInt(match[2], 10),
-        height: parseInt(match[3], 10),
-        difficulty: match[4].toLowerCase()
-      };
-    }
-    // Fallback: use full title as name
-    return {
-      name: title,
-      width: 0,
-      height: 0,
-      difficulty: 'unknown'
-    };
-  }
-
-  // Get puzzle ID from puzzle object (uses shared utility if available)
-  function getPuzzleId(puzzle) {
-    // Use shared utility from CozyGarden if available for consistency
-    if (window.CozyGarden?.getPuzzleId) {
-      return window.CozyGarden.getPuzzleId(puzzle);
-    }
-    // Fallback for when game.js hasn't loaded yet
-    const title = getPuzzleTitle(puzzle);
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
 
   // Get storage instance
@@ -283,7 +246,7 @@
   function createMiniSolution(puzzle) {
     try {
       const canvas = document.createElement('canvas');
-      const cellSize = Math.max(2, Math.floor(MINI_CANVAS_SIZE / Math.max(puzzle.width, puzzle.height)));
+      const cellSize = Math.max(2, Math.floor(CONFIG.MINI_CANVAS_SIZE / Math.max(puzzle.width, puzzle.height)));
 
       canvas.width = puzzle.width * cellSize;
       canvas.height = puzzle.height * cellSize;
@@ -320,7 +283,7 @@
   function createMiniProgress(puzzle, savedGrid) {
     try {
       const canvas = document.createElement('canvas');
-      const cellSize = Math.max(2, Math.floor(MINI_CANVAS_SIZE / Math.max(puzzle.width, puzzle.height)));
+      const cellSize = Math.max(2, Math.floor(CONFIG.MINI_CANVAS_SIZE / Math.max(puzzle.width, puzzle.height)));
 
       canvas.width = puzzle.width * cellSize;
       canvas.height = puzzle.height * cellSize;
@@ -367,8 +330,7 @@
 
     // Filter puzzles by search term if provided, preserving original indices
     // Limit search length to prevent DoS via extremely long strings
-    const MAX_SEARCH_LENGTH = 100;
-    const searchFilter = (options.searchFilter || '').toLowerCase().trim().slice(0, MAX_SEARCH_LENGTH);
+    const searchFilter = (options.searchFilter || '').toLowerCase().trim().slice(0, CONFIG.MAX_SEARCH_LENGTH);
 
     // Create array of {puzzle, originalIndex} to preserve indices through filtering
     let puzzleItems = puzzles.map((puzzle, index) => ({ puzzle, originalIndex: index }));

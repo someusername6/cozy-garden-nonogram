@@ -45,6 +45,33 @@ html[data-theme="light"] {
   --color-highlight: rgba(92, 107, 74, 0.12);
   --color-highlight-strong: rgba(92, 107, 74, 0.2);
 
+  /* === Dark Theme Values (defined once, used by both selectors) === */
+  --dark-color-primary: #c8e6b0;
+  --dark-color-primary-light: #4a6038;
+  --dark-color-primary-dark: #b8d49a;
+  --dark-color-primary-btn: #5a7a45;
+  --dark-color-secondary: #2a2420;
+  --dark-color-secondary-dark: #3a3430;
+  --dark-color-accent: #9bc77a;
+  --dark-color-bg-start: #0f0d0c;
+  --dark-color-bg-end: #0a0908;
+  --dark-color-surface: #1a1614;
+  --dark-color-cell: #1e1a18;
+  --dark-color-cell-hover: #2a2420;
+  --dark-color-cell-empty: #141210;
+  --dark-color-grid-border: #3a3230;
+  --dark-color-text: #ede5dd;
+  --dark-color-text-light: #d5c8ba;
+  --dark-color-text-muted: #a89888;
+  --dark-color-shadow: rgba(0, 0, 0, 0.6);
+  --dark-color-overlay: rgba(0, 0, 0, 0.8);
+  --dark-color-danger: #e57373;
+  --dark-color-info: #4fc3f7;
+  --dark-color-warning: #ffb74d;
+  --dark-color-focus-ring: rgba(143, 179, 109, 0.3);
+  --dark-color-highlight: rgba(143, 179, 109, 0.15);
+  --dark-color-highlight-strong: rgba(143, 179, 109, 0.25);
+
   /* Spacing */
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -64,46 +91,39 @@ html[data-theme="light"] {
 
 /* === Dark Mode Theme === */
 /* Cozy dark theme with warm browns, deep greens, and amber accents.
- * NOTE: Dark mode variables appear in two places by necessity:
+ * Dark values are defined once as --dark-* in :root, then remapped to --color-*
+ * in two selectors to ensure dark mode works even if JS fails to load:
  * 1. html[data-theme="dark"] - for explicit dark mode selection
  * 2. @media (prefers-color-scheme: dark) html[data-theme="system"] - for
- *    system preference detection (must work before/without JS)
- * This duplication ensures dark mode works even if JS fails to load. */
+ *    system preference detection (must work before/without JS) */
 
-/* Explicit dark theme selection */
+/* Explicit dark theme selection - remaps to dark values defined in :root */
 html[data-theme="dark"] {
-  /* Theme colors - warm and cozy */
-  --color-primary: #c8e6b0;
-  --color-primary-light: #4a6038;
-  --color-primary-dark: #b8d49a;
-  --color-primary-btn: #5a7a45; /* Darker green for button backgrounds with white text */
-  --color-secondary: #2a2420;
-  --color-secondary-dark: #3a3430;
-  --color-accent: #9bc77a;
-
-  /* Background colors - near-black with warm undertones */
-  --color-bg-start: #0f0d0c;
-  --color-bg-end: #0a0908;
-  --color-surface: #1a1614;
-  --color-cell: #1e1a18;
-  --color-cell-hover: #2a2420;
-  --color-cell-empty: #141210;
-  --color-grid-border: #3a3230;
-
-  /* Text colors - warm off-whites (WCAG AA compliant, min 4.5:1 contrast) */
-  --color-text: #ede5dd;
-  --color-text-light: #d5c8ba;
-  --color-text-muted: #a89888;
-
-  /* Additional UI colors */
-  --color-shadow: rgba(0, 0, 0, 0.6);
-  --color-overlay: rgba(0, 0, 0, 0.8);
-  --color-danger: #e57373;
-  --color-info: #4fc3f7;
-  --color-warning: #ffb74d;
-  --color-focus-ring: rgba(143, 179, 109, 0.3);
-  --color-highlight: rgba(143, 179, 109, 0.15);
-  --color-highlight-strong: rgba(143, 179, 109, 0.25);
+  --color-primary: var(--dark-color-primary);
+  --color-primary-light: var(--dark-color-primary-light);
+  --color-primary-dark: var(--dark-color-primary-dark);
+  --color-primary-btn: var(--dark-color-primary-btn);
+  --color-secondary: var(--dark-color-secondary);
+  --color-secondary-dark: var(--dark-color-secondary-dark);
+  --color-accent: var(--dark-color-accent);
+  --color-bg-start: var(--dark-color-bg-start);
+  --color-bg-end: var(--dark-color-bg-end);
+  --color-surface: var(--dark-color-surface);
+  --color-cell: var(--dark-color-cell);
+  --color-cell-hover: var(--dark-color-cell-hover);
+  --color-cell-empty: var(--dark-color-cell-empty);
+  --color-grid-border: var(--dark-color-grid-border);
+  --color-text: var(--dark-color-text);
+  --color-text-light: var(--dark-color-text-light);
+  --color-text-muted: var(--dark-color-text-muted);
+  --color-shadow: var(--dark-color-shadow);
+  --color-overlay: var(--dark-color-overlay);
+  --color-danger: var(--dark-color-danger);
+  --color-info: var(--dark-color-info);
+  --color-warning: var(--dark-color-warning);
+  --color-focus-ring: var(--dark-color-focus-ring);
+  --color-highlight: var(--dark-color-highlight);
+  --color-highlight-strong: var(--dark-color-highlight-strong);
 }
 
 /* System preference detection - applies dark theme when user prefers dark
@@ -111,31 +131,31 @@ html[data-theme="dark"] {
  * before JS loads (prevents flash of light theme on dark-preferring systems). */
 @media (prefers-color-scheme: dark) {
   html[data-theme="system"] {
-    --color-primary: #c8e6b0;
-    --color-primary-light: #4a6038;
-    --color-primary-dark: #b8d49a;
-    --color-primary-btn: #5a7a45;
-    --color-secondary: #2a2420;
-    --color-secondary-dark: #3a3430;
-    --color-accent: #9bc77a;
-    --color-bg-start: #0f0d0c;
-    --color-bg-end: #0a0908;
-    --color-surface: #1a1614;
-    --color-cell: #1e1a18;
-    --color-cell-hover: #2a2420;
-    --color-cell-empty: #141210;
-    --color-grid-border: #3a3230;
-    --color-text: #ede5dd;
-    --color-text-light: #d5c8ba;
-    --color-text-muted: #a89888;
-    --color-shadow: rgba(0, 0, 0, 0.6);
-    --color-overlay: rgba(0, 0, 0, 0.8);
-    --color-danger: #e57373;
-    --color-info: #4fc3f7;
-    --color-warning: #ffb74d;
-    --color-focus-ring: rgba(143, 179, 109, 0.3);
-    --color-highlight: rgba(143, 179, 109, 0.15);
-    --color-highlight-strong: rgba(143, 179, 109, 0.25);
+    --color-primary: var(--dark-color-primary);
+    --color-primary-light: var(--dark-color-primary-light);
+    --color-primary-dark: var(--dark-color-primary-dark);
+    --color-primary-btn: var(--dark-color-primary-btn);
+    --color-secondary: var(--dark-color-secondary);
+    --color-secondary-dark: var(--dark-color-secondary-dark);
+    --color-accent: var(--dark-color-accent);
+    --color-bg-start: var(--dark-color-bg-start);
+    --color-bg-end: var(--dark-color-bg-end);
+    --color-surface: var(--dark-color-surface);
+    --color-cell: var(--dark-color-cell);
+    --color-cell-hover: var(--dark-color-cell-hover);
+    --color-cell-empty: var(--dark-color-cell-empty);
+    --color-grid-border: var(--dark-color-grid-border);
+    --color-text: var(--dark-color-text);
+    --color-text-light: var(--dark-color-text-light);
+    --color-text-muted: var(--dark-color-text-muted);
+    --color-shadow: var(--dark-color-shadow);
+    --color-overlay: var(--dark-color-overlay);
+    --color-danger: var(--dark-color-danger);
+    --color-info: var(--dark-color-info);
+    --color-warning: var(--dark-color-warning);
+    --color-focus-ring: var(--dark-color-focus-ring);
+    --color-highlight: var(--dark-color-highlight);
+    --color-highlight-strong: var(--dark-color-highlight-strong);
   }
 }
 

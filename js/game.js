@@ -6,6 +6,9 @@
 (function() {
   'use strict';
 
+  // === Shared Utilities ===
+  const { CONFIG, getPuzzleId, getPuzzleTitle } = window.CozyUtils;
+
   // Game state
   let currentPuzzle = 0;
   let currentDifficulty = 'easy';
@@ -31,10 +34,6 @@
   let rowClueElements = [];  // rowClueElements[row]
   let colClueElements = [];  // colClueElements[col]
 
-  // === Constants ===
-  const STAMP_CANVAS_SIZE = 180;  // Flying stamp preview size (matches victory screen)
-  const MAX_PUZZLE_DIMENSION = 32;  // Maximum puzzle width/height (security limit)
-  const TOAST_DURATION = 2500;  // ms to show toast notifications
   // Help shown flag now stored in CozyStorage.flags.helpShown
 
   // === Toast Notification ===
@@ -59,7 +58,7 @@
     // Auto-hide after duration
     toastTimeout = setTimeout(() => {
       toast.classList.remove('visible');
-    }, TOAST_DURATION);
+    }, CONFIG.TOAST_DURATION);
   }
 
   function hideToast() {
@@ -180,7 +179,7 @@
       return null;
     }
     // Validate dimensions are within limits
-    if (p.w > MAX_PUZZLE_DIMENSION || p.h > MAX_PUZZLE_DIMENSION || p.w < 1 || p.h < 1) {
+    if (p.w > CONFIG.MAX_PUZZLE_DIMENSION || p.h > CONFIG.MAX_PUZZLE_DIMENSION || p.w < 1 || p.h < 1) {
       console.warn('[Game] Puzzle dimensions out of range:', p.w, 'x', p.h);
       return null;
     }
@@ -279,12 +278,6 @@
     if (t.includes('challenging')) return 'challenging';
     if (t.includes('expert')) return 'expert';
     return 'easy';
-  }
-
-  function getPuzzleId(puzzle) {
-    // Handle both concise (t) and verbose (title) formats
-    const title = puzzle.t || puzzle.title;
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
 
   function getStorage() {
@@ -597,7 +590,7 @@
       }
 
       // Validate puzzle dimensions (security: prevent DOM explosion)
-      if (puzzle.width > MAX_PUZZLE_DIMENSION || puzzle.height > MAX_PUZZLE_DIMENSION ||
+      if (puzzle.width > CONFIG.MAX_PUZZLE_DIMENSION || puzzle.height > CONFIG.MAX_PUZZLE_DIMENSION ||
           puzzle.width < 1 || puzzle.height < 1) {
         console.error(`[Game] Invalid puzzle dimensions: ${puzzle.width}x${puzzle.height}`);
         isLoadingPuzzle = false;
@@ -911,6 +904,235 @@
     }
   }
 
+  // === Cell Creation Helpers (extracted from buildGrid for clarity) ===
+
+  /**
+   * Create a grid cell DOM element with basic attributes
+   */
+  function createGridCell(row, col) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.row = row;
+    cell.dataset.col = col;
+    // Accessibility: roving tabindex - only focused cell is tabbable
+    cell.tabIndex = (row === focusedRow && col === focusedCol) ? 0 : -1;
+    cell.setAttribute('role', 'gridcell');
+    cell.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}`);
+    return cell;
+  }
+
+  /**
+   * Attach focus event handlers for keyboard navigation
+   */
+  function attachCellFocusHandlers(cell, row, col) {
+    cell.onfocus = () => {
+      // Update roving tabindex state when cell receives focus (via click, tab, or arrow)
+      if (focusedRow !== row || focusedCol !== col) {
+        // Update old cell's tabIndex
+        if (cellElements[focusedRow]?.[focusedCol]) {
+          cellElements[focusedRow][focusedCol].tabIndex = -1;
+        }
+        // Update state
+        focusedRow = row;
+        focusedCol = col;
+        // Ensure this cell has correct tabIndex
+        cell.tabIndex = 0;
+      }
+      // Update crosshair highlight
+      updateCrosshairHighlight(row, col);
+    };
+  }
+
+  /**
+   * Attach keyboard event handlers for cell interaction
+   */
+  function attachCellKeyboardHandlers(cell, row, col) {
+    cell.onkeydown = (e) => {
+      // Arrow key navigation
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveFocusToCell(row - 1, col);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveFocusToCell(row + 1, col);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        moveFocusToCell(row, col - 1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        moveFocusToCell(row, col + 1);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const history = getHistory();
+        if (history) history.beginAction('fill');
+        fillCell(row, col, selectedColor, !pencilMode);
+        if (history) history.commitAction();
+        updatePencilActionsVisibility();
+      } else if (e.key === 'x' || e.key === 'X') {
+        // X key marks cell as empty
+        e.preventDefault();
+        e.stopPropagation(); // Prevent global handler from selecting eraser
+        const history = getHistory();
+        if (history) history.beginAction('fill');
+        fillCell(row, col, 0, !pencilMode);
+        if (history) history.commitAction();
+        updatePencilActionsVisibility();
+      }
+    };
+  }
+
+  /**
+   * Attach mouse event handlers for cell interaction
+   */
+  function attachCellMouseHandlers(cell, row, col) {
+    cell.onmousedown = (e) => {
+      e.preventDefault();
+      cell.focus(); // Explicitly focus since preventDefault blocks default focus
+      const history = getHistory();
+      if (history) history.beginAction('fill');
+
+      isDragging = true;
+      dragColor = e.button === 2 ? 0 : selectedColor;
+      dragCertain = !pencilMode;
+      fillCell(row, col, dragColor, dragCertain);
+      // Capture actual value after toggle logic for consistent drag
+      const cellAfterFill = getCell(row, col);
+      dragColor = cellAfterFill.value;
+      dragCertain = cellAfterFill.certain;
+    };
+
+    cell.onmouseenter = () => {
+      updateCrosshairHighlight(row, col);
+      if (isDragging) {
+        fillCell(row, col, dragColor, dragCertain, true); // skipToggle=true
+      }
+    };
+
+    cell.oncontextmenu = (e) => {
+      e.preventDefault();
+    };
+  }
+
+  /**
+   * Attach touch event handlers with long-press support
+   */
+  function attachCellTouchHandlers(cell, row, col) {
+    let longPressTimer = null;
+    let touchStartTime = 0;
+    let touchMoved = false;
+    let initialTouchRow = row;
+    let initialTouchCol = col;
+
+    cell.ontouchstart = (e) => {
+      // Don't prevent default here - let zoom handle multi-touch
+      if (e.touches.length > 1) return;
+
+      e.preventDefault();
+      e.stopPropagation(); // Prevent zoom container from starting pan
+      touchMoved = false;
+      touchStartTime = Date.now();
+      initialTouchRow = row;
+      initialTouchCol = col;
+
+      // Notify zoom system for tooltip (pass touch Y for positioning)
+      if (window.CozyZoom) {
+        const touchY = e.touches[0]?.clientY ?? 0;
+        window.CozyZoom.onCellTouchStart(row, col, touchY);
+      }
+
+      const history = getHistory();
+      if (history) history.beginAction('fill');
+
+      isDragging = true;
+      dragColor = selectedColor;
+      dragCertain = !pencilMode;
+
+      // Long press timer for X mark
+      longPressTimer = setTimeout(() => {
+        if (!touchMoved) {
+          // Switch to X mode
+          dragColor = 0;
+          fillCell(initialTouchRow, initialTouchCol, 0, dragCertain);
+          // Capture actual value after fill for consistent drag
+          const cellAfterFill = getCell(initialTouchRow, initialTouchCol);
+          dragColor = cellAfterFill.value;
+          dragCertain = cellAfterFill.certain;
+          // Haptic feedback for long-press
+          if (window.CozyApp) window.CozyApp.vibrate(50);
+        }
+      }, CONFIG.LONG_PRESS_DELAY);
+
+      // Immediate fill with color (will be undone if long-press triggers)
+      fillCell(row, col, dragColor, dragCertain);
+      // Capture actual value after toggle logic for consistent drag
+      const cellAfterFill = getCell(row, col);
+      dragColor = cellAfterFill.value;
+      dragCertain = cellAfterFill.certain;
+    };
+
+    cell.ontouchmove = (e) => {
+      if (e.touches.length > 1) return;
+      if (!isDragging) return;
+
+      e.preventDefault();
+      e.stopPropagation(); // Prevent zoom container from interfering
+      touchMoved = true;
+      clearTimeout(longPressTimer);
+
+      // Handle drag-to-fill
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (target && target.classList.contains('cell')) {
+        const r = parseInt(target.dataset.row);
+        const c = parseInt(target.dataset.col);
+        if (!isNaN(r) && !isNaN(c)) {
+          fillCell(r, c, dragColor, dragCertain, true); // skipToggle=true
+          // Notify zoom system for tooltip update
+          if (window.CozyZoom) {
+            window.CozyZoom.onCellTouchMove(r, c);
+          }
+        }
+      }
+    };
+
+    cell.ontouchend = () => {
+      clearTimeout(longPressTimer);
+
+      // If it was a quick tap (not long-press, not drag), ensure we filled
+      const tapDuration = Date.now() - touchStartTime;
+      if (tapDuration < CONFIG.LONG_PRESS_DELAY && !touchMoved) {
+        // Quick tap - already filled in touchstart
+      }
+
+      isDragging = false;
+      dragColor = null;
+
+      const history = getHistory();
+      if (history) history.commitAction();
+
+      updatePencilActionsVisibility();
+
+      // Notify zoom system to hide tooltip
+      if (window.CozyZoom) {
+        window.CozyZoom.onCellTouchEnd();
+      }
+    };
+
+    cell.ontouchcancel = () => {
+      clearTimeout(longPressTimer);
+      isDragging = false;
+      dragColor = null;
+
+      const history = getHistory();
+      if (history) history.cancelAction();
+
+      // Notify zoom system to hide tooltip
+      if (window.CozyZoom) {
+        window.CozyZoom.onCellTouchEnd();
+      }
+    };
+  }
+
   function buildGrid(puzzle) {
     const gridEl = document.getElementById('grid');
     gridEl.innerHTML = '';
@@ -949,210 +1171,11 @@
 
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.row = row;
-        cell.dataset.col = col;
-        // Accessibility: roving tabindex - only focused cell is tabbable
-        cell.tabIndex = (row === focusedRow && col === focusedCol) ? 0 : -1;
-        cell.setAttribute('role', 'gridcell');
-        cell.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}`);
-
-        // === Focus Events (for keyboard navigation) ===
-        cell.onfocus = () => {
-          // Update roving tabindex state when cell receives focus (via click, tab, or arrow)
-          if (focusedRow !== row || focusedCol !== col) {
-            // Update old cell's tabIndex
-            if (cellElements[focusedRow]?.[focusedCol]) {
-              cellElements[focusedRow][focusedCol].tabIndex = -1;
-            }
-            // Update state
-            focusedRow = row;
-            focusedCol = col;
-            // Ensure this cell has correct tabIndex
-            cell.tabIndex = 0;
-          }
-          // Update crosshair highlight
-          updateCrosshairHighlight(row, col);
-        };
-
-        // === Keyboard Events ===
-        cell.onkeydown = (e) => {
-          // Arrow key navigation
-          if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            moveFocusToCell(row - 1, col);
-          } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            moveFocusToCell(row + 1, col);
-          } else if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            moveFocusToCell(row, col - 1);
-          } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            moveFocusToCell(row, col + 1);
-          } else if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const history = getHistory();
-            if (history) history.beginAction('fill');
-            fillCell(row, col, selectedColor, !pencilMode);
-            if (history) history.commitAction();
-            updatePencilActionsVisibility();
-          } else if (e.key === 'x' || e.key === 'X') {
-            // X key marks cell as empty
-            e.preventDefault();
-            e.stopPropagation(); // Prevent global handler from selecting eraser
-            const history = getHistory();
-            if (history) history.beginAction('fill');
-            fillCell(row, col, 0, !pencilMode);
-            if (history) history.commitAction();
-            updatePencilActionsVisibility();
-          }
-        };
-
-        // === Mouse Events ===
-        cell.onmousedown = (e) => {
-          e.preventDefault();
-          cell.focus(); // Explicitly focus since preventDefault blocks default focus
-          const history = getHistory();
-          if (history) history.beginAction('fill');
-
-          isDragging = true;
-          dragColor = e.button === 2 ? 0 : selectedColor;
-          dragCertain = !pencilMode;
-          fillCell(row, col, dragColor, dragCertain);
-          // Capture actual value after toggle logic for consistent drag
-          const cellAfterFill = getCell(row, col);
-          dragColor = cellAfterFill.value;
-          dragCertain = cellAfterFill.certain;
-        };
-
-        cell.onmouseenter = () => {
-          updateCrosshairHighlight(row, col);
-          if (isDragging) {
-            fillCell(row, col, dragColor, dragCertain, true); // skipToggle=true
-          }
-        };
-
-        cell.oncontextmenu = (e) => {
-          e.preventDefault();
-        };
-
-        // === Touch Events with Long-Press ===
-        let longPressTimer = null;
-        let touchStartTime = 0;
-        let touchMoved = false;
-        let initialTouchRow = row;
-        let initialTouchCol = col;
-
-        cell.ontouchstart = (e) => {
-          // Don't prevent default here - let zoom handle multi-touch
-          if (e.touches.length > 1) return;
-
-          e.preventDefault();
-          e.stopPropagation(); // Prevent zoom container from starting pan
-          touchMoved = false;
-          touchStartTime = Date.now();
-          initialTouchRow = row;
-          initialTouchCol = col;
-
-          // Notify zoom system for tooltip (pass touch Y for positioning)
-          if (window.CozyZoom) {
-            const touchY = e.touches[0]?.clientY ?? 0;
-            window.CozyZoom.onCellTouchStart(row, col, touchY);
-          }
-
-          const history = getHistory();
-          if (history) history.beginAction('fill');
-
-          isDragging = true;
-          dragColor = selectedColor;
-          dragCertain = !pencilMode;
-
-          // Long press timer for X mark
-          longPressTimer = setTimeout(() => {
-            if (!touchMoved) {
-              // Switch to X mode
-              dragColor = 0;
-              fillCell(initialTouchRow, initialTouchCol, 0, dragCertain);
-              // Capture actual value after fill for consistent drag
-              const cellAfterFill = getCell(initialTouchRow, initialTouchCol);
-              dragColor = cellAfterFill.value;
-              dragCertain = cellAfterFill.certain;
-              // Haptic feedback for long-press
-              if (window.CozyApp) window.CozyApp.vibrate(50);
-            }
-          }, 400);
-
-          // Immediate fill with color (will be undone if long-press triggers)
-          fillCell(row, col, dragColor, dragCertain);
-          // Capture actual value after toggle logic for consistent drag
-          const cellAfterFill = getCell(row, col);
-          dragColor = cellAfterFill.value;
-          dragCertain = cellAfterFill.certain;
-        };
-
-        cell.ontouchmove = (e) => {
-          if (e.touches.length > 1) return;
-          if (!isDragging) return;
-
-          e.preventDefault();
-          e.stopPropagation(); // Prevent zoom container from interfering
-          touchMoved = true;
-          clearTimeout(longPressTimer);
-
-          // Handle drag-to-fill
-          const touch = e.touches[0];
-          const target = document.elementFromPoint(touch.clientX, touch.clientY);
-          if (target && target.classList.contains('cell')) {
-            const r = parseInt(target.dataset.row);
-            const c = parseInt(target.dataset.col);
-            if (!isNaN(r) && !isNaN(c)) {
-              fillCell(r, c, dragColor, dragCertain, true); // skipToggle=true
-              // Notify zoom system for tooltip update
-              if (window.CozyZoom) {
-                window.CozyZoom.onCellTouchMove(r, c);
-              }
-            }
-          }
-        };
-
-        cell.ontouchend = () => {
-          clearTimeout(longPressTimer);
-
-          // If it was a quick tap (not long-press, not drag), ensure we filled
-          const tapDuration = Date.now() - touchStartTime;
-          if (tapDuration < 400 && !touchMoved) {
-            // Quick tap - already filled in touchstart
-          }
-
-          isDragging = false;
-          dragColor = null;
-
-          const history = getHistory();
-          if (history) history.commitAction();
-
-          updatePencilActionsVisibility();
-
-          // Notify zoom system to hide tooltip
-          if (window.CozyZoom) {
-            window.CozyZoom.onCellTouchEnd();
-          }
-        };
-
-        cell.ontouchcancel = () => {
-          clearTimeout(longPressTimer);
-          isDragging = false;
-          dragColor = null;
-
-          const history = getHistory();
-          if (history) history.cancelAction();
-
-          // Notify zoom system to hide tooltip
-          if (window.CozyZoom) {
-            window.CozyZoom.onCellTouchEnd();
-          }
-        };
+        const cell = createGridCell(row, col);
+        attachCellFocusHandlers(cell, row, col);
+        attachCellKeyboardHandlers(cell, row, col);
+        attachCellMouseHandlers(cell, row, col);
+        attachCellTouchHandlers(cell, row, col);
 
         // Cache the cell element for fast lookup
         cellElements[row][col] = cell;
@@ -1807,7 +1830,7 @@
     const height = puzzle.height;
     const width = puzzle.width;
     const maxDim = Math.max(width, height);
-    const cellSize = Math.max(2, Math.floor(STAMP_CANVAS_SIZE / maxDim));
+    const cellSize = Math.max(2, Math.floor(CONFIG.STAMP_CANVAS_SIZE / maxDim));
 
     const canvas = document.createElement('canvas');
     canvas.width = width * cellSize;

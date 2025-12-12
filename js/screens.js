@@ -5,9 +5,8 @@
 const ScreenManager = (function() {
   'use strict';
 
-  // === Constants ===
-  const VICTORY_CANVAS_SIZE = 180;  // Victory screen puzzle preview size
-  const MAX_SCREEN_HISTORY = 10;    // Limit history to prevent unbounded growth
+  // === Shared Utilities ===
+  const { CONFIG } = window.CozyUtils;
 
   // Screen definitions
   const SCREENS = {
@@ -300,8 +299,8 @@ const ScreenManager = (function() {
     if (addToHistory && currentScreen !== null) {
       screenHistory.push(currentScreen);
       // Trim history if it exceeds max length
-      if (screenHistory.length > MAX_SCREEN_HISTORY) {
-        screenHistory = screenHistory.slice(-MAX_SCREEN_HISTORY);
+      if (screenHistory.length > CONFIG.MAX_SCREEN_HISTORY) {
+        screenHistory = screenHistory.slice(-CONFIG.MAX_SCREEN_HISTORY);
       }
       history.pushState({ screen: screenId }, '', `#${screenId}`);
     }
@@ -590,7 +589,7 @@ const ScreenManager = (function() {
     const width = solution[0] ? solution[0].length : height;
     const maxDim = Math.max(width, height);
     // Fit within container with padding for rounded corners
-    const targetSize = VICTORY_CANVAS_SIZE;
+    const targetSize = CONFIG.VICTORY_CANVAS_SIZE;
     const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
 
     const canvas = document.createElement('canvas');
