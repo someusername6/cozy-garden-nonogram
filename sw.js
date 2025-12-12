@@ -35,7 +35,6 @@ const STATIC_FILES = [
   '/assets/icons/maskable-512.png',
   // SVG icons used in UI
   '/assets/icons/flower-uniform-petals.svg',
-  '/assets/icons/undo.svg',
   '/assets/icons/magnifying-glass.svg',
   '/assets/icons/wooden-painters-palette.svg',
   '/assets/icons/celebration.svg'
