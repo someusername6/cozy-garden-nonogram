@@ -167,6 +167,8 @@
             <div id="row-clues-container" role="group" aria-label="Row clues"></div>
             <div class="grid" id="grid" role="grid" aria-label="Puzzle grid"></div>
           </div>
+          <!-- Toast notification (overlays bottom of grid) -->
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
         </div>
 
         <!-- Contextual clue tooltip (shown when zoomed and touching cells) -->
@@ -187,8 +189,6 @@
           <button class="zoom-btn zoom-out" aria-label="Zoom out">&minus;</button>
           <button class="zoom-btn zoom-fit" aria-label="Fit to view">&#8862;</button>
         </div>
-
-        <div class="status" id="status" role="status" aria-live="polite">Select colors and fill the grid</div>
 
         <div class="controls">
           <!-- Undo/Redo -->

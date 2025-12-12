@@ -688,32 +688,44 @@ kbd {
 }
 
 /* === Status === */
+/* Status is now hidden - we use toast notifications instead */
 .status {
-  text-align: center;
-  font-size: 16px;
-  padding: 10px 20px;
-  border-radius: 20px;
-  background: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-width: 100%;
-  /* Hidden by default - only shown for meaningful states */
   display: none;
 }
 
-/* Show status only for meaningful states */
-.status.won,
-.status.revealed {
-  display: block;
+/* === Toast Notifications === */
+/* Positioned relative to zoom-container, overlaying the bottom of the grid */
+.toast {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  box-shadow: 0 4px 16px var(--color-shadow);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  text-align: center;
+  max-width: calc(100% - 32px);
 }
 
-.status.won {
+.toast.visible {
+  opacity: 0.95;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.toast.toast-success {
   background: var(--color-primary-light);
   color: var(--color-primary-dark);
-  animation: pulse 0.5s ease-in-out 3;
 }
 
-.status.revealed {
+.toast.toast-info {
   background: var(--color-secondary);
   color: var(--color-text);
 }

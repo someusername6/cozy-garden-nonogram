@@ -29,6 +29,40 @@
   // === Constants ===
   const STAMP_CANVAS_SIZE = 180;  // Flying stamp preview size (matches victory screen)
   const MAX_PUZZLE_DIMENSION = 32;  // Maximum puzzle width/height (security limit)
+  const TOAST_DURATION = 2500;  // ms to show toast notifications
+
+  // === Toast Notification ===
+  let toastTimeout = null;
+
+  function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+
+    // Clear any existing timeout
+    clearTimeout(toastTimeout);
+
+    // Update content and style
+    toast.textContent = message;
+    toast.className = 'toast visible';
+    if (type === 'success') {
+      toast.classList.add('toast-success');
+    } else if (type === 'info') {
+      toast.classList.add('toast-info');
+    }
+
+    // Auto-hide after duration
+    toastTimeout = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, TOAST_DURATION);
+  }
+
+  function hideToast() {
+    const toast = document.getElementById('toast');
+    if (toast) {
+      clearTimeout(toastTimeout);
+      toast.classList.remove('visible');
+    }
+  }
 
   // Normalize puzzle from concise format to verbose format
   // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
@@ -516,9 +550,8 @@
         }
       }
 
-      const statusEl = document.getElementById('status');
-      statusEl.textContent = 'Select colors and fill the grid';
-      statusEl.classList.remove('won', 'revealed');
+      // Hide any existing toast when loading a new puzzle
+      hideToast();
 
       const select = document.getElementById('puzzle-select-dropdown');
       if (select) select.value = index;
@@ -1189,8 +1222,7 @@
     }
 
     // Puzzle completed!
-    document.getElementById('status').textContent = 'Puzzle Complete!';
-    document.getElementById('status').classList.add('won');
+    // (Victory screen provides the feedback, no toast needed)
 
     // Success haptic
     if (window.CozyApp) window.CozyApp.vibrate([50, 100, 50]);
@@ -1222,7 +1254,7 @@
     const history = getHistory();
     const changes = [];
 
-    // Record all non-blank cells for undo
+    // Record all non-blank cells for undo and clear them
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
         const cell = getCell(row, col);
@@ -1232,23 +1264,33 @@
             before: { value: cell.value, certain: cell.certain },
             after: { value: null, certain: true }
           });
+          // Clear the cell
+          cell.value = null;
+          cell.certain = true;
+          updateCellVisual(row, col, puzzle);
         }
       }
     }
 
-    if (changes.length > 0 && history) {
-      history.recordBatchAction('reset', changes);
-    }
+    // Only record to history if there were changes
+    if (changes.length > 0) {
+      if (history) {
+        history.recordBatchAction('reset', changes);
+      }
 
-    // Clear storage and reload
-    const storage = getStorage();
-    if (storage) {
-      const puzzleId = getPuzzleId(puzzle);
-      storage.savePuzzleGrid(puzzleId, null);
-    }
+      // Update clue satisfaction
+      updateAllClueSatisfaction(puzzle);
 
-    // Reload without restoring grid
-    loadPuzzle(currentPuzzle);
+      // Clear saved grid in storage
+      const storage = getStorage();
+      if (storage) {
+        const puzzleId = getPuzzleId(puzzle);
+        storage.savePuzzleGrid(puzzleId, null);
+      }
+
+      // Update pencil actions visibility
+      updatePencilActionsVisibility();
+    }
   }
 
   function showSolution() {
@@ -1260,24 +1302,40 @@
       window.CozyZoom.zoomToFit();
     }
 
-    // Clear history - showing solution is not undoable
     const history = getHistory();
-    if (history) history.clear();
+    const changes = [];
 
-    // Convert solution to new format
-    grid = puzzle.solution.map(row =>
-      row.map(value => createCell(value, true))
-    );
-
+    // Record all cell changes for undo
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
+        const cell = getCell(row, col);
+        const solutionValue = puzzle.solution[row][col];
+
+        // Only record if the cell is different from solution
+        if (cell.value !== solutionValue || !cell.certain) {
+          changes.push({
+            row, col,
+            before: { value: cell.value, certain: cell.certain },
+            after: { value: solutionValue, certain: true }
+          });
+        }
+
+        // Apply solution
+        cell.value = solutionValue;
+        cell.certain = true;
         updateCellVisual(row, col, puzzle);
       }
     }
 
-    const statusEl = document.getElementById('status');
-    statusEl.textContent = 'Solution revealed';
-    statusEl.classList.add('revealed');
+    // Record to history if there were changes
+    if (changes.length > 0 && history) {
+      history.recordBatchAction('solution', changes);
+    }
+
+    // Update clue satisfaction
+    updateAllClueSatisfaction(puzzle);
+
+    showToast('Solution revealed', 'info');
     updatePencilActionsVisibility();
   }
 
