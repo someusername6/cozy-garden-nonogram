@@ -17,9 +17,14 @@
   let pencilMode = false;  // Pencil mode for uncertain marks
   let isLoadingPuzzle = false;  // Guard against concurrent puzzle loads
 
+  // Keyboard navigation state (roving tabindex)
+  let focusedRow = 0;
+  let focusedCol = 0;
+
   // Event handler references for cleanup (prevents memory leaks)
   let mouseUpHandler = null;
   let gridMouseLeaveHandler = null;
+  let gridFocusOutHandler = null;
 
   // DOM element cache for performance (avoids repeated querySelector calls)
   let cellElements = [];  // 2D array: cellElements[row][col]
@@ -580,6 +585,10 @@
       pencilMode = false;
       updatePencilModeUI();
 
+      // Reset keyboard focus to top-left cell
+      focusedRow = 0;
+      focusedCol = 0;
+
       currentPuzzle = index;
       const puzzle = puzzles[index];
       if (!puzzle) {
@@ -874,6 +883,34 @@
     }
   }
 
+  // Move keyboard focus to a specific cell (roving tabindex pattern)
+  function moveFocusToCell(newRow, newCol) {
+    const puzzle = getPuzzles()[currentPuzzle];
+    if (!puzzle) return;
+
+    // Bounds check - stop at edges
+    if (newRow < 0 || newRow >= puzzle.height || newCol < 0 || newCol >= puzzle.width) {
+      return;
+    }
+
+    // Update old cell's tabIndex
+    if (cellElements[focusedRow]?.[focusedCol]) {
+      cellElements[focusedRow][focusedCol].tabIndex = -1;
+    }
+
+    // Update state
+    focusedRow = newRow;
+    focusedCol = newCol;
+
+    // Update new cell and focus it
+    const newCell = cellElements[newRow]?.[newCol];
+    if (newCell) {
+      newCell.tabIndex = 0;
+      newCell.focus();
+      // Crosshair highlight is handled by the cell's onfocus handler
+    }
+  }
+
   function buildGrid(puzzle) {
     const gridEl = document.getElementById('grid');
     gridEl.innerHTML = '';
@@ -883,6 +920,9 @@
     // Clean up previous event listeners to prevent memory leaks
     if (gridMouseLeaveHandler) {
       gridEl.removeEventListener('mouseleave', gridMouseLeaveHandler);
+    }
+    if (gridFocusOutHandler) {
+      gridEl.removeEventListener('focusout', gridFocusOutHandler);
     }
     if (mouseUpHandler) {
       document.removeEventListener('mouseup', mouseUpHandler);
@@ -894,9 +934,18 @@
       cellElements[r] = [];
     }
 
-    // Clear highlight when leaving grid
+    // Clear highlight when leaving grid (mouse)
     gridMouseLeaveHandler = () => clearCrosshairHighlight();
     gridEl.addEventListener('mouseleave', gridMouseLeaveHandler);
+
+    // Clear highlight when focus leaves grid (keyboard)
+    gridFocusOutHandler = (e) => {
+      // Only clear if focus is leaving the grid entirely
+      if (!gridEl.contains(e.relatedTarget)) {
+        clearCrosshairHighlight();
+      }
+    };
+    gridEl.addEventListener('focusout', gridFocusOutHandler);
 
     for (let row = 0; row < puzzle.height; row++) {
       for (let col = 0; col < puzzle.width; col++) {
@@ -904,14 +953,45 @@
         cell.className = 'cell';
         cell.dataset.row = row;
         cell.dataset.col = col;
-        // Accessibility: make cells keyboard accessible
-        cell.tabIndex = 0;
+        // Accessibility: roving tabindex - only focused cell is tabbable
+        cell.tabIndex = (row === focusedRow && col === focusedCol) ? 0 : -1;
         cell.setAttribute('role', 'gridcell');
         cell.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}`);
 
+        // === Focus Events (for keyboard navigation) ===
+        cell.onfocus = () => {
+          // Update roving tabindex state when cell receives focus (via click, tab, or arrow)
+          if (focusedRow !== row || focusedCol !== col) {
+            // Update old cell's tabIndex
+            if (cellElements[focusedRow]?.[focusedCol]) {
+              cellElements[focusedRow][focusedCol].tabIndex = -1;
+            }
+            // Update state
+            focusedRow = row;
+            focusedCol = col;
+            // Ensure this cell has correct tabIndex
+            cell.tabIndex = 0;
+          }
+          // Update crosshair highlight
+          updateCrosshairHighlight(row, col);
+        };
+
         // === Keyboard Events ===
         cell.onkeydown = (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          // Arrow key navigation
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            moveFocusToCell(row - 1, col);
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            moveFocusToCell(row + 1, col);
+          } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            moveFocusToCell(row, col - 1);
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            moveFocusToCell(row, col + 1);
+          } else if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             const history = getHistory();
             if (history) history.beginAction('fill');
@@ -921,6 +1001,7 @@
           } else if (e.key === 'x' || e.key === 'X') {
             // X key marks cell as empty
             e.preventDefault();
+            e.stopPropagation(); // Prevent global handler from selecting eraser
             const history = getHistory();
             if (history) history.beginAction('fill');
             fillCell(row, col, 0, !pencilMode);
@@ -932,6 +1013,7 @@
         // === Mouse Events ===
         cell.onmousedown = (e) => {
           e.preventDefault();
+          cell.focus(); // Explicitly focus since preventDefault blocks default focus
           const history = getHistory();
           if (history) history.beginAction('fill');
 
@@ -1464,6 +1546,17 @@
       // 0 or X = Select eraser
       if ((e.key === '0' || e.key === 'x') && !e.ctrlKey && !e.metaKey) {
         selectColor(0);
+      }
+      // Escape = Go back to collection (only on puzzle screen, not when modal is open)
+      if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey) {
+        const helpModal = document.getElementById('help-modal');
+        const isHelpModalOpen = helpModal?.classList.contains('visible');
+        const isOnPuzzleScreen = window.ScreenManager?.getCurrentScreen() === window.ScreenManager?.SCREENS?.PUZZLE;
+
+        if (isOnPuzzleScreen && !isHelpModalOpen) {
+          e.preventDefault();
+          showCollection();
+        }
       }
     });
   }
