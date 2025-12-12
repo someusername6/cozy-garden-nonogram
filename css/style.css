@@ -690,8 +690,19 @@ kbd {
 }
 
 .color-btn.eraser {
-  background: linear-gradient(135deg, var(--color-cell) 45%, #c97a7a 50%, var(--color-cell) 55%);
+  background: var(--color-surface);
   position: relative;
+}
+
+.color-btn.eraser::after {
+  content: "\2715";
+  color: var(--color-text-light);
+  font-size: 20px;
+  font-weight: bold;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* === Status === */
