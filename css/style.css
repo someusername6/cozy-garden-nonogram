@@ -924,11 +924,11 @@ kbd {
   justify-content: center;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   background: var(--color-secondary-dark);
 }
 
-.btn:active {
+.btn:active:not(:disabled) {
   transform: scale(0.95);
 }
 
