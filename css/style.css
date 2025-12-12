@@ -2146,6 +2146,7 @@ html[data-theme="dark"] :focus-visible {
 
 .puzzle-card.completed {
   background: color-mix(in srgb, var(--color-primary-light) 15%, var(--color-surface));
+  border: 2px solid var(--color-primary-light);
 }
 
 .puzzle-card-preview {
