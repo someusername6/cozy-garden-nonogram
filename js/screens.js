@@ -860,6 +860,7 @@ const ScreenManager = (function() {
     getCurrentScreen,
     applyTheme,
     initTheme,
+    showConfirmModal,
     SCREENS
   };
 })();
