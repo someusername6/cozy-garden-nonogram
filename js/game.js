@@ -882,6 +882,7 @@
     const gridEl = document.getElementById('grid');
     gridEl.innerHTML = '';
     gridEl.style.gridTemplateColumns = `repeat(${puzzle.width}, var(--cell-size))`;
+    gridEl.style.gridTemplateRows = `repeat(${puzzle.height}, var(--cell-size))`;
 
     // Clean up previous event listeners to prevent memory leaks
     if (gridMouseLeaveHandler) {

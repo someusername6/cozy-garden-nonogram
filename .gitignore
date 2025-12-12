@@ -32,3 +32,4 @@ test_images/test_variants/
 # Claude settings (local)
 .claude/
 images/input_reduced/
+node_modules/

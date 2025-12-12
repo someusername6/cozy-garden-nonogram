@@ -322,7 +322,8 @@ body {
   display: grid;
   grid-template-columns: auto auto;
   grid-template-rows: auto auto;
-  gap: 4px;
+  column-gap: 4px;
+  row-gap: 4px;
   touch-action: none; /* Prevent scrolling while drawing */
   /* Prevent text selection during gameplay (scoped to game area only) */
   -webkit-user-select: none;
@@ -336,20 +337,19 @@ body {
 /* === Clues === */
 .col-clues {
   display: grid;
-  gap: max(1px, calc(var(--cell-size) * 0.04));
-  padding: max(1px, calc(var(--cell-size) * 0.04));
-  padding-top: 0;
+  gap: 1px;
   align-self: end;
+  justify-self: start;
 }
 
 .col-clue {
   width: var(--cell-size);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  padding-bottom: max(1px, calc(var(--cell-size) * 0.08));
-  gap: max(1px, calc(var(--cell-size) * 0.04));
+  gap: 2px;
 }
 
 .clue-cell {
@@ -372,22 +372,19 @@ body {
 
 #row-clues-container {
   display: grid;
-  gap: max(1px, calc(var(--cell-size) * 0.04));
-  padding: max(1px, calc(var(--cell-size) * 0.04));
-  padding-left: 0;
+  gap: 1px;
   justify-self: end;
+  align-self: start;
   width: max-content; /* Ensure container expands to fit widest row of clues */
 }
 
 .row-clues {
-  /* Scale min-width with cell size to prevent fixed constraint at low zoom */
   min-width: max(30px, calc(var(--cell-size) * 3.5));
   height: var(--cell-size);
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding-right: max(2px, calc(var(--cell-size) * 0.15));
-  gap: max(1px, calc(var(--cell-size) * 0.08));
+  gap: 2px;
 }
 
 .row-clue-cell {
@@ -414,11 +411,11 @@ body {
   display: grid;
   gap: 1px;
   background: var(--color-grid-border);
-  padding: 1px;
-  border-radius: 4px;
   user-select: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   touch-action: none;
+  justify-self: start;
+  align-self: start;
 }
 
 .cell {
