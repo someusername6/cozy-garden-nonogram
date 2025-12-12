@@ -168,7 +168,7 @@ html {
 body {
   /* System font stack with modern fallbacks for better cross-platform rendering */
   font-family: 'Georgia', 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', 'Times New Roman', serif;
-  background: linear-gradient(135deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+  background: var(--color-bg-start);
   color: var(--color-text);
   margin: 0;
   padding: 0;
@@ -1743,24 +1743,32 @@ html[data-theme="dark"] .puzzle-card:focus-visible {
 /* === Collection Screen === */
 
 .collection-search {
-  max-width: 800px;
-  margin: 0 auto 16px auto;
-  padding: 12px;
+  margin: 0 -16px; /* Negative margin to counteract screen-content padding */
+  padding: 12px 16px 16px 16px;
   /* Sticky search bar while scrolling */
   position: sticky;
   top: 0;
   z-index: 10;
-  background: linear-gradient(135deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+  /* Flat background matching page */
+  background: var(--color-bg-start);
+}
+
+/* No top padding - search bar provides visual separation */
+#screen-collection .screen-content {
+  padding-top: 0;
 }
 
 .collection-search-input {
   width: 100%;
+  max-width: 800px;
+  display: block;
+  margin: 0 auto;
   padding: 10px 14px;
   font-size: 16px;
   font-family: inherit;
   border: 1px solid var(--color-secondary-dark);
   border-radius: 8px;
-  background: var(--color-surface);
+  background: var(--color-bg-end);
   color: var(--color-text);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -2079,7 +2087,7 @@ body.showing-game .collection-screen {
   bottom: 0;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+  background: var(--color-bg-start);
   transition: opacity 0.3s ease, transform 0.3s ease;
   padding-top: var(--safe-area-top);
   padding-bottom: var(--safe-area-bottom);
