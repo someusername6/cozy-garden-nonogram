@@ -67,7 +67,7 @@ open index.html
 - Tutorial for first-time users
 - Settings (sound/music/vibration toggles, theme selection, reset progress)
 - Settings: "Solve All Puzzles" debug button (for testing)
-- Dark mode with cozy warm theme (Light/Dark options, defaults to system preference for new users)
+- Light/Dark themes styled as "Day in the Garden" (vibrant greens, sunlit warmth) and "Night in the Garden" (deep navy, moonlit silvers). Defaults to system preference for new users. Theme buttons labeled "Light/Dark" (not "Day/Night") for clarity and accessibility convention.
 - PWA support (offline capable, installable)
 - Crosshair hover effect on desktop
 
