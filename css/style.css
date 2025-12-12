@@ -2255,7 +2255,8 @@ body.showing-game .collection-screen {
 }
 
 .victory-icon {
-  font-size: 64px;
+  width: 48px;
+  height: 48px;
   display: block;
   animation: victory-pop 0.5s ease-out;
 }
