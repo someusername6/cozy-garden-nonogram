@@ -1666,6 +1666,7 @@ body.is-installed {
 .difficulty-tab:focus-visible,
 .tutorial-next-btn:focus-visible,
 .tutorial-skip:focus-visible,
+.settings-btn:focus-visible,
 .settings-danger-btn:focus-visible,
 .settings-debug-btn:focus-visible {
   outline: 3px solid var(--color-accent);
@@ -2607,6 +2608,24 @@ body.showing-game .collection-screen {
 .theme-name {
   font-size: 0.75rem;
   line-height: 1;
+}
+
+.settings-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-btn:active {
+  background: var(--color-primary);
+  color: var(--color-surface);
 }
 
 .settings-danger-btn {

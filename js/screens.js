@@ -670,6 +670,15 @@ const ScreenManager = (function() {
       resetBtn.setAttribute('data-initialized', 'true');
     }
 
+    // Show tutorial button
+    const tutorialBtn = document.getElementById('settings-tutorial-btn');
+    if (tutorialBtn && !tutorialBtn.hasAttribute('data-initialized')) {
+      tutorialBtn.addEventListener('click', () => {
+        showScreen(SCREENS.TUTORIAL);
+      });
+      tutorialBtn.setAttribute('data-initialized', 'true');
+    }
+
     // Theme selection
     const themeOptions = document.querySelectorAll('.theme-option');
     const currentTheme = window.CozyStorage?.getSetting('theme') || 'system';
