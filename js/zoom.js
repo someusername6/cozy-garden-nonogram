@@ -14,7 +14,7 @@
   const TOOLTIP_DISMISS_DELAY = 1500;  // ms after touch ends
   const TOOLTIP_SHOW_DELAY = 100; // ms before showing tooltip
   const PAN_THRESHOLD = 10;       // pixels of movement before pan commits
-  const ZOOM_HINT_KEY = 'cozy_garden_zoom_hint_shown';
+  // Zoom hint flag now stored in CozyStorage.flags.zoomHintShown
 
   // === State ===
   let currentZoom = DEFAULT_ZOOM;
@@ -487,11 +487,11 @@
     if (puzzle.width <= 10 && puzzle.height <= 10) return;
 
     // Only show once
-    if (localStorage.getItem(ZOOM_HINT_KEY)) return;
+    if (window.CozyStorage?.getFlag('zoomHintShown')) return;
 
     // Show hint toast
     showZoomHint();
-    localStorage.setItem(ZOOM_HINT_KEY, 'true');
+    window.CozyStorage?.setFlag('zoomHintShown', true);
   }
 
   function showZoomHint() {

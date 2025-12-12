@@ -40,6 +40,16 @@
         difficulty: 'easy',
         grid: null, // Saved grid state for current puzzle
         startTime: null
+      },
+      // One-time UI flags (things shown once to user)
+      flags: {
+        tutorialCompleted: false,
+        helpShown: false,
+        zoomHintShown: false
+      },
+      // Persistent UI state
+      uiState: {
+        collapsedSections: [] // Collection screen collapsed categories
       }
     };
   }
@@ -319,6 +329,42 @@
       }
 
       this.data.stats.lastPlayDate = today;
+    }
+
+    // === Flags Methods (one-time UI flags) ===
+
+    getFlag(key) {
+      // Ensure flags object exists (migration support)
+      if (!this.data.flags) {
+        this.data.flags = getDefaultData().flags;
+      }
+      return this.data.flags[key] || false;
+    }
+
+    setFlag(key, value = true) {
+      if (!this.data.flags) {
+        this.data.flags = getDefaultData().flags;
+      }
+      this.data.flags[key] = value;
+      this.save();
+    }
+
+    // === UI State Methods ===
+
+    getUIState(key) {
+      // Ensure uiState object exists (migration support)
+      if (!this.data.uiState) {
+        this.data.uiState = getDefaultData().uiState;
+      }
+      return this.data.uiState[key];
+    }
+
+    setUIState(key, value) {
+      if (!this.data.uiState) {
+        this.data.uiState = getDefaultData().uiState;
+      }
+      this.data.uiState[key] = value;
+      this.save();
     }
 
     // === Export/Import ===

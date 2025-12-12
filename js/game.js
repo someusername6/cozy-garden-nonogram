@@ -30,7 +30,7 @@
   const STAMP_CANVAS_SIZE = 180;  // Flying stamp preview size (matches victory screen)
   const MAX_PUZZLE_DIMENSION = 32;  // Maximum puzzle width/height (security limit)
   const TOAST_DURATION = 2500;  // ms to show toast notifications
-  const HELP_SHOWN_KEY = 'cozy_garden_help_shown';  // localStorage key for first-time help
+  // Help shown flag now stored in CozyStorage.flags.helpShown
 
   // === Toast Notification ===
   let toastTimeout = null;
@@ -147,11 +147,11 @@
 
   function maybeShowFirstTimeHelp() {
     // Show help modal automatically on first visit
-    if (!localStorage.getItem(HELP_SHOWN_KEY)) {
+    if (!window.CozyStorage?.getFlag('helpShown')) {
       // Small delay so the puzzle renders first
       setTimeout(() => {
         showHelpModal();
-        localStorage.setItem(HELP_SHOWN_KEY, 'true');
+        window.CozyStorage?.setFlag('helpShown', true);
       }, 500);
     }
   }
@@ -283,7 +283,9 @@
   }
 
   function getPuzzleId(puzzle) {
-    return puzzle.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    // Handle both concise (t) and verbose (title) formats
+    const title = puzzle.t || puzzle.title;
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
 
   function getStorage() {

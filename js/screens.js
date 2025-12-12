@@ -28,12 +28,155 @@ const ScreenManager = (function() {
   // Screen elements cache
   let screenElements = {};
 
+  // Confirm modal state
+  let confirmModalCallback = null;
+
+  // === Confirm/Alert Modal Functions ===
+
+  /**
+   * Show a confirmation modal
+   * @param {Object} options - Modal options
+   * @param {string} options.title - Modal title
+   * @param {string} options.message - Modal message
+   * @param {string} [options.confirmText='Confirm'] - Confirm button text
+   * @param {string} [options.cancelText='Cancel'] - Cancel button text
+   * @param {boolean} [options.danger=false] - Use danger styling for confirm button
+   * @param {Function} options.onConfirm - Callback when confirmed
+   * @param {Function} [options.onCancel] - Callback when cancelled
+   */
+  function showConfirmModal(options) {
+    const modal = document.getElementById('confirm-modal');
+    const title = document.getElementById('confirm-modal-title');
+    const message = document.getElementById('confirm-modal-message');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+
+    if (!modal) return;
+
+    // Set content
+    title.textContent = options.title || 'Confirm';
+    message.textContent = options.message || 'Are you sure?';
+    confirmBtn.textContent = options.confirmText || 'Confirm';
+    cancelBtn.textContent = options.cancelText || 'Cancel';
+
+    // Set danger styling if needed
+    confirmBtn.classList.toggle('confirm-modal-btn-danger', !!options.danger);
+    confirmBtn.classList.toggle('confirm-modal-btn-primary', !options.danger);
+
+    // Remove alert mode
+    modal.classList.remove('alert-mode');
+
+    // Store callback
+    confirmModalCallback = options;
+
+    // Show modal
+    modal.classList.add('visible');
+
+    // Focus confirm button for accessibility
+    setTimeout(() => confirmBtn.focus(), 100);
+  }
+
+  /**
+   * Show an alert modal (single OK button)
+   * @param {Object} options - Modal options
+   * @param {string} options.title - Modal title
+   * @param {string} options.message - Modal message
+   * @param {string} [options.buttonText='OK'] - Button text
+   * @param {Function} [options.onClose] - Callback when closed
+   */
+  function showAlertModal(options) {
+    const modal = document.getElementById('confirm-modal');
+    const title = document.getElementById('confirm-modal-title');
+    const message = document.getElementById('confirm-modal-message');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+
+    if (!modal) return;
+
+    // Set content
+    title.textContent = options.title || 'Notice';
+    message.textContent = options.message || '';
+    confirmBtn.textContent = options.buttonText || 'OK';
+
+    // Reset to primary styling
+    confirmBtn.classList.remove('confirm-modal-btn-danger');
+    confirmBtn.classList.add('confirm-modal-btn-primary');
+
+    // Set alert mode (hides cancel button)
+    modal.classList.add('alert-mode');
+
+    // Store callback
+    confirmModalCallback = { onConfirm: options.onClose };
+
+    // Show modal
+    modal.classList.add('visible');
+
+    // Focus button for accessibility
+    setTimeout(() => confirmBtn.focus(), 100);
+  }
+
+  /**
+   * Hide the confirm modal
+   */
+  function hideConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    if (modal) {
+      modal.classList.remove('visible');
+    }
+    confirmModalCallback = null;
+  }
+
+  /**
+   * Initialize confirm modal event listeners
+   */
+  function initConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    const backdrop = modal?.querySelector('.confirm-modal-backdrop');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+
+    if (!modal) return;
+
+    // Confirm button
+    confirmBtn?.addEventListener('click', () => {
+      const callback = confirmModalCallback?.onConfirm;
+      hideConfirmModal();
+      // Delay callback to allow hide transition to complete before showing another modal
+      if (callback) setTimeout(callback, 200);
+    });
+
+    // Cancel button
+    cancelBtn?.addEventListener('click', () => {
+      const callback = confirmModalCallback?.onCancel;
+      hideConfirmModal();
+      if (callback) callback();
+    });
+
+    // Backdrop click (only for non-destructive actions)
+    backdrop?.addEventListener('click', () => {
+      const callback = confirmModalCallback?.onCancel;
+      hideConfirmModal();
+      if (callback) callback();
+    });
+
+    // Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('visible')) {
+        const callback = confirmModalCallback?.onCancel;
+        hideConfirmModal();
+        if (callback) callback();
+      }
+    });
+  }
+
   /**
    * Initialize screen manager
    */
   function init() {
     // Apply saved theme immediately to prevent flash
     initTheme();
+
+    // Initialize confirm modal
+    initConfirmModal();
 
     // Cache all screen elements
     Object.values(SCREENS).forEach(screenId => {
@@ -193,7 +336,7 @@ const ScreenManager = (function() {
       }
 
       // Check if first time user
-      const hasPlayedBefore = localStorage.getItem('cozy_garden_played');
+      const hasPlayedBefore = window.CozyStorage?.getFlag('tutorialCompleted');
 
       if (!hasPlayedBefore) {
         showScreen(SCREENS.TUTORIAL);
@@ -222,12 +365,21 @@ const ScreenManager = (function() {
       settingsBtn.setAttribute('data-initialized', 'true');
     }
 
-    // Update progress display
+    // Update progress display using CozyStorage
     if (progressEl && window.PUZZLE_DATA) {
-      const progress = loadProgress();
-      // PUZZLE_DATA is a flat array, not an object
-      const totalPuzzles = Array.isArray(window.PUZZLE_DATA) ? window.PUZZLE_DATA.length : 0;
-      const solvedCount = progress.solved ? progress.solved.length : 0;
+      const puzzles = window.PUZZLE_DATA;
+      const totalPuzzles = Array.isArray(puzzles) ? puzzles.length : 0;
+      let solvedCount = 0;
+
+      if (window.CozyStorage && window.CozyGarden?.getPuzzleId) {
+        puzzles.forEach(puzzle => {
+          const puzzleId = window.CozyGarden.getPuzzleId(puzzle);
+          if (window.CozyStorage.isPuzzleCompleted(puzzleId)) {
+            solvedCount++;
+          }
+        });
+      }
+
       progressEl.textContent = `${solvedCount} / ${totalPuzzles} puzzles solved`;
     }
   }
@@ -396,29 +548,41 @@ const ScreenManager = (function() {
     // Reset progress
     if (resetBtn && !resetBtn.hasAttribute('data-initialized')) {
       resetBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
-          // Clear game state (in-memory grid, etc.)
-          if (window.CozyGarden && window.CozyGarden.clearAllState) {
-            window.CozyGarden.clearAllState();
+        showConfirmModal({
+          title: 'Reset Progress',
+          message: 'Are you sure you want to reset all progress? This cannot be undone.',
+          confirmText: 'Reset',
+          cancelText: 'Cancel',
+          danger: true,
+          onConfirm: () => {
+            // Clear game state (in-memory grid, etc.)
+            if (window.CozyGarden && window.CozyGarden.clearAllState) {
+              window.CozyGarden.clearAllState();
+            }
+
+            // Use CozyStorage reset (clears all progress, flags, and UI state)
+            if (window.CozyStorage && window.CozyStorage.reset) {
+              window.CozyStorage.reset();
+            }
+
+            // Clean up legacy localStorage keys (from older versions)
+            localStorage.removeItem('cozy_garden_progress');
+            localStorage.removeItem('cozy_garden_played');
+            localStorage.removeItem('cozy_garden_collapsed_sections');
+            localStorage.removeItem('cozy_garden_help_shown');
+            localStorage.removeItem('cozy_garden_zoom_hint_shown');
+
+            // Refresh collection if visible
+            if (window.CozyCollection) {
+              window.CozyCollection.refresh();
+            }
+
+            showAlertModal({
+              title: 'Progress Reset',
+              message: 'All progress has been cleared.'
+            });
           }
-
-          // Use CozyStorage reset if available
-          if (window.CozyStorage && window.CozyStorage.reset) {
-            window.CozyStorage.reset();
-          }
-
-          // Also clear screen manager's progress tracking
-          localStorage.removeItem('cozy_garden_progress');
-          localStorage.removeItem('cozy_garden_played');
-          localStorage.removeItem('cozy_garden_collapsed_sections');
-
-          // Refresh collection if visible
-          if (window.CozyCollection) {
-            window.CozyCollection.refresh();
-          }
-
-          alert('Progress reset!');
-        }
+        });
       });
       resetBtn.setAttribute('data-initialized', 'true');
     }
@@ -457,32 +621,41 @@ const ScreenManager = (function() {
     const solveAllBtn = document.getElementById('settings-solve-all-btn');
     if (solveAllBtn && !solveAllBtn.hasAttribute('data-initialized')) {
       solveAllBtn.addEventListener('click', () => {
-        if (confirm('Mark all puzzles as solved? This is a debug feature.')) {
-          const puzzles = window.PUZZLE_DATA || [];
-          const storage = window.CozyStorage;
+        showConfirmModal({
+          title: 'Debug: Solve All',
+          message: 'Mark all puzzles as solved? This is a debug feature.',
+          confirmText: 'Solve All',
+          cancelText: 'Cancel',
+          onConfirm: () => {
+            const puzzles = window.PUZZLE_DATA || [];
+            const storage = window.CozyStorage;
 
-          if (storage) {
-            puzzles.forEach(puzzle => {
-              // Use shared utility from CozyGarden if available for consistency
-              let puzzleId;
-              if (window.CozyGarden?.getPuzzleId) {
-                puzzleId = window.CozyGarden.getPuzzleId(puzzle);
-              } else {
-                // Fallback - handle both concise (t) and verbose (title) formats
-                const title = puzzle.t || puzzle.title;
-                puzzleId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-              }
-              storage.completePuzzle(puzzleId);
+            if (storage) {
+              puzzles.forEach(puzzle => {
+                // Use shared utility from CozyGarden if available for consistency
+                let puzzleId;
+                if (window.CozyGarden?.getPuzzleId) {
+                  puzzleId = window.CozyGarden.getPuzzleId(puzzle);
+                } else {
+                  // Fallback - handle both concise (t) and verbose (title) formats
+                  const title = puzzle.t || puzzle.title;
+                  puzzleId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                }
+                storage.completePuzzle(puzzleId);
+              });
+            }
+
+            // Refresh collection if visible
+            if (window.CozyCollection) {
+              window.CozyCollection.refresh();
+            }
+
+            showAlertModal({
+              title: 'All Puzzles Solved',
+              message: `Marked ${puzzles.length} puzzles as solved!`
             });
           }
-
-          // Refresh collection if visible
-          if (window.CozyCollection) {
-            window.CozyCollection.refresh();
-          }
-
-          alert(`Marked ${puzzles.length} puzzles as solved!`);
-        }
+        });
       });
       solveAllBtn.setAttribute('data-initialized', 'true');
     }
@@ -515,7 +688,7 @@ const ScreenManager = (function() {
     }
 
     function completeTutorial() {
-      localStorage.setItem('cozy_garden_played', 'true');
+      window.CozyStorage?.setFlag('tutorialCompleted', true);
       showScreen(SCREENS.HOME);
     }
 
@@ -539,28 +712,6 @@ const ScreenManager = (function() {
     // Reset to first step when entering
     currentStep = 0;
     showStep(0);
-  }
-
-  // ============================================
-  // Progress Persistence (settings now use CozyStorage)
-  // ============================================
-
-  function loadProgress() {
-    try {
-      const saved = localStorage.getItem('cozy_garden_progress');
-      return saved ? JSON.parse(saved) : { solved: [], totalTime: 0 };
-    } catch {
-      return { solved: [], totalTime: 0 };
-    }
-  }
-
-  function saveProgress(puzzleId, timeSeconds) {
-    const progress = loadProgress();
-    if (!progress.solved.includes(puzzleId)) {
-      progress.solved.push(puzzleId);
-    }
-    progress.totalTime = (progress.totalTime || 0) + timeSeconds;
-    localStorage.setItem('cozy_garden_progress', JSON.stringify(progress));
   }
 
   // ============================================
@@ -606,8 +757,6 @@ const ScreenManager = (function() {
     goBack,
     getScreenData,
     getCurrentScreen,
-    saveProgress,
-    loadProgress,
     applyTheme,
     initTheme,
     SCREENS

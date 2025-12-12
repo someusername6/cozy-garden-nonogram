@@ -10,26 +10,18 @@
   // Difficulty display order (derived from puzzles, but with preferred ordering)
   const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'challenging', 'expert'];
 
-  // Storage key for collapsed state
-  const COLLAPSED_KEY = 'cozy_garden_collapsed_sections';
-
-  // Get collapsed sections from localStorage
+  // Get collapsed sections from CozyStorage
   function getCollapsedSections() {
-    try {
-      const stored = localStorage.getItem(COLLAPSED_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch (e) {
-      return null;
+    const stored = window.CozyStorage?.getUIState('collapsedSections');
+    if (stored && typeof stored === 'object') {
+      return stored;
     }
+    return null;
   }
 
-  // Save collapsed sections to localStorage
+  // Save collapsed sections to CozyStorage
   function saveCollapsedSections(collapsed) {
-    try {
-      localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsed));
-    } catch (e) {
-      // Ignore storage errors
-    }
+    window.CozyStorage?.setUIState('collapsedSections', collapsed);
   }
 
   // Toggle section collapsed state
