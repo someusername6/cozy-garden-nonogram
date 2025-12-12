@@ -1625,7 +1625,7 @@
       }
 
       // Update clue satisfaction
-      updateAllClueSatisfaction(puzzle);
+      updateClueSatisfaction(puzzle);
 
       // Clear saved grid in storage
       const storage = getStorage();
@@ -1679,7 +1679,7 @@
     }
 
     // Update clue satisfaction
-    updateAllClueSatisfaction(puzzle);
+    updateClueSatisfaction(puzzle);
 
     showToast('Solution revealed', 'info');
     updatePencilActionsVisibility();
