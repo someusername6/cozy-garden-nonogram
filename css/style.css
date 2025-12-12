@@ -1454,32 +1454,6 @@ html[data-theme="dark"] .confirm-modal-btn-primary {
   border-color: var(--color-primary-btn);
 }
 
-html[data-theme="dark"] .clue-tooltip {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-html[data-theme="dark"] .zoom-btn {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-html[data-theme="dark"] .zoom-hint-toast {
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-html[data-theme="dark"] .color-btn {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Use darker green for primary buttons with white text */
-html[data-theme="dark"] .home-btn-primary,
-html[data-theme="dark"] .victory-btn-primary,
-html[data-theme="dark"] .confirm-modal-btn-primary {
-  background: var(--color-primary-btn);
-  border-color: var(--color-primary-btn);
-}
-
 /* Hide zoom controls on desktop (mouse users don't need them) */
 @media (hover: hover) and (pointer: fine) {
   .zoom-controls {
