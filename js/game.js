@@ -582,12 +582,16 @@
 
       currentPuzzle = index;
       const puzzle = puzzles[index];
-      if (!puzzle) return;
+      if (!puzzle) {
+        isLoadingPuzzle = false;
+        return;
+      }
 
       // Validate puzzle dimensions (security: prevent DOM explosion)
       if (puzzle.width > MAX_PUZZLE_DIMENSION || puzzle.height > MAX_PUZZLE_DIMENSION ||
           puzzle.width < 1 || puzzle.height < 1) {
         console.error(`[Game] Invalid puzzle dimensions: ${puzzle.width}x${puzzle.height}`);
+        isLoadingPuzzle = false;
         return;
       }
 
