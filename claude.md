@@ -85,6 +85,7 @@ open index.html
 - **Leaderboards or competitive features**: Not aligned with cozy positioning.
 - **Energy systems**: Dark pattern, avoid entirely.
 - **Search button**: Collection search uses "filter as you type" pattern intentionally. With ~130 puzzles filtered client-side, results are instant. A submit button would add unnecessary friction. This is the same pattern used by Spotlight, VS Code command palette, and browser bookmark managers.
+- **Lazy canvas rendering (IntersectionObserver)**: Not needed at current scale (~130 puzzles). Each mini canvas is simple pixel drawing (<1ms), and collapsible sections already limit visible cards. Revisit only if puzzle count exceeds 500+ or users report slow collection loading on low-end devices.
 
 ## Market Context
 
