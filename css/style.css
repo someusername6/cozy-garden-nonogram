@@ -1973,7 +1973,8 @@ body.showing-game .collection-screen {
 }
 
 .splash-icon {
-  font-size: 80px;
+  width: 80px;
+  height: 80px;
   display: block;
   animation: splash-bounce 1s ease-in-out infinite;
 }
@@ -2036,7 +2037,8 @@ body.showing-game .collection-screen {
 }
 
 .home-icon {
-  font-size: 64px;
+  width: 64px;
+  height: 64px;
   display: block;
 }
 
@@ -2468,7 +2470,8 @@ body.showing-game .collection-screen {
 }
 
 .tutorial-emoji {
-  font-size: 80px;
+  width: 80px;
+  height: 80px;
   display: block;
 }
 
