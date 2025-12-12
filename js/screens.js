@@ -165,6 +165,35 @@ const ScreenManager = (function() {
         hideConfirmModal();
         if (callback) callback();
       }
+
+      // Focus trap: keep Tab within modal when visible
+      if (e.key === 'Tab' && modal.classList.contains('visible')) {
+        const isAlertMode = modal.classList.contains('alert-mode');
+        const focusableElements = isAlertMode ? [confirmBtn] : [cancelBtn, confirmBtn];
+        const firstEl = focusableElements[0];
+        const lastEl = focusableElements[focusableElements.length - 1];
+
+        // Check if focus is within the modal
+        const focusInModal = focusableElements.includes(document.activeElement);
+
+        if (!focusInModal) {
+          // Focus escaped, bring it back
+          e.preventDefault();
+          firstEl.focus();
+        } else if (e.shiftKey) {
+          // Shift+Tab: if on first element, go to last
+          if (document.activeElement === firstEl) {
+            e.preventDefault();
+            lastEl.focus();
+          }
+        } else {
+          // Tab: if on last element, go to first
+          if (document.activeElement === lastEl) {
+            e.preventDefault();
+            firstEl.focus();
+          }
+        }
+      }
     });
   }
 
@@ -186,8 +215,54 @@ const ScreenManager = (function() {
     // Handle browser back button
     window.addEventListener('popstate', handlePopState);
 
+    // Global Escape key handler for back navigation
+    document.addEventListener('keydown', handleGlobalEscape);
+
     // Start with splash screen
     showScreen(SCREENS.SPLASH, {}, false);
+  }
+
+  /**
+   * Handle global Escape key for back navigation
+   */
+  function handleGlobalEscape(e) {
+    if (e.key !== 'Escape') return;
+
+    // Don't handle if typing in an input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    // Let modals handle their own Escape (confirm modal, help modal)
+    const confirmModal = document.getElementById('confirm-modal');
+    const helpModal = document.getElementById('help-modal');
+    if (confirmModal?.classList.contains('visible') || helpModal?.classList.contains('visible')) {
+      return; // Modal handlers will deal with it
+    }
+
+    // Navigate based on current screen
+    switch (currentScreen) {
+      case SCREENS.HOME:
+        // Already at home, do nothing
+        break;
+      case SCREENS.COLLECTION:
+        showScreen(SCREENS.HOME);
+        break;
+      case SCREENS.PUZZLE:
+        // Handled by game.js
+        break;
+      case SCREENS.VICTORY:
+        showScreen(SCREENS.COLLECTION);
+        break;
+      case SCREENS.SETTINGS:
+        showScreen(SCREENS.HOME);
+        break;
+      case SCREENS.TUTORIAL:
+        // Skip tutorial
+        if (window.CozyStorage) {
+          window.CozyStorage.setFlag('tutorialComplete', true);
+        }
+        showScreen(SCREENS.HOME);
+        break;
+    }
   }
 
   /**
@@ -382,6 +457,11 @@ const ScreenManager = (function() {
 
       progressEl.textContent = `${solvedCount} / ${totalPuzzles} puzzles solved`;
     }
+
+    // Focus management: focus on Play button
+    if (playBtn) {
+      setTimeout(() => playBtn.focus(), 100);
+    }
   }
 
   /**
@@ -391,6 +471,12 @@ const ScreenManager = (function() {
     // Collection screen initialization is handled by game.js
     // Trigger a custom event so game.js can respond
     window.dispatchEvent(new CustomEvent('screen:collection', { detail: data }));
+
+    // Focus management: focus on search input
+    const searchInput = document.getElementById('collection-search-input');
+    if (searchInput) {
+      setTimeout(() => searchInput.focus(), 100);
+    }
   }
 
   /**
@@ -487,6 +573,11 @@ const ScreenManager = (function() {
         }
       });
       continueBtn.setAttribute('data-initialized', 'true');
+    }
+
+    // Focus management: focus on Continue button
+    if (continueBtn) {
+      setTimeout(() => continueBtn.focus(), 100);
     }
   }
 
@@ -652,6 +743,11 @@ const ScreenManager = (function() {
       });
       solveAllBtn.setAttribute('data-initialized', 'true');
     }
+
+    // Focus management: focus on vibration toggle (first interactive setting)
+    if (vibrationToggle) {
+      setTimeout(() => vibrationToggle.focus(), 100);
+    }
   }
 
   /**
@@ -705,6 +801,11 @@ const ScreenManager = (function() {
     // Reset to first step when entering
     currentStep = 0;
     showStep(0);
+
+    // Focus management: focus on Next button
+    if (nextBtn) {
+      setTimeout(() => nextBtn.focus(), 100);
+    }
   }
 
   // ============================================

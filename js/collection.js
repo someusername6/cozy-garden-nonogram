@@ -201,16 +201,29 @@
     card.className = 'puzzle-card' + (isCompleted ? ' completed' : '') + (hasPartialProgress ? ' in-progress' : '');
     card.dataset.puzzleIndex = item.index;
     card.dataset.puzzleId = item.id;
-    // Accessibility: make cards keyboard accessible
-    card.tabIndex = 0;
+    // Accessibility: make cards keyboard accessible (roving tabindex - manager sets focused to 0)
+    card.tabIndex = -1;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', `${item.meta.name}, ${item.meta.width} by ${item.meta.height}${isCompleted ? ', completed' : ''}`);
 
-    // Keyboard handler for accessibility
+    // Keyboard handler for accessibility (Enter/Space to select, arrows to navigate)
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        // Track this card as focused so we return to it
+        if (window.CozyCollection) {
+          window.CozyCollection.focusedCardId = item.id;
+        }
         onClick(item.index);
+        return;
+      }
+      // Arrow key navigation - delegate to collection manager
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.CozyCollection) {
+          window.CozyCollection.navigateFromCard(card, e.key);
+        }
       }
     });
 
@@ -255,7 +268,13 @@
     card.appendChild(badge);
 
     // Click handler
-    card.addEventListener('click', () => onClick(item.index));
+    card.addEventListener('click', () => {
+      // Track this card as focused so we return to it
+      if (window.CozyCollection) {
+        window.CozyCollection.focusedCardId = item.id;
+      }
+      onClick(item.index);
+    });
 
     return card;
   }
@@ -473,6 +492,7 @@
       this.searchInput = null;
       this.searchInputHandler = null;  // Store handler reference for cleanup
       this.searchDebounceTimeout = null;  // Debounce timer for search
+      this.focusedCardId = null;  // Track focused card for roving tabindex
     }
 
     init(containerId, puzzles, onPuzzleSelect) {
@@ -517,6 +537,8 @@
           this.onPuzzleSelect(index);
         }
       }, renderOptions);
+      // Update roving tabindex after render
+      this.updateRovingTabindex();
     }
 
     show() {
@@ -549,6 +571,139 @@
       if (this.visible) {
         this.render(options);
       }
+    }
+
+    // Get all visible puzzle cards (in expanded sections)
+    getVisibleCards() {
+      if (!this.container) return [];
+      const cards = [];
+      const sections = this.container.querySelectorAll('.collection-section');
+      sections.forEach(section => {
+        const grid = section.querySelector('.collection-grid');
+        if (grid && grid.style.display !== 'none') {
+          const sectionCards = grid.querySelectorAll('.puzzle-card');
+          sectionCards.forEach(card => cards.push(card));
+        }
+      });
+      return cards;
+    }
+
+    // Find card in specified direction based on visual position
+    // direction: 'up', 'down', 'left', 'right'
+    findCardInDirection(currentCard, direction) {
+      const cards = this.getVisibleCards();
+      if (cards.length === 0) return null;
+
+      const currentRect = currentCard.getBoundingClientRect();
+      const currentCenterX = currentRect.left + currentRect.width / 2;
+      const currentCenterY = currentRect.top + currentRect.height / 2;
+
+      // Tolerance for "same row/column" comparison
+      const rowTolerance = currentRect.height * 0.5;
+      const colTolerance = currentRect.width * 0.5;
+
+      let bestCandidate = null;
+      let bestDistance = Infinity;
+
+      cards.forEach(card => {
+        if (card === currentCard) return;
+
+        const rect = card.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        let isValid = false;
+
+        switch (direction) {
+          case 'left':
+            // Must be to the left and roughly same row
+            isValid = centerX < currentCenterX - colTolerance &&
+                      Math.abs(centerY - currentCenterY) < rowTolerance;
+            break;
+          case 'right':
+            // Must be to the right and roughly same row
+            isValid = centerX > currentCenterX + colTolerance &&
+                      Math.abs(centerY - currentCenterY) < rowTolerance;
+            break;
+          case 'up':
+            // Must be above (allow any column, prefer closest X)
+            isValid = centerY < currentCenterY - rowTolerance;
+            break;
+          case 'down':
+            // Must be below (allow any column, prefer closest X)
+            isValid = centerY > currentCenterY + rowTolerance;
+            break;
+        }
+
+        if (isValid) {
+          // Calculate distance (Manhattan for same row/col, Euclidean for up/down)
+          let distance;
+          if (direction === 'left' || direction === 'right') {
+            distance = Math.abs(centerX - currentCenterX);
+          } else {
+            // For up/down, prioritize closest Y first, then prefer similar X
+            const yDist = Math.abs(centerY - currentCenterY);
+            const xDist = Math.abs(centerX - currentCenterX);
+            distance = yDist * 1000 + xDist; // Heavily weight Y distance
+          }
+
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestCandidate = card;
+          }
+        }
+      });
+
+      return bestCandidate;
+    }
+
+    // Navigate from a card in response to arrow key
+    navigateFromCard(card, key) {
+      const directionMap = {
+        'ArrowUp': 'up',
+        'ArrowDown': 'down',
+        'ArrowLeft': 'left',
+        'ArrowRight': 'right'
+      };
+      const direction = directionMap[key];
+      if (!direction) return;
+
+      const targetCard = this.findCardInDirection(card, direction);
+      if (targetCard) {
+        // Update tabindex for roving pattern
+        card.tabIndex = -1;
+        targetCard.tabIndex = 0;
+        targetCard.focus();
+        this.focusedCardId = targetCard.dataset.puzzleId;
+
+        // Scroll into view if needed
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Update roving tabindex after render
+    updateRovingTabindex() {
+      const cards = this.getVisibleCards();
+      if (cards.length === 0) return;
+
+      // Find the previously focused card or default to first
+      let focusedCard = null;
+      if (this.focusedCardId) {
+        focusedCard = this.container.querySelector(
+          `.puzzle-card[data-puzzle-id="${this.focusedCardId}"]`
+        );
+      }
+
+      // If previously focused card not found, use first visible card
+      if (!focusedCard) {
+        focusedCard = cards[0];
+        this.focusedCardId = focusedCard?.dataset.puzzleId || null;
+      }
+
+      // Set all cards to tabindex=-1 except the focused one
+      cards.forEach(card => {
+        card.tabIndex = (card === focusedCard) ? 0 : -1;
+      });
     }
 
     // Scroll to a specific puzzle by ID, expanding its section if needed
