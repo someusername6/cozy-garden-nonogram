@@ -683,7 +683,9 @@ const ScreenManager = (function() {
     // Mark current theme as active
     themeOptions.forEach(option => {
       const theme = option.dataset.theme;
-      option.classList.toggle('active', theme === currentTheme);
+      const isActive = theme === currentTheme;
+      option.classList.toggle('active', isActive);
+      option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
 
     // Add click handlers
@@ -692,9 +694,13 @@ const ScreenManager = (function() {
         option.addEventListener('click', () => {
           const theme = option.dataset.theme;
 
-          // Update active state
-          themeOptions.forEach(opt => opt.classList.remove('active'));
+          // Update active state and aria-pressed
+          themeOptions.forEach(opt => {
+            opt.classList.remove('active');
+            opt.setAttribute('aria-pressed', 'false');
+          });
           option.classList.add('active');
+          option.setAttribute('aria-pressed', 'true');
 
           // Save and apply theme
           if (window.CozyStorage) {
