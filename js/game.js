@@ -249,13 +249,7 @@
   // Get cell state at position, returning default empty cell if none exists.
   // Note: Returns a copy/default, does NOT create cell in grid. Use setCellDirect to modify.
   function getCell(row, col) {
-    const cell = grid[row]?.[col];
-    if (!cell) return createCell();
-    // Handle legacy format (raw values)
-    if (typeof cell !== 'object' || !('value' in cell)) {
-      return createCell(cell, true);
-    }
-    return cell;
+    return grid[row]?.[col] || createCell();
   }
 
   function setCellDirect(row, col, value, certain) {
@@ -607,14 +601,10 @@
 
       const hasRestoredGrid = savedGrid && savedGrid.length === puzzle.height;
       if (hasRestoredGrid) {
-        // Deep copy and migrate format if needed
-        grid = savedGrid.map(row => row.map(cell => {
-          if (typeof cell === 'object' && 'value' in cell) {
-            return { value: cell.value, certain: cell.certain };
-          }
-          // Legacy format: raw value
-          return createCell(cell, true);
-        }));
+        // Deep copy
+        grid = savedGrid.map(row => row.map(cell =>
+          ({ value: cell.value, certain: cell.certain })
+        ));
       } else {
         // Create empty grid
         grid = [];
@@ -1485,7 +1475,7 @@
     }
   }
 
-  // Legacy function - now uses ScreenManager
+  // Navigate to collection screen, saving current puzzle first
   function showCollection() {
     saveCurrentPuzzle();
     if (window.ScreenManager) {
@@ -1493,7 +1483,7 @@
     }
   }
 
-  // Legacy function - now uses ScreenManager
+  // Navigate to puzzle screen
   function showGame(puzzleIndex) {
     if (window.ScreenManager) {
       window.ScreenManager.showScreen(window.ScreenManager.SCREENS.PUZZLE, { puzzleId: puzzleIndex });

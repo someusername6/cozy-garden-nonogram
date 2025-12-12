@@ -565,13 +565,6 @@ const ScreenManager = (function() {
               window.CozyStorage.reset();
             }
 
-            // Clean up legacy localStorage keys (from older versions)
-            localStorage.removeItem('cozy_garden_progress');
-            localStorage.removeItem('cozy_garden_played');
-            localStorage.removeItem('cozy_garden_collapsed_sections');
-            localStorage.removeItem('cozy_garden_help_shown');
-            localStorage.removeItem('cozy_garden_zoom_hint_shown');
-
             // Refresh collection if visible
             if (window.CozyCollection) {
               window.CozyCollection.refresh();

@@ -74,10 +74,6 @@
             this.save();
           } else {
             this.data = parsed;
-            // Migrate if needed
-            if (this.data.version !== STORAGE_VERSION) {
-              this.data = this.migrate(this.data);
-            }
           }
         } else {
           this.data = getDefaultData();
@@ -90,17 +86,6 @@
         this.save();
       }
       return this;
-    }
-
-    // Migrate old data format
-    migrate(oldData) {
-      const newData = getDefaultData();
-      // Copy over compatible fields
-      if (oldData.progress) newData.progress = oldData.progress;
-      if (oldData.settings) Object.assign(newData.settings, oldData.settings);
-      if (oldData.stats) Object.assign(newData.stats, oldData.stats);
-      newData.version = STORAGE_VERSION;
-      return newData;
     }
 
     // Save to localStorage
@@ -157,17 +142,10 @@
           savedGrid: null
         };
       }
-      // Save the grid (deep copy with object support)
+      // Save the grid (deep copy)
       if (grid) {
         this.data.progress[puzzleId].savedGrid = grid.map(row =>
-          row.map(cell => {
-            // Handle new object format {value, certain}
-            if (typeof cell === 'object' && cell !== null && 'value' in cell) {
-              return { value: cell.value, certain: cell.certain };
-            }
-            // Handle legacy format (raw value) - convert to new format
-            return { value: cell, certain: true };
-          })
+          row.map(cell => ({ value: cell.value, certain: cell.certain }))
         );
       } else {
         this.data.progress[puzzleId].savedGrid = null;
@@ -176,22 +154,15 @@
     }
 
     // Get saved grid for a puzzle
-    // Returns grid in new format: array of {value, certain} objects
+    // Returns grid as array of {value, certain} objects
     getPuzzleGrid(puzzleId) {
       if (!this.data.progress) return null;
       const progress = this.data.progress[puzzleId];
       if (!progress || !progress.savedGrid) return null;
 
-      // Deep copy with format handling
+      // Deep copy
       return progress.savedGrid.map(row =>
-        row.map(cell => {
-          // Handle new object format
-          if (typeof cell === 'object' && cell !== null && 'value' in cell) {
-            return { value: cell.value, certain: cell.certain };
-          }
-          // Handle legacy format (raw value) - convert to new format
-          return { value: cell, certain: true };
-        })
+        row.map(cell => ({ value: cell.value, certain: cell.certain }))
       );
     }
 
@@ -245,14 +216,7 @@
       let savedGrid = null;
       if (grid) {
         savedGrid = grid.map(row =>
-          row.map(cell => {
-            // Handle new object format {value, certain}
-            if (typeof cell === 'object' && cell !== null && 'value' in cell) {
-              return { value: cell.value, certain: cell.certain };
-            }
-            // Handle legacy format (raw value) - convert to new format
-            return { value: cell, certain: true };
-          })
+          row.map(cell => ({ value: cell.value, certain: cell.certain }))
         );
       }
 
@@ -334,17 +298,10 @@
     // === Flags Methods (one-time UI flags) ===
 
     getFlag(key) {
-      // Ensure flags object exists (migration support)
-      if (!this.data.flags) {
-        this.data.flags = getDefaultData().flags;
-      }
-      return this.data.flags[key] || false;
+      return this.data.flags?.[key] || false;
     }
 
     setFlag(key, value = true) {
-      if (!this.data.flags) {
-        this.data.flags = getDefaultData().flags;
-      }
       this.data.flags[key] = value;
       this.save();
     }
@@ -352,17 +309,10 @@
     // === UI State Methods ===
 
     getUIState(key) {
-      // Ensure uiState object exists (migration support)
-      if (!this.data.uiState) {
-        this.data.uiState = getDefaultData().uiState;
-      }
-      return this.data.uiState[key];
+      return this.data.uiState?.[key];
     }
 
     setUIState(key, value) {
-      if (!this.data.uiState) {
-        this.data.uiState = getDefaultData().uiState;
-      }
       this.data.uiState[key] = value;
       this.save();
     }
@@ -376,8 +326,8 @@
     importData(jsonString) {
       try {
         const imported = JSON.parse(jsonString);
-        if (imported.version) {
-          this.data = this.migrate(imported);
+        if (isValidStorageData(imported)) {
+          this.data = imported;
           this.save();
           return true;
         }
