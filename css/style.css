@@ -727,8 +727,8 @@ body.pencil-mode .palette-menu-btn {
 .history-btn {
   background: var(--color-secondary);
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
@@ -913,8 +913,8 @@ kbd {
   color: var(--color-text);
   border: none;
   padding: 0 16px;
-  height: 40px;
-  border-radius: 20px;
+  height: 44px;
+  border-radius: 22px;
   cursor: pointer;
   font-size: 14px;
   font-family: inherit;
@@ -989,9 +989,9 @@ kbd {
 .help-btn {
   font-weight: bold;
   font-size: 16px;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   padding: 0;
   border-radius: 50%;
 }
