@@ -449,8 +449,9 @@ body {
 }
 
 /* === Crosshair Hover Effect === */
-.cell.highlight-row::after,
-.cell.highlight-col::after {
+/* Using ::before for highlight overlay */
+.cell.highlight-row::before,
+.cell.highlight-col::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -458,8 +459,21 @@ body {
   pointer-events: none;
 }
 
-.cell.highlight-row.highlight-col::after {
+.cell.highlight-row.highlight-col::before {
   background-color: rgba(92, 107, 74, 0.2);
+}
+
+/* Maybe states use ::before for corner fold, so use filter for highlight instead */
+.cell.maybe-color.highlight-row,
+.cell.maybe-color.highlight-col,
+.cell.maybe-empty.highlight-row,
+.cell.maybe-empty.highlight-col {
+  filter: brightness(0.93);
+}
+
+.cell.maybe-color.highlight-row.highlight-col,
+.cell.maybe-empty.highlight-row.highlight-col {
+  filter: brightness(0.88);
 }
 
 .cell.highlight-cell {
@@ -499,10 +513,12 @@ body {
 /* === Maybe States (Pencil Mode) === */
 
 /* Corner fold indicator for all maybe states */
+/* Note: Must override highlight ::before which sets inset: 0 */
 .cell.maybe-color::before,
 .cell.maybe-empty::before {
   content: "";
   position: absolute;
+  inset: auto; /* Reset highlight's inset: 0 */
   top: 0;
   right: 0;
   width: 0;
@@ -510,6 +526,7 @@ body {
   border-style: solid;
   border-width: 0 7px 7px 0;
   border-color: transparent var(--color-primary) transparent transparent;
+  background-color: transparent; /* Reset highlight's background */
   filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.15));
   pointer-events: none;
   z-index: 1;
