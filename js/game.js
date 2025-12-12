@@ -1701,6 +1701,21 @@
     updatePencilActionsVisibility();
   }
 
+  function confirmShowSolution() {
+    if (window.ScreenManager?.showConfirmModal) {
+      window.ScreenManager.showConfirmModal({
+        title: 'Show Solution?',
+        message: 'This will reveal the complete puzzle. You can still undo afterward.',
+        confirmText: 'Show Solution',
+        cancelText: 'Cancel',
+        onConfirm: showSolution
+      });
+    } else {
+      // Fallback if modal not available
+      showSolution();
+    }
+  }
+
   // === Keyboard Shortcuts ===
 
   function setupKeyboardShortcuts() {
@@ -1909,7 +1924,7 @@
       if (btn.textContent.includes('Reset')) {
         btn.addEventListener('click', resetPuzzle);
       } else if (btn.textContent.includes('Solution')) {
-        btn.addEventListener('click', showSolution);
+        btn.addEventListener('click', confirmShowSolution);
       }
     });
 
@@ -2155,7 +2170,7 @@
   // Expose globally
   window.CozyGarden = {
     resetPuzzle: resetPuzzle,
-    showSolution: showSolution,
+    showSolution: confirmShowSolution,
     performUndo: performUndo,
     performRedo: performRedo,
     togglePencilMode: togglePencilMode,
