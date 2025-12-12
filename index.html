@@ -18,14 +18,18 @@
     (function() {
       try {
         var stored = localStorage.getItem('cozy_garden_data');
-        var theme = 'system';
+        var theme = null;
         if (stored) {
           var data = JSON.parse(stored);
-          theme = data.settings && data.settings.theme ? data.settings.theme : 'system';
+          theme = data.settings && data.settings.theme ? data.settings.theme : null;
+        }
+        // Default to system preference if no saved theme
+        if (!theme || theme === 'system') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         document.documentElement.setAttribute('data-theme', theme);
         // Update theme-color meta for dark mode
-        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        if (theme === 'dark') {
           document.getElementById('theme-color-meta').setAttribute('content', '#0f0d0c');
         }
       } catch (e) {}
@@ -276,10 +280,6 @@
               <button class="theme-option" data-theme="dark">
                 <span class="theme-icon">&#9790;</span>
                 <span class="theme-name">Dark</span>
-              </button>
-              <button class="theme-option" data-theme="system">
-                <span class="theme-icon">&#9881;</span>
-                <span class="theme-name">Auto</span>
               </button>
             </div>
           </div>

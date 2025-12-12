@@ -681,7 +681,11 @@ const ScreenManager = (function() {
 
     // Theme selection
     const themeOptions = document.querySelectorAll('.theme-option');
-    const currentTheme = window.CozyStorage?.getSetting('theme') || 'system';
+    // Get current theme, defaulting to system preference if not set
+    let currentTheme = window.CozyStorage?.getSetting('theme');
+    if (!currentTheme || currentTheme === 'system') {
+      currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
 
     // Mark current theme as active
     themeOptions.forEach(option => {
@@ -824,7 +828,7 @@ const ScreenManager = (function() {
 
   /**
    * Apply theme to the document
-   * @param {string} theme - 'light', 'dark', or 'system'
+   * @param {string} theme - 'light' or 'dark'
    */
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -832,9 +836,7 @@ const ScreenManager = (function() {
     // Update theme-color meta tag for browser/PWA chrome
     const themeColorMeta = document.getElementById('theme-color-meta');
     if (themeColorMeta) {
-      const isDark = theme === 'dark' ||
-        (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      themeColorMeta.setAttribute('content', isDark ? '#0f0d0c' : '#5c6b4a');
+      themeColorMeta.setAttribute('content', theme === 'dark' ? '#0f0d0c' : '#5c6b4a');
     }
   }
 
@@ -842,16 +844,12 @@ const ScreenManager = (function() {
    * Initialize theme from saved preference or system default
    */
   function initTheme() {
-    const savedTheme = window.CozyStorage?.getSetting('theme') || 'system';
+    let savedTheme = window.CozyStorage?.getSetting('theme');
+    // Default to system preference if no saved theme (or legacy 'system' value)
+    if (!savedTheme || savedTheme === 'system') {
+      savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
     applyTheme(savedTheme);
-
-    // Listen for system preference changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      const currentTheme = window.CozyStorage?.getSetting('theme') || 'system';
-      if (currentTheme === 'system') {
-        applyTheme('system'); // Re-apply to update meta tag
-      }
-    });
   }
 
   // Public API

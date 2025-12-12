@@ -67,7 +67,7 @@ open index.html
 - Tutorial for first-time users
 - Settings (sound/music/vibration toggles, theme selection, reset progress)
 - Settings: "Solve All Puzzles" debug button (for testing)
-- Dark mode with cozy warm theme (Light/Dark/Auto options, respects system preference)
+- Dark mode with cozy warm theme (Light/Dark options, defaults to system preference for new users)
 - PWA support (offline capable, installable)
 - Crosshair hover effect on desktop
 

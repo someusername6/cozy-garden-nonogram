@@ -92,10 +92,7 @@ html[data-theme="light"] {
 /* === Dark Mode Theme === */
 /* Cozy dark theme with warm browns, deep greens, and amber accents.
  * Dark values are defined once as --dark-* in :root, then remapped to --color-*
- * in two selectors to ensure dark mode works even if JS fails to load:
- * 1. html[data-theme="dark"] - for explicit dark mode selection
- * 2. @media (prefers-color-scheme: dark) html[data-theme="system"] - for
- *    system preference detection (must work before/without JS) */
+ * when dark theme is active. */
 
 /* Explicit dark theme selection - remaps to dark values defined in :root */
 html[data-theme="dark"] {
@@ -126,38 +123,6 @@ html[data-theme="dark"] {
   --color-highlight-strong: var(--dark-color-highlight-strong);
 }
 
-/* System preference detection - applies dark theme when user prefers dark
- * and has theme set to 'system'. This @media block is required to work
- * before JS loads (prevents flash of light theme on dark-preferring systems). */
-@media (prefers-color-scheme: dark) {
-  html[data-theme="system"] {
-    --color-primary: var(--dark-color-primary);
-    --color-primary-light: var(--dark-color-primary-light);
-    --color-primary-dark: var(--dark-color-primary-dark);
-    --color-primary-btn: var(--dark-color-primary-btn);
-    --color-secondary: var(--dark-color-secondary);
-    --color-secondary-dark: var(--dark-color-secondary-dark);
-    --color-accent: var(--dark-color-accent);
-    --color-bg-start: var(--dark-color-bg-start);
-    --color-bg-end: var(--dark-color-bg-end);
-    --color-surface: var(--dark-color-surface);
-    --color-cell: var(--dark-color-cell);
-    --color-cell-hover: var(--dark-color-cell-hover);
-    --color-cell-empty: var(--dark-color-cell-empty);
-    --color-grid-border: var(--dark-color-grid-border);
-    --color-text: var(--dark-color-text);
-    --color-text-light: var(--dark-color-text-light);
-    --color-text-muted: var(--dark-color-text-muted);
-    --color-shadow: var(--dark-color-shadow);
-    --color-overlay: var(--dark-color-overlay);
-    --color-danger: var(--dark-color-danger);
-    --color-info: var(--dark-color-info);
-    --color-warning: var(--dark-color-warning);
-    --color-focus-ring: var(--dark-color-focus-ring);
-    --color-highlight: var(--dark-color-highlight);
-    --color-highlight-strong: var(--dark-color-highlight-strong);
-  }
-}
 
 /* === Utility Classes === */
 /* Visually hidden but accessible to screen readers */
@@ -1395,32 +1360,30 @@ html[data-theme="dark"] .confirm-modal-btn-primary {
   border-color: var(--color-primary-btn);
 }
 
-@media (prefers-color-scheme: dark) {
-  html[data-theme="system"] .clue-tooltip {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  }
+html[data-theme="dark"] .clue-tooltip {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
 
-  html[data-theme="system"] .zoom-btn {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  }
+html[data-theme="dark"] .zoom-btn {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
 
-  html[data-theme="system"] .zoom-hint-toast {
-    background: var(--color-surface);
-    color: var(--color-text);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  }
+html[data-theme="dark"] .zoom-hint-toast {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
 
-  html[data-theme="system"] .color-btn {
-    border-color: rgba(255, 255, 255, 0.2);
-  }
+html[data-theme="dark"] .color-btn {
+  border-color: rgba(255, 255, 255, 0.2);
+}
 
-  /* Use darker green for primary buttons with white text */
-  html[data-theme="system"] .home-btn-primary,
-  html[data-theme="system"] .victory-btn-primary,
-  html[data-theme="system"] .confirm-modal-btn-primary {
-    background: var(--color-primary-btn);
-    border-color: var(--color-primary-btn);
-  }
+/* Use darker green for primary buttons with white text */
+html[data-theme="dark"] .home-btn-primary,
+html[data-theme="dark"] .victory-btn-primary,
+html[data-theme="dark"] .confirm-modal-btn-primary {
+  background: var(--color-primary-btn);
+  border-color: var(--color-primary-btn);
 }
 
 /* Hide zoom controls on desktop (mouse users don't need them) */
@@ -1753,10 +1716,8 @@ html[data-theme="dark"] .puzzle-card:focus-visible {
   outline-color: var(--color-accent);
 }
 
-@media (prefers-color-scheme: dark) {
-  html[data-theme="system"] :focus-visible {
-    outline-color: var(--color-primary-light);
-  }
+html[data-theme="dark"] :focus-visible {
+  outline-color: var(--color-primary-light);
 }
 
 /* High contrast mode support */
