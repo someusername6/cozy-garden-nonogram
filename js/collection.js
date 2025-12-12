@@ -296,7 +296,7 @@
       }
 
       // Draw light grid background
-      ctx.fillStyle = '#f0ede5';
+      ctx.fillStyle = '#f5f2e8';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw saved progress

@@ -836,7 +836,7 @@ const ScreenManager = (function() {
     // Update theme-color meta tag for browser/PWA chrome
     const themeColorMeta = document.getElementById('theme-color-meta');
     if (themeColorMeta) {
-      themeColorMeta.setAttribute('content', theme === 'dark' ? '#0f0d0c' : '#5c6b4a');
+      themeColorMeta.setAttribute('content', theme === 'dark' ? '#0a1018' : '#4a7c3f');
     }
   }
 

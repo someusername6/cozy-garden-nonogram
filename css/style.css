@@ -13,64 +13,66 @@
 /* === CSS Custom Properties === */
 :root,
 html[data-theme="light"] {
-  /* Theme colors - Light Mode (default) */
-  --color-primary: #5c6b4a;
-  --color-primary-light: #a8c686;
-  --color-primary-dark: #3d4a2d;
-  --color-secondary: #d4c4a8;
-  --color-secondary-dark: #c4b498;
-  --color-accent: #6b8e4e;
+  /* Theme colors - Light Mode: "Day in the Garden"
+   * Warm sunlight filtering through leaves, vibrant healthy plants */
+  --color-primary: #4a7c3f;
+  --color-primary-light: #8fbc6b;
+  --color-primary-dark: #2d5a1f;
+  --color-secondary: #e8dcc4;
+  --color-secondary-dark: #d4c4a8;
+  --color-accent: #5a9a4a;
 
-  /* Background colors */
-  --color-bg-start: #f5f1e8;
-  --color-bg-end: #e8e4d9;
+  /* Background colors - sunlit, warm golden undertones */
+  --color-bg-start: #faf8f0;
+  --color-bg-end: #f0ebe0;
   --color-surface: #fff;
-  --color-cell: #faf8f3;
-  --color-cell-hover: #f0ede5;
-  --color-cell-empty: #e8e4d9;
-  --color-grid-border: #8b7355;
+  --color-cell: #fdfcf8;
+  --color-cell-hover: #f5f2e8;
+  --color-cell-empty: #e8e4d8;
+  --color-grid-border: #6b5a42;
 
-  /* Text colors */
-  --color-text: #4a5240;
-  --color-text-light: #8b8578;
-  --color-text-muted: #bbb5a6;
+  /* Text colors - improved contrast, forest greens */
+  --color-text: #2d3a24;
+  --color-text-light: #5a6652;
+  --color-text-muted: #8a8a7a;
 
   /* Additional UI colors */
   --color-shadow: rgba(0, 0, 0, 0.15);
   --color-overlay: rgba(0, 0, 0, 0.5);
-  --color-danger: #d9534f;
-  --color-info: #5bc0de;
-  --color-warning: #ff9800;
-  --color-focus-ring: rgba(107, 142, 78, 0.2);
-  --color-highlight: rgba(92, 107, 74, 0.12);
-  --color-highlight-strong: rgba(92, 107, 74, 0.2);
+  --color-danger: #c9433f;
+  --color-info: #4a9eba;
+  --color-warning: #e88a00;
+  --color-focus-ring: rgba(74, 124, 63, 0.25);
+  --color-highlight: rgba(74, 124, 63, 0.12);
+  --color-highlight-strong: rgba(74, 124, 63, 0.22);
 
-  /* === Dark Theme Values (defined once, used by both selectors) === */
-  --dark-color-primary: #c8e6b0;
-  --dark-color-primary-light: #4a6038;
-  --dark-color-primary-dark: #b8d49a;
-  --dark-color-primary-btn: #5a7a45;
-  --dark-color-secondary: #2a2420;
-  --dark-color-secondary-dark: #3a3430;
-  --dark-color-accent: #9bc77a;
-  --dark-color-bg-start: #0f0d0c;
-  --dark-color-bg-end: #0a0908;
-  --dark-color-surface: #1a1614;
-  --dark-color-cell: #1e1a18;
-  --dark-color-cell-hover: #2a2420;
-  --dark-color-cell-empty: #141210;
-  --dark-color-grid-border: #3a3230;
-  --dark-color-text: #ede5dd;
-  --dark-color-text-light: #d5c8ba;
-  --dark-color-text-muted: #a89888;
+  /* === Dark Theme Values: "Night in the Garden"
+   * Moonlit garden, deep blue night sky, cool silvery greens */
+  --dark-color-primary: #a8d4a0;
+  --dark-color-primary-light: #3d5a48;
+  --dark-color-primary-dark: #90c488;
+  --dark-color-primary-btn: #4a7a55;
+  --dark-color-secondary: #1a2028;
+  --dark-color-secondary-dark: #242830;
+  --dark-color-accent: #7ac4a0;
+  --dark-color-bg-start: #0a1018;
+  --dark-color-bg-end: #060810;
+  --dark-color-surface: #141820;
+  --dark-color-cell: #181c24;
+  --dark-color-cell-hover: #1e2430;
+  --dark-color-cell-empty: #0c1018;
+  --dark-color-grid-border: #2a3540;
+  --dark-color-text: #e8eef0;
+  --dark-color-text-light: #b8c4cc;
+  --dark-color-text-muted: #7a8898;
   --dark-color-shadow: rgba(0, 0, 0, 0.6);
-  --dark-color-overlay: rgba(0, 0, 0, 0.8);
-  --dark-color-danger: #e57373;
-  --dark-color-info: #4fc3f7;
-  --dark-color-warning: #ffb74d;
-  --dark-color-focus-ring: rgba(143, 179, 109, 0.3);
-  --dark-color-highlight: rgba(143, 179, 109, 0.15);
-  --dark-color-highlight-strong: rgba(143, 179, 109, 0.25);
+  --dark-color-overlay: rgba(0, 0, 0, 0.85);
+  --dark-color-danger: #f07070;
+  --dark-color-info: #60c8e8;
+  --dark-color-warning: #f0a050;
+  --dark-color-focus-ring: rgba(122, 196, 160, 0.3);
+  --dark-color-highlight: rgba(122, 196, 160, 0.15);
+  --dark-color-highlight-strong: rgba(122, 196, 160, 0.25);
 
   /* Spacing */
   --safe-area-top: env(safe-area-inset-top, 0px);
