@@ -94,7 +94,9 @@
     document.documentElement.style.setProperty('--cell-size', `${newCellSize}px`);
 
     // Update container overflow based on zoom state
-    const isZoomed = newZoom > 1.0;
+    // Enable scrolling when zoomed beyond fit (content larger than container)
+    const fitZoom = calculateFitZoom();
+    const isZoomed = newZoom > fitZoom + 0.01; // Small epsilon for float comparison
     container.classList.toggle('is-zoomed', isZoomed);
 
     // Update button states
@@ -156,35 +158,34 @@
     const baseCellSize = getBaseCellSize();
 
     // Clue areas scale with cell size, so express them as multiples of cell size
-    // Each clue cell is roughly 0.7-0.9 of cell size, plus small gaps
     const maxRowClues = Math.max(...puzzle.row_clues.map(r => r.length));
     const maxColClues = Math.max(...puzzle.col_clues.map(c => c.length));
 
-    // Clue area in terms of cell-size units (not pixels)
-    // Each clue takes ~0.65 cell widths, plus some padding
-    const clueWidthUnits = Math.max(3, maxRowClues * 0.65 + 1);
-    const clueHeightUnits = Math.max(2.5, maxColClues * 0.55 + 1);
+    // Clue area in terms of cell-size units
+    // Row clues: each clue is ~0.6 cell widths, plus gap
+    // Col clues: each clue is ~0.6 cell heights, plus gap
+    const clueWidthUnits = Math.max(2, maxRowClues * 0.6 + 0.5);
+    const clueHeightUnits = Math.max(2, maxColClues * 0.6 + 0.5);
 
-    // Total board size in cell-size units
-    const totalWidthUnits = puzzle.width + clueWidthUnits;
-    const totalHeightUnits = puzzle.height + clueHeightUnits;
+    // Total board size in cell-size units (grid + clues + gap between them)
+    const totalWidthUnits = puzzle.width + clueWidthUnits + 0.25;
+    const totalHeightUnits = puzzle.height + clueHeightUnits + 0.25;
 
-    // Use the viewport/screen size, not the container (which changes with content)
-    // The container's max-height is set via CSS to ~55vh, so use that as reference
-    const vh = window.innerHeight * 0.01;
-    const availableWidth = window.innerWidth - 30; // Account for padding
-    const availableHeight = vh * 55; // Match CSS max-height
+    // Measure actual container dimensions
+    const availableWidth = container.clientWidth;
+    const availableHeight = container.clientHeight;
 
-    // Some padding for controls and breathing room
-    const paddingX = 20;
-    const paddingY = 20;
+    // Small padding for breathing room
+    const padding = 8;
 
-    const fitZoomX = (availableWidth - paddingX) / (totalWidthUnits * baseCellSize);
-    const fitZoomY = (availableHeight - paddingY) / (totalHeightUnits * baseCellSize);
+    // Calculate zoom needed to fit in each dimension
+    const fitZoomX = (availableWidth - padding * 2) / (totalWidthUnits * baseCellSize);
+    const fitZoomY = (availableHeight - padding * 2) / (totalHeightUnits * baseCellSize);
 
+    // Use the smaller of the two to ensure puzzle fits in both dimensions
     const fitZoom = Math.min(fitZoomX, fitZoomY);
 
-    // Apply buffer so fit isn't too tight, then clamp to valid range
+    // Apply small buffer so fit isn't too tight, then clamp to valid range
     const result = clamp(fitZoom * FIT_ZOOM_BUFFER, ABSOLUTE_MIN_ZOOM, CONFIG.MAX_ZOOM);
 
     // Cache the result
@@ -205,6 +206,12 @@
     const fitZoom = calculateFitZoom();
     // Min zoom is the greater of: absolute floor, or fit zoom (can't zoom out past fit)
     return Math.max(ABSOLUTE_MIN_ZOOM, fitZoom);
+  }
+
+  // Check if currently zoomed beyond fit (i.e., content larger than container)
+  function isZoomedBeyondFit() {
+    const fitZoom = calculateFitZoom();
+    return currentZoom > fitZoom + 0.01;
   }
 
   // === Gesture Handlers ===
@@ -261,11 +268,11 @@
   }
 
   function handleDoubleTap(touch) {
-    if (currentZoom > 1.0) {
+    if (isZoomedBeyondFit()) {
       // Zoomed in → reset to fit
       applyZoom(calculateFitZoom(), true);
     } else {
-      // At default → zoom to comfortable level
+      // At fit → zoom to comfortable level
       applyZoom(CONFIG.COMFORTABLE_ZOOM, true);
     }
   }
@@ -289,7 +296,7 @@
 
   function showTooltip() {
     if (!tooltip) return;
-    if (currentZoom <= 1.0) return; // Only show when zoomed
+    if (!isZoomedBeyondFit()) return; // Only show when zoomed beyond fit
 
     tooltip.classList.add('visible');
   }
@@ -373,7 +380,7 @@
   // These are called from game.js cell handlers
 
   function onCellTouchStart(row, col, touchY) {
-    if (currentZoom <= 1.0) return;
+    if (!isZoomedBeyondFit()) return;
 
     tooltipLocked = false;
     cancelTooltipDismissTimer();
@@ -388,7 +395,7 @@
   }
 
   function onCellTouchMove() {
-    if (currentZoom <= 1.0) return;
+    if (!isZoomedBeyondFit()) return;
 
     // Lock tooltip to initial cell during drag
     tooltipLocked = true;
@@ -396,7 +403,7 @@
   }
 
   function onCellTouchEnd() {
-    if (currentZoom <= 1.0) return;
+    if (!isZoomedBeyondFit()) return;
 
     clearTimeout(tooltipShowTimer);
     tooltipLocked = false;
@@ -555,17 +562,13 @@
     // Called when a puzzle is loaded
     // Invalidate cache so fit zoom is calculated fresh for this puzzle
     invalidateFitZoomCache();
+
+    // Always start at fit zoom - the largest zoom where the entire puzzle fits
+    // This maximizes puzzle visibility while ensuring everything is on screen
     const fitZoom = calculateFitZoom();
+    applyZoom(fitZoom, false);
 
-    // Always start at fit zoom if puzzle doesn't fit at 1.0
-    // This ensures the entire puzzle (grid + clues) is visible initially
-    if (fitZoom < 1.0) {
-      applyZoom(fitZoom, false);
-    } else {
-      applyZoom(DEFAULT_ZOOM, false);
-    }
-
-    // Maybe show first-time hint
+    // Maybe show first-time hint for large puzzles
     setTimeout(maybeShowZoomHint, 500);
   }
 
@@ -625,7 +628,7 @@
     setZoom: (level, animate = true) => applyZoom(level, !animate),
     zoomIn: (increment = 0.5) => applyZoom(currentZoom + increment, true),
     zoomOut: (increment = 0.5) => applyZoom(currentZoom - increment, true),
-    isZoomed: () => currentZoom > 1.0,
+    isZoomed: isZoomedBeyondFit,
 
     // Cell touch integration (called from game.js)
     onCellTouchStart,

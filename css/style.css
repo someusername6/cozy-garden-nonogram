@@ -1216,6 +1216,10 @@ kbd {
   flex: 1;
   min-height: 0; /* Allow flex shrinking */
   overflow: hidden;
+  /* Center the puzzle when it fits within the container */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   /* Allow panning but NOT browser pinch-zoom - we handle zoom ourselves */
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
@@ -1228,9 +1232,11 @@ kbd {
   display: none;
 }
 
-/* Zoomed state - enable scrolling */
+/* Zoomed state - enable scrolling and disable centering */
 .zoom-container.is-zoomed {
   overflow: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 /* When zoomed in (>1x): scale clue cells larger for touch targets and alignment */
