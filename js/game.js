@@ -1843,12 +1843,7 @@
     if (puzzle) {
       // Parse name from title (e.g., "Dandelion 2 (5x7, easy)" -> "Dandelion 2")
       const match = puzzle.title.match(/^(.+?)\s*\(/);
-      const name = match ? match[1].trim() : puzzle.title;
-      // Use safe DOM manipulation instead of innerHTML
-      titleEl.textContent = '';
-      const strong = document.createElement('strong');
-      strong.textContent = name;
-      titleEl.appendChild(strong);
+      titleEl.textContent = match ? match[1].trim() : puzzle.title;
     }
   }
 
