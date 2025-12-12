@@ -322,8 +322,8 @@ body {
 /* === Clues === */
 .col-clues {
   display: grid;
-  gap: 1px;
-  padding: 1px;
+  gap: max(1px, calc(var(--cell-size) * 0.04));
+  padding: max(1px, calc(var(--cell-size) * 0.04));
   padding-top: 0;
   align-self: end;
 }
@@ -334,17 +334,18 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  padding-bottom: 2px;
-  gap: 1px;
+  padding-bottom: max(1px, calc(var(--cell-size) * 0.08));
+  gap: max(1px, calc(var(--cell-size) * 0.04));
 }
 
 .clue-cell {
-  width: 20px;
-  height: 16px;
+  /* Scale proportionally with cell size - use low minimums to prevent overlap at low zoom */
+  width: max(6px, calc(var(--cell-size) * 0.85));
+  height: max(5px, calc(var(--cell-size) * 0.7));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: max(5px, calc(var(--cell-size) * 0.42));
   font-weight: bold;
   border-radius: 2px;
   cursor: pointer;
@@ -357,33 +358,35 @@ body {
 
 #row-clues-container {
   display: grid;
-  gap: 1px;
-  padding: 1px;
+  gap: max(1px, calc(var(--cell-size) * 0.04));
+  padding: max(1px, calc(var(--cell-size) * 0.04));
   padding-left: 0;
   justify-self: end;
   width: max-content; /* Ensure container expands to fit widest row of clues */
 }
 
 .row-clues {
-  min-width: 80px;
+  /* Scale min-width with cell size to prevent fixed constraint at low zoom */
+  min-width: max(30px, calc(var(--cell-size) * 3.5));
   height: var(--cell-size);
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding-right: 4px;
-  gap: 2px;
+  padding-right: max(2px, calc(var(--cell-size) * 0.15));
+  gap: max(1px, calc(var(--cell-size) * 0.08));
 }
 
 .row-clue-cell {
-  min-width: 16px;
-  height: 20px;
+  /* Scale proportionally with cell size - use low minimums to prevent overlap at low zoom */
+  min-width: max(5px, calc(var(--cell-size) * 0.65));
+  height: max(6px, calc(var(--cell-size) * 0.85));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: max(5px, calc(var(--cell-size) * 0.42));
   font-weight: bold;
   border-radius: 2px;
-  padding: 0 2px;
+  padding: 0 max(1px, calc(var(--cell-size) * 0.08));
   cursor: pointer;
   transition: transform 0.1s;
 }
@@ -805,6 +808,272 @@ body.is-offline .app-header {
   opacity: 0.9;
 }
 
+/* === Zoom & Pan System === */
+
+/* Zoom container wraps the board for scrolling when zoomed */
+.zoom-container {
+  position: relative;
+  max-width: 100%;
+  max-height: calc(var(--vh, 1vh) * 55);
+  overflow: hidden;
+  /* Allow panning but NOT browser pinch-zoom - we handle zoom ourselves */
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  /* Hide scrollbars but keep functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.zoom-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Zoomed state - enable scrolling */
+.zoom-container.is-zoomed {
+  overflow: auto;
+}
+
+/* When zoomed in (>1x): scale clue cells larger for touch targets and alignment */
+.zoom-container.is-zoomed .clue-cell {
+  /* Column clue cells: width scales to align with grid columns */
+  width: max(6px, calc(var(--cell-size) * 0.95));
+  height: max(5px, calc(var(--cell-size) * 0.65));
+  font-size: max(5px, calc(var(--cell-size) * 0.38));
+}
+
+.zoom-container.is-zoomed .row-clue-cell {
+  /* Row clue cells: height scales to align with grid rows */
+  min-width: max(5px, calc(var(--cell-size) * 0.55));
+  height: max(6px, calc(var(--cell-size) * 0.95));
+  font-size: max(5px, calc(var(--cell-size) * 0.38));
+}
+
+/* Contextual clue tooltip */
+.clue-tooltip {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 4px 20px var(--color-shadow);
+  z-index: 100;
+  min-width: 180px;
+  max-width: calc(100vw - 32px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out;
+}
+
+.clue-tooltip.visible {
+  opacity: 1;
+}
+
+.clue-tooltip.position-bottom {
+  bottom: calc(var(--safe-area-bottom) + 180px);
+  top: auto;
+}
+
+.clue-tooltip.position-top {
+  top: calc(var(--safe-area-top) + 160px);
+  bottom: auto;
+}
+
+/* Reduce opacity during drag */
+.clue-tooltip.dragging {
+  opacity: 0.4;
+}
+
+.clue-tooltip-row,
+.clue-tooltip-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.clue-tooltip-row + .clue-tooltip-col {
+  border-top: 1px solid var(--color-cell-hover);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+.clue-tooltip-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  min-width: 28px;
+  flex-shrink: 0;
+}
+
+.clue-tooltip-clues {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  max-width: calc(100vw - 100px);
+}
+
+.clue-tooltip-clues::-webkit-scrollbar {
+  display: none;
+}
+
+.clue-tooltip-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.clue-tooltip-num.satisfied {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+/* Zoom control buttons */
+.zoom-controls {
+  position: fixed;
+  bottom: calc(var(--safe-area-bottom) + 100px);
+  right: calc(var(--safe-area-right) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+  opacity: 0.4;
+  pointer-events: auto;
+  transition: opacity 0.2s;
+}
+
+.zoom-controls:hover,
+.zoom-controls:focus-within {
+  opacity: 1;
+}
+
+/* More visible when zoomed */
+.zoom-container.is-zoomed ~ .zoom-controls {
+  opacity: 0.8;
+}
+
+.zoom-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+}
+
+.zoom-btn:hover {
+  background: var(--color-cell-hover);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Highlight fit button when zoomed */
+.zoom-btn.zoom-fit.highlighted {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  box-shadow: 0 2px 12px var(--color-shadow);
+}
+
+/* Zoom hint toast */
+.zoom-hint-toast {
+  position: fixed;
+  bottom: calc(var(--safe-area-bottom) + 60px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--color-text);
+  color: var(--color-surface);
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-size: 14px;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
+}
+
+.zoom-hint-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Dark mode adjustments for zoom UI */
+html[data-theme="dark"] .clue-tooltip {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .zoom-btn {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] .zoom-hint-toast {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] .clue-tooltip {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  html[data-theme="system"] .zoom-btn {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  html[data-theme="system"] .zoom-hint-toast {
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Hide zoom controls on desktop (mouse users don't need them) */
+@media (hover: hover) and (pointer: fine) {
+  .zoom-controls {
+    display: none;
+  }
+}
+
+/* Landscape adjustments for zoom */
+@media (orientation: landscape) {
+  .zoom-container {
+    max-height: calc(var(--vh, 1vh) * 65);
+  }
+
+  .clue-tooltip.position-bottom {
+    bottom: calc(var(--safe-area-bottom) + 80px);
+  }
+
+  .zoom-controls {
+    bottom: calc(var(--safe-area-bottom) + 20px);
+  }
+}
+
 /* === Responsive Adjustments === */
 
 /* Small phones */
@@ -823,20 +1092,9 @@ body.is-offline .app-header {
   }
 
   .row-clues {
-    min-width: 60px;
+    /* Scale min-width with cell size */
+    min-width: max(30px, calc(var(--cell-size) * 3));
     height: var(--cell-size);
-  }
-
-  .clue-cell {
-    width: 16px;
-    height: 14px;
-    font-size: 9px;
-  }
-
-  .row-clue-cell {
-    min-width: 14px;
-    height: 16px;
-    font-size: 9px;
   }
 
   .palette {
@@ -877,19 +1135,8 @@ body.is-offline .app-header {
 
   .row-clues {
     height: var(--cell-size);
-    min-width: 100px;
-  }
-
-  .clue-cell {
-    width: 24px;
-    height: 18px;
-    font-size: 11px;
-  }
-
-  .row-clue-cell {
-    min-width: 18px;
-    height: 22px;
-    font-size: 11px;
+    /* Scale min-width with cell size */
+    min-width: max(40px, calc(var(--cell-size) * 3.5));
   }
 
   .status {
@@ -908,17 +1155,7 @@ body.is-offline .app-header {
     margin: 0 auto;
   }
 
-  .clue-cell {
-    width: 28px;
-    height: 22px;
-    font-size: 13px;
-  }
-
-  .row-clue-cell {
-    min-width: 22px;
-    height: 26px;
-    font-size: 13px;
-  }
+  /* Clue cells scale automatically via clamp() */
 
   .board-wrapper {
     gap: 4px;

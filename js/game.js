@@ -533,6 +533,11 @@
 
       updatePencilActionsVisibility();
       updateClueSatisfaction(puzzle);
+
+      // Initialize zoom system for this puzzle
+      if (window.CozyZoom) {
+        window.CozyZoom.initForPuzzle(puzzle);
+      }
     } finally {
       isLoadingPuzzle = false;
     }
@@ -846,6 +851,12 @@
           initialTouchRow = row;
           initialTouchCol = col;
 
+          // Notify zoom system for tooltip (pass touch Y for positioning)
+          if (window.CozyZoom) {
+            const touchY = e.touches[0]?.clientY ?? 0;
+            window.CozyZoom.onCellTouchStart(row, col, touchY);
+          }
+
           const history = getHistory();
           if (history) history.beginAction('fill');
 
@@ -893,6 +904,10 @@
             const c = parseInt(target.dataset.col);
             if (!isNaN(r) && !isNaN(c)) {
               fillCell(r, c, dragColor, dragCertain, true); // skipToggle=true
+              // Notify zoom system for tooltip update
+              if (window.CozyZoom) {
+                window.CozyZoom.onCellTouchMove(r, c);
+              }
             }
           }
         };
@@ -913,6 +928,11 @@
           if (history) history.commitAction();
 
           updatePencilActionsVisibility();
+
+          // Notify zoom system to hide tooltip
+          if (window.CozyZoom) {
+            window.CozyZoom.onCellTouchEnd();
+          }
         };
 
         cell.ontouchcancel = () => {
@@ -922,6 +942,11 @@
 
           const history = getHistory();
           if (history) history.cancelAction();
+
+          // Notify zoom system to hide tooltip
+          if (window.CozyZoom) {
+            window.CozyZoom.onCellTouchEnd();
+          }
         };
 
         // Cache the cell element for fast lookup
@@ -1228,6 +1253,11 @@
   function showSolution() {
     const puzzle = getPuzzles()[currentPuzzle];
     if (!puzzle) return;
+
+    // Reset zoom to show full solution
+    if (window.CozyZoom) {
+      window.CozyZoom.resetZoom();
+    }
 
     // Clear history - showing solution is not undoable
     const history = getHistory();
@@ -1642,6 +1672,61 @@
     if (history) history.clear();
   }
 
+  // === Zoom Integration API ===
+
+  /**
+   * Get clue information for a specific cell position
+   * @param {number} row - Row index
+   * @param {number} col - Column index
+   * @returns {Object|null} Object with rowClues and colClues arrays, each containing {count, color, satisfied}
+   */
+  function getClueInfo(row, col) {
+    const puzzles = getPuzzles();
+    const puzzle = puzzles[currentPuzzle];
+    if (!puzzle) return null;
+
+    // Get row clues with satisfaction status
+    const rowClueEl = rowClueElements[row];
+    const rowSatisfied = rowClueEl ? rowClueEl.classList.contains('satisfied') : false;
+    const rowClues = puzzle.row_clues[row].map(clue => ({
+      count: clue.count,
+      color: clue.color,
+      satisfied: rowSatisfied
+    }));
+
+    // Get column clues with satisfaction status
+    const colClueEl = colClueElements[col];
+    const colSatisfied = colClueEl ? colClueEl.classList.contains('satisfied') : false;
+    const colClues = puzzle.col_clues[col].map(clue => ({
+      count: clue.count,
+      color: clue.color,
+      satisfied: colSatisfied
+    }));
+
+    return { rowClues, colClues };
+  }
+
+  /**
+   * Get RGB color array for a color ID
+   * @param {number} colorId - Color ID (1-indexed)
+   * @returns {number[]|null} RGB array [r, g, b] or null if not found
+   */
+  function getColorRgb(colorId) {
+    const puzzles = getPuzzles();
+    const puzzle = puzzles[currentPuzzle];
+    if (!puzzle || !puzzle.color_map) return null;
+    return puzzle.color_map[colorId] || null;
+  }
+
+  /**
+   * Get the current puzzle object
+   * @returns {Object|null} Current puzzle or null
+   */
+  function getCurrentPuzzle() {
+    const puzzles = getPuzzles();
+    return puzzles[currentPuzzle] || null;
+  }
+
   // Expose globally
   window.CozyGarden = {
     resetPuzzle: resetPuzzle,
@@ -1657,7 +1742,11 @@
     showGame: showGame,
     clearAllState: clearAllState,
     navigateToCollectionWithStamp: navigateToCollectionWithStamp,
-    getPuzzleId: getPuzzleId  // Utility for generating consistent puzzle IDs
+    getPuzzleId: getPuzzleId,  // Utility for generating consistent puzzle IDs
+    // Zoom integration API
+    getClueInfo: getClueInfo,
+    getColorRgb: getColorRgb,
+    getCurrentPuzzle: getCurrentPuzzle
   };
 
   // Auto-initialize

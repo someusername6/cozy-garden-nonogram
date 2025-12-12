@@ -159,11 +159,33 @@
           </button>
         </div>
 
-        <div class="board-wrapper">
-          <div class="corner"></div>
-          <div class="col-clues" id="col-clues" role="group" aria-label="Column clues"></div>
-          <div id="row-clues-container" role="group" aria-label="Row clues"></div>
-          <div class="grid" id="grid" role="grid" aria-label="Puzzle grid"></div>
+        <!-- Zoomable/Scrollable puzzle area -->
+        <div class="zoom-container" id="zoom-container">
+          <div class="board-wrapper">
+            <div class="corner"></div>
+            <div class="col-clues" id="col-clues" role="group" aria-label="Column clues"></div>
+            <div id="row-clues-container" role="group" aria-label="Row clues"></div>
+            <div class="grid" id="grid" role="grid" aria-label="Puzzle grid"></div>
+          </div>
+        </div>
+
+        <!-- Contextual clue tooltip (shown when zoomed and touching cells) -->
+        <div class="clue-tooltip position-bottom" id="clue-tooltip" aria-live="polite" aria-atomic="true">
+          <div class="clue-tooltip-row">
+            <span class="clue-tooltip-label">Row:</span>
+            <span class="clue-tooltip-clues" id="tooltip-row-clues"></span>
+          </div>
+          <div class="clue-tooltip-col">
+            <span class="clue-tooltip-label">Col:</span>
+            <span class="clue-tooltip-clues" id="tooltip-col-clues"></span>
+          </div>
+        </div>
+
+        <!-- Floating zoom controls -->
+        <div class="zoom-controls" id="zoom-controls">
+          <button class="zoom-btn zoom-in" aria-label="Zoom in">+</button>
+          <button class="zoom-btn zoom-out" aria-label="Zoom out">&minus;</button>
+          <button class="zoom-btn zoom-fit" aria-label="Fit to view">&#8862;</button>
         </div>
 
         <div class="status" id="status" role="status" aria-live="polite">Select colors and fill the grid</div>
@@ -357,5 +379,7 @@
   <script defer src="js/app.js"></script>
   <!-- Game logic -->
   <script defer src="js/game.js"></script>
+  <!-- Zoom & Pan system -->
+  <script defer src="js/zoom.js"></script>
 </body>
 </html>

@@ -63,8 +63,13 @@ const ScreenManager = (function() {
     // Store data for the screen
     screenData = data;
 
-    // Hide current screen
+    // Handle leaving the current screen
     if (currentScreen && screenElements[currentScreen]) {
+      // Clean up zoom system when leaving puzzle screen
+      if (currentScreen === SCREENS.PUZZLE && window.CozyZoom) {
+        window.CozyZoom.destroy();
+      }
+
       screenElements[currentScreen].classList.remove('screen-active');
       screenElements[currentScreen].classList.add('screen-hidden');
     }
@@ -240,6 +245,11 @@ const ScreenManager = (function() {
    * Puzzle Screen - Gameplay
    */
   function initPuzzleScreen(data) {
+    // Initialize zoom system for the puzzle screen
+    if (window.CozyZoom) {
+      window.CozyZoom.init();
+    }
+
     // Puzzle screen initialization is handled by game.js
     // data should contain { puzzleId: string }
     window.dispatchEvent(new CustomEvent('screen:puzzle', { detail: data }));
