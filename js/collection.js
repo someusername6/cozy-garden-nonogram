@@ -355,7 +355,9 @@
     container.innerHTML = '';
 
     // Filter puzzles by search term if provided, preserving original indices
-    const searchFilter = (options.searchFilter || '').toLowerCase().trim();
+    // Limit search length to prevent DoS via extremely long strings
+    const MAX_SEARCH_LENGTH = 100;
+    const searchFilter = (options.searchFilter || '').toLowerCase().trim().slice(0, MAX_SEARCH_LENGTH);
 
     // Create array of {puzzle, originalIndex} to preserve indices through filtering
     let puzzleItems = puzzles.map((puzzle, index) => ({ puzzle, originalIndex: index }));
