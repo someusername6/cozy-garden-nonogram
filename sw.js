@@ -1,8 +1,8 @@
 // Cozy Garden Service Worker
 // Provides offline capability and caching
 
-const CACHE_NAME = 'cozy-garden-v20';
-const STATIC_CACHE = 'cozy-garden-static-v20';
+const CACHE_NAME = 'cozy-garden-v21';
+const STATIC_CACHE = 'cozy-garden-static-v21';
 const DATA_CACHE = 'cozy-garden-data-v1';
 
 // Files to cache immediately on install
@@ -32,7 +32,13 @@ const STATIC_FILES = [
   '/assets/icons/icon-384.png',
   '/assets/icons/icon-512.png',
   '/assets/icons/apple-touch-icon.png',
-  '/assets/icons/maskable-512.png'
+  '/assets/icons/maskable-512.png',
+  // SVG icons used in UI
+  '/assets/icons/flower-uniform-petals.svg',
+  '/assets/icons/undo.svg',
+  '/assets/icons/magnifying-glass.svg',
+  '/assets/icons/wooden-painters-palette.svg',
+  '/assets/icons/celebration.svg'
 ];
 
 // Install event - cache static assets
