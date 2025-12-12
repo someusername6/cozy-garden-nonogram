@@ -74,29 +74,29 @@ html[data-theme="light"] {
 html[data-theme="dark"] {
   /* Theme colors - warm and cozy */
   --color-primary: #8fb36d;
-  --color-primary-light: #5c7a4a;
+  --color-primary-light: #4a6038;
   --color-primary-dark: #b8d49a;
-  --color-secondary: #4a4036;
-  --color-secondary-dark: #5a5046;
+  --color-secondary: #2a2420;
+  --color-secondary-dark: #3a3430;
   --color-accent: #9bc77a;
 
-  /* Background colors - warm dark browns */
-  --color-bg-start: #2a2420;
-  --color-bg-end: #1e1a17;
-  --color-surface: #362f2a;
-  --color-cell: #3d3530;
-  --color-cell-hover: #4a413a;
-  --color-cell-empty: #2e2825;
-  --color-grid-border: #5a4d42;
+  /* Background colors - near-black with warm undertones */
+  --color-bg-start: #0f0d0c;
+  --color-bg-end: #0a0908;
+  --color-surface: #1a1614;
+  --color-cell: #1e1a18;
+  --color-cell-hover: #2a2420;
+  --color-cell-empty: #141210;
+  --color-grid-border: #3a3230;
 
   /* Text colors - warm off-whites (WCAG AA compliant, min 4.5:1 contrast) */
-  --color-text: #e8e0d8;
-  --color-text-light: #cfc0b0;
-  --color-text-muted: #b5a595;
+  --color-text: #ede5dd;
+  --color-text-light: #d5c8ba;
+  --color-text-muted: #a89888;
 
   /* Additional UI colors */
-  --color-shadow: rgba(0, 0, 0, 0.4);
-  --color-overlay: rgba(0, 0, 0, 0.7);
+  --color-shadow: rgba(0, 0, 0, 0.6);
+  --color-overlay: rgba(0, 0, 0, 0.8);
   --color-danger: #e57373;
   --color-info: #4fc3f7;
   --color-warning: #ffb74d;
@@ -111,23 +111,23 @@ html[data-theme="dark"] {
 @media (prefers-color-scheme: dark) {
   html[data-theme="system"] {
     --color-primary: #8fb36d;
-    --color-primary-light: #5c7a4a;
+    --color-primary-light: #4a6038;
     --color-primary-dark: #b8d49a;
-    --color-secondary: #4a4036;
-    --color-secondary-dark: #5a5046;
+    --color-secondary: #2a2420;
+    --color-secondary-dark: #3a3430;
     --color-accent: #9bc77a;
-    --color-bg-start: #2a2420;
-    --color-bg-end: #1e1a17;
-    --color-surface: #362f2a;
-    --color-cell: #3d3530;
-    --color-cell-hover: #4a413a;
-    --color-cell-empty: #2e2825;
-    --color-grid-border: #5a4d42;
-    --color-text: #e8e0d8;
-    --color-text-light: #cfc0b0;
-    --color-text-muted: #b5a595;
-    --color-shadow: rgba(0, 0, 0, 0.4);
-    --color-overlay: rgba(0, 0, 0, 0.7);
+    --color-bg-start: #0f0d0c;
+    --color-bg-end: #0a0908;
+    --color-surface: #1a1614;
+    --color-cell: #1e1a18;
+    --color-cell-hover: #2a2420;
+    --color-cell-empty: #141210;
+    --color-grid-border: #3a3230;
+    --color-text: #ede5dd;
+    --color-text-light: #d5c8ba;
+    --color-text-muted: #a89888;
+    --color-shadow: rgba(0, 0, 0, 0.6);
+    --color-overlay: rgba(0, 0, 0, 0.8);
     --color-danger: #e57373;
     --color-info: #4fc3f7;
     --color-warning: #ffb74d;
@@ -666,7 +666,7 @@ kbd {
 .color-btn {
   width: 40px;
   height: 40px;
-  border: 3px solid transparent;
+  border: 3px solid rgba(0, 0, 0, 0.15);
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.1s, border-color 0.1s;
@@ -1189,6 +1189,10 @@ html[data-theme="dark"] .zoom-hint-toast {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
+html[data-theme="dark"] .color-btn {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 @media (prefers-color-scheme: dark) {
   html[data-theme="system"] .clue-tooltip {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
@@ -1202,6 +1206,10 @@ html[data-theme="dark"] .zoom-hint-toast {
     background: var(--color-surface);
     color: var(--color-text);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  html[data-theme="system"] .color-btn {
+    border-color: rgba(255, 255, 255, 0.2);
   }
 }
 

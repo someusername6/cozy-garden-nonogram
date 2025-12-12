@@ -579,7 +579,7 @@ const ScreenManager = (function() {
     if (themeColorMeta) {
       const isDark = theme === 'dark' ||
         (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      themeColorMeta.setAttribute('content', isDark ? '#2a2420' : '#5c6b4a');
+      themeColorMeta.setAttribute('content', isDark ? '#0f0d0c' : '#5c6b4a');
     }
   }
 
