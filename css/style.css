@@ -449,13 +449,17 @@ body {
 }
 
 /* === Crosshair Hover Effect === */
-.cell.highlight-row,
-.cell.highlight-col {
-  box-shadow: inset 0 0 0 100px rgba(92, 107, 74, 0.12);
+.cell.highlight-row::after,
+.cell.highlight-col::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(92, 107, 74, 0.12);
+  pointer-events: none;
 }
 
-.cell.highlight-row.highlight-col {
-  box-shadow: inset 0 0 0 100px rgba(92, 107, 74, 0.2);
+.cell.highlight-row.highlight-col::after {
+  background-color: rgba(92, 107, 74, 0.2);
 }
 
 .cell.highlight-cell {
