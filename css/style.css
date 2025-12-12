@@ -2124,6 +2124,7 @@ html[data-theme="dark"] :focus-visible {
 .puzzle-card {
   width: 90px;
   background: var(--color-surface);
+  border: 2px solid var(--color-secondary-dark);
   border-radius: 12px;
   padding: 10px;
   cursor: pointer;
