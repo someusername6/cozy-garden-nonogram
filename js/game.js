@@ -288,11 +288,27 @@
     return window.CozyHistory || null;
   }
 
+  // === Screen Reader Announcements ===
+
+  /**
+   * Announce a message to screen readers via live region
+   * @param {string} message - Text to announce
+   */
+  function announce(message) {
+    const el = document.getElementById('sr-announcer');
+    if (el) {
+      el.textContent = '';
+      // Brief delay ensures screen reader registers the change
+      setTimeout(() => { el.textContent = message; }, 50);
+    }
+  }
+
   // === Pencil Mode ===
 
   function setPencilMode(enabled) {
     pencilMode = enabled;
     updatePencilModeUI();
+    announce(enabled ? 'Pencil mode' : 'Pen mode');
     closeModeMenu(); // Close menu after selection
   }
 
