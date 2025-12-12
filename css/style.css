@@ -2038,7 +2038,7 @@ html[data-theme="dark"] .puzzle-card:focus-visible {
 }
 
 .puzzle-card-name {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-text);
   line-height: 1.2;
   margin-bottom: 4px;
@@ -2051,7 +2051,7 @@ html[data-theme="dark"] .puzzle-card:focus-visible {
 }
 
 .puzzle-card-badge {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--color-text-light);
   background: var(--color-secondary);
   padding: 2px 8px;
@@ -2100,6 +2100,10 @@ body.showing-game .collection-screen {
   }
 
   .puzzle-card-name {
+    font-size: 14px;
+  }
+
+  .puzzle-card-badge {
     font-size: 12px;
   }
 }
@@ -2120,7 +2124,7 @@ body.showing-game .collection-screen {
   }
 
   .puzzle-card-name {
-    font-size: 13px;
+    font-size: 14px;
   }
 }
 
