@@ -1840,6 +1840,21 @@ html[data-theme="dark"] .puzzle-card:focus-visible {
   padding-bottom: 20px;
 }
 
+.collection-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.collection-empty-message {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  margin: 0;
+}
+
 .collection-header {
   text-align: center;
   margin-bottom: 20px;

@@ -347,6 +347,20 @@
     const sortedDifficulties = getSortedDifficulties(groups);
     const storage = getStorage();
 
+    // Show empty state if search returned no results
+    if (sortedDifficulties.length === 0 && searchFilter) {
+      const emptyState = document.createElement('div');
+      emptyState.className = 'collection-empty-state';
+
+      const message = document.createElement('p');
+      message.className = 'collection-empty-message';
+      message.textContent = `No puzzles match "${searchFilter}"`;
+      emptyState.appendChild(message);
+
+      container.appendChild(emptyState);
+      return;
+    }
+
     // Get or calculate collapsed state
     // When searching, expand all sections to show results
     let collapsed;
