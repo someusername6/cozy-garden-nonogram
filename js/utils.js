@@ -13,6 +13,9 @@
     VICTORY_CANVAS_SIZE: 180,   // Victory screen puzzle preview
     MINI_CANVAS_SIZE: 80,       // Collection thumbnail size
 
+    // Mini canvas outline (for thumbnails and stamps)
+    OUTLINE_THICKNESS: 2,       // Outline width in pixels
+
     // Limits
     MAX_PUZZLE_DIMENSION: 32,   // Maximum puzzle width/height (security limit)
     MAX_HISTORY: 50,            // Undo/redo history depth
@@ -75,11 +78,70 @@
     };
   }
 
+  /**
+   * Render pixel art to a canvas with outlined edges
+   * @param {number} width - Grid width in cells
+   * @param {number} height - Grid height in cells
+   * @param {number} targetSize - Target canvas size in pixels
+   * @param {Function} getColorAt - Callback (row, col) => [r,g,b] or null for empty
+   * @returns {HTMLCanvasElement} Canvas with outlined pixel art
+   */
+  function renderOutlinedCanvas(width, height, targetSize, getColorAt) {
+    const maxDim = Math.max(width, height);
+    const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
+    const padding = CONFIG.OUTLINE_THICKNESS * 2;
+    const offset = CONFIG.OUTLINE_THICKNESS;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * cellSize + padding;
+    canvas.height = height * cellSize + padding;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    // Get theme-aware outline color from CSS variable
+    const outlineColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-text-muted').trim() || '#8a8a7a';
+
+    // Draw outlines first
+    ctx.fillStyle = outlineColor;
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const color = getColorAt(row, col);
+        if (color) {
+          const px = offset + col * cellSize;
+          const py = offset + row * cellSize;
+          ctx.fillRect(
+            px - CONFIG.OUTLINE_THICKNESS,
+            py - CONFIG.OUTLINE_THICKNESS,
+            cellSize + padding,
+            cellSize + padding
+          );
+        }
+      }
+    }
+
+    // Draw all fills on top
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const color = getColorAt(row, col);
+        if (color) {
+          ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+          const px = offset + col * cellSize;
+          const py = offset + row * cellSize;
+          ctx.fillRect(px, py, cellSize, cellSize);
+        }
+      }
+    }
+
+    return canvas;
+  }
+
   // === Export ===
   window.CozyUtils = {
     CONFIG,
     getPuzzleId,
     getPuzzleTitle,
-    parsePuzzleTitle
+    parsePuzzleTitle,
+    renderOutlinedCanvas
   };
 })();

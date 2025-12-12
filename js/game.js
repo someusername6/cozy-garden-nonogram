@@ -7,7 +7,7 @@
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG, getPuzzleId, getPuzzleTitle } = window.CozyUtils;
+  const { CONFIG, getPuzzleId, getPuzzleTitle, renderOutlinedCanvas } = window.CozyUtils;
 
   // Game state
   let currentPuzzle = 0;
@@ -1984,32 +1984,21 @@
     }
     if (!hasProgress) return null;
 
-    // Create canvas with same sizing as victory screen
-    const height = puzzle.height;
-    const width = puzzle.width;
-    const maxDim = Math.max(width, height);
-    const cellSize = Math.max(2, Math.floor(CONFIG.STAMP_CANVAS_SIZE / maxDim));
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width * cellSize;
-    canvas.height = height * cellSize;
-    const ctx = canvas.getContext('2d');
-
-    // Draw current grid state (only filled cells, not X marks)
-    for (let row = 0; row < height; row++) {
-      for (let col = 0; col < width; col++) {
+    return renderOutlinedCanvas(
+      puzzle.width,
+      puzzle.height,
+      CONFIG.STAMP_CANVAS_SIZE,
+      (row, col) => {
         const cell = getCell(row, col);
         if (cell.value !== null && cell.value > 0) {
           const color = puzzle.color_map[cell.value];
           if (color) {
-            ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            return color;
           }
         }
+        return null;
       }
-    }
-
-    return canvas;
+    );
   }
 
   // Navigate to collection with stamp animation for partial progress

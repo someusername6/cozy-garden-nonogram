@@ -2113,8 +2113,12 @@ html[data-theme="dark"] :focus-visible {
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
-  background: var(--color-cell);
   border-radius: 6px;
+}
+
+/* Background only for placeholder (no canvas) */
+.puzzle-card-preview:has(.puzzle-card-placeholder) {
+  background: var(--color-cell);
   overflow: hidden;
 }
 

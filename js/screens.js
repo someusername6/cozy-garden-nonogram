@@ -6,7 +6,7 @@ const ScreenManager = (function() {
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG } = window.CozyUtils;
+  const { CONFIG, renderOutlinedCanvas } = window.CozyUtils;
 
   // Screen definitions
   const SCREENS = {
@@ -587,26 +587,19 @@ const ScreenManager = (function() {
     container.innerHTML = '';
     const height = solution.length;
     const width = solution[0] ? solution[0].length : height;
-    const maxDim = Math.max(width, height);
-    // Fit within container with padding for rounded corners
-    const targetSize = CONFIG.VICTORY_CANVAS_SIZE;
-    const cellSize = Math.max(2, Math.floor(targetSize / maxDim));
 
-    const canvas = document.createElement('canvas');
-    canvas.width = width * cellSize;
-    canvas.height = height * cellSize;
-    const ctx = canvas.getContext('2d');
-
-    for (let row = 0; row < height; row++) {
-      for (let col = 0; col < width; col++) {
+    const canvas = renderOutlinedCanvas(
+      width,
+      height,
+      CONFIG.VICTORY_CANVAS_SIZE,
+      (row, col) => {
         const colorIndex = solution[row][col];
         if (colorIndex > 0 && palette[colorIndex]) {
-          const color = palette[colorIndex];
-          ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-          ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+          return palette[colorIndex];
         }
+        return null;
       }
-    }
+    );
 
     container.appendChild(canvas);
   }
