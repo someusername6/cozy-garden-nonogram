@@ -1701,21 +1701,6 @@
     updatePencilActionsVisibility();
   }
 
-  function confirmShowSolution() {
-    if (window.ScreenManager?.showConfirmModal) {
-      window.ScreenManager.showConfirmModal({
-        title: 'Show Solution?',
-        message: 'This will reveal the complete puzzle. You can still undo afterward.',
-        confirmText: 'Show Solution',
-        cancelText: 'Cancel',
-        onConfirm: showSolution
-      });
-    } else {
-      // Fallback if modal not available
-      showSolution();
-    }
-  }
-
   // === Keyboard Shortcuts ===
 
   function setupKeyboardShortcuts() {
@@ -1880,6 +1865,70 @@
 
   // === Initialization ===
 
+  // Hold-to-confirm button pattern
+  const HOLD_DURATION = 1200; // ms
+
+  function setupHoldButton(btn, onConfirm) {
+    if (!btn) return;
+
+    let holdTimer = null;
+    let isHolding = false;
+
+    function startHold(e) {
+      // Prevent default to avoid text selection on mobile
+      if (e.type === 'touchstart') {
+        e.preventDefault();
+      }
+
+      if (isHolding) return;
+      isHolding = true;
+      btn.classList.add('holding');
+
+      holdTimer = setTimeout(() => {
+        if (isHolding) {
+          cancelHold();
+          onConfirm();
+        }
+      }, HOLD_DURATION);
+    }
+
+    function cancelHold() {
+      isHolding = false;
+      btn.classList.remove('holding');
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+    }
+
+    // Mouse events
+    btn.addEventListener('mousedown', startHold);
+    btn.addEventListener('mouseup', cancelHold);
+    btn.addEventListener('mouseleave', cancelHold);
+
+    // Touch events
+    btn.addEventListener('touchstart', startHold, { passive: false });
+    btn.addEventListener('touchend', cancelHold);
+    btn.addEventListener('touchcancel', cancelHold);
+
+    // Keyboard events (Enter/Space)
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        startHold(e);
+      }
+    });
+    btn.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        cancelHold();
+      }
+    });
+    btn.addEventListener('blur', cancelHold);
+
+    // Set CSS variable for animation duration
+    btn.style.setProperty('--hold-duration', `${HOLD_DURATION}ms`);
+  }
+
   // Setup button event listeners (replaces inline onclick handlers for CSP compliance)
   function setupButtonListeners() {
     // Mode menu buttons
@@ -1918,15 +1967,11 @@
       });
     }
 
-    // Control buttons (Reset, Solution)
-    const controlBtns = document.querySelectorAll('.controls .btn-secondary');
-    controlBtns.forEach(btn => {
-      if (btn.textContent.includes('Reset')) {
-        btn.addEventListener('click', resetPuzzle);
-      } else if (btn.textContent.includes('Solution')) {
-        btn.addEventListener('click', confirmShowSolution);
-      }
-    });
+    // Hold-to-confirm buttons (Reset, Solution)
+    const resetBtn = document.getElementById('reset-btn');
+    const solutionBtn = document.getElementById('solution-btn');
+    setupHoldButton(resetBtn, resetPuzzle);
+    setupHoldButton(solutionBtn, showSolution);
 
     // Back button on puzzle screen
     const puzzleBackBtn = document.querySelector('#screen-puzzle .header-back-btn');
@@ -2170,7 +2215,7 @@
   // Expose globally
   window.CozyGarden = {
     resetPuzzle: resetPuzzle,
-    showSolution: confirmShowSolution,
+    showSolution: showSolution,
     performUndo: performUndo,
     performRedo: performRedo,
     togglePencilMode: togglePencilMode,

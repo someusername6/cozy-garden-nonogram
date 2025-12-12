@@ -223,8 +223,14 @@
             </button>
           </div>
 
-          <button class="btn btn-secondary" aria-label="Reset current puzzle">Reset</button>
-          <button class="btn btn-secondary" aria-label="Show puzzle solution">Solution</button>
+          <button class="btn btn-secondary btn-hold" id="reset-btn" aria-label="Hold to reset puzzle" data-action="reset">
+              <span class="btn-hold-fill"></span>
+              <span class="btn-hold-text">Reset</span>
+            </button>
+            <button class="btn btn-secondary btn-hold" id="solution-btn" aria-label="Hold to reveal solution" data-action="solution">
+              <span class="btn-hold-fill"></span>
+              <span class="btn-hold-text">Solution</span>
+            </button>
           <button id="help-btn" class="btn btn-secondary help-btn" title="How to play" aria-label="How to play">?</button>
         </div>
 

@@ -941,6 +941,42 @@ kbd {
   background: var(--color-accent);
 }
 
+/* === Hold-to-Confirm Buttons === */
+.btn-hold {
+  position: relative;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.btn-hold-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  background: var(--color-danger, #d9534f);
+  opacity: 0.3;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.btn-hold.holding .btn-hold-fill {
+  transition: width var(--hold-duration, 1.2s) linear;
+  width: 100%;
+}
+
+.btn-hold:not(.holding) .btn-hold-fill {
+  transition: width 0.15s ease-out;
+  width: 0;
+}
+
+.btn-hold-text {
+  position: relative;
+  z-index: 1;
+}
+
 /* === Help Button === */
 .help-btn {
   font-weight: bold;
