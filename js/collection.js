@@ -736,18 +736,32 @@
         // Get target position after scroll settles
         const targetRect = preview.getBoundingClientRect();
 
-        // Calculate scale factor to fit within target (preserving aspect ratio)
+        // Calculate scale factor to match exact mini canvas dimensions
+        // This prevents the visual jump when the stamp is replaced by the actual canvas
         const currentWidth = parseFloat(flyingStamp.style.width);
         const currentHeight = parseFloat(flyingStamp.style.height);
-        const stampAspect = currentWidth / currentHeight;
 
+        // Find the puzzle to calculate exact mini canvas dimensions
+        const puzzle = this.puzzles.find(p => getPuzzleId(p) === puzzleId);
         let targetWidth, targetHeight;
-        if (stampAspect > 1) {
-          targetWidth = targetRect.width;
-          targetHeight = targetRect.width / stampAspect;
+
+        if (puzzle) {
+          // Match the calculation in renderOutlinedCanvas
+          const maxDim = Math.max(puzzle.width, puzzle.height);
+          const cellSize = Math.max(2, Math.floor(CONFIG.MINI_CANVAS_SIZE / maxDim));
+          const padding = CONFIG.OUTLINE_THICKNESS * 2;
+          targetWidth = puzzle.width * cellSize + padding;
+          targetHeight = puzzle.height * cellSize + padding;
         } else {
-          targetHeight = targetRect.height;
-          targetWidth = targetRect.height * stampAspect;
+          // Fallback to container-based scaling
+          const stampAspect = currentWidth / currentHeight;
+          if (stampAspect > 1) {
+            targetWidth = targetRect.width;
+            targetHeight = targetRect.width / stampAspect;
+          } else {
+            targetHeight = targetRect.height;
+            targetWidth = targetRect.height * stampAspect;
+          }
         }
 
         const scale = targetWidth / currentWidth;
