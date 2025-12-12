@@ -1776,7 +1776,7 @@ body.is-installed {
 }
 
 /* Color palette buttons */
-.color-btn:focus-visible {
+.color-btn:focus-visible:not(.selected) {
   outline: 3px solid var(--color-primary);
   outline-offset: 3px;
   transform: scale(1.15);
