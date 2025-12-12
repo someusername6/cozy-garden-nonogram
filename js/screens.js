@@ -761,12 +761,14 @@ const ScreenManager = (function() {
   /**
    * Tutorial Screen
    */
+  // Tutorial state (module-level so it persists across re-initializations)
+  let tutorialCurrentStep = 0;
+
   function initTutorialScreen() {
     const skipBtn = document.getElementById('tutorial-skip-btn');
     const nextBtn = document.getElementById('tutorial-next-btn');
     const steps = document.querySelectorAll('.tutorial-step');
     const dots = document.querySelectorAll('.tutorial-dot');
-    let currentStep = 0;
 
     function showStep(index) {
       steps.forEach((step, i) => {
@@ -796,9 +798,9 @@ const ScreenManager = (function() {
 
     if (nextBtn && !nextBtn.hasAttribute('data-initialized')) {
       nextBtn.addEventListener('click', () => {
-        if (currentStep < steps.length - 1) {
-          currentStep++;
-          showStep(currentStep);
+        if (tutorialCurrentStep < steps.length - 1) {
+          tutorialCurrentStep++;
+          showStep(tutorialCurrentStep);
         } else {
           completeTutorial();
         }
@@ -807,7 +809,7 @@ const ScreenManager = (function() {
     }
 
     // Reset to first step when entering
-    currentStep = 0;
+    tutorialCurrentStep = 0;
     showStep(0);
 
     // Focus management: focus on Next button
