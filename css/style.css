@@ -163,6 +163,8 @@ html {
   height: 100%;
   /* Prevent overscroll bounce on iOS */
   overscroll-behavior: none;
+  /* Disable browser pinch-zoom globally - puzzle has custom zoom */
+  touch-action: pan-x pan-y;
 }
 
 body {
