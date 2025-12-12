@@ -135,8 +135,8 @@
 
     <main class="screen-content app-main">
       <div class="game-container">
-        <div class="palette" id="palette">
-          <span class="palette-label">Colors:</span>
+        <div class="palette" id="palette" aria-label="Color palette">
+          <span class="palette-label visually-hidden">Colors:</span>
         </div>
 
         <!-- Mode toggle: Pen (certain) vs Pencil (maybe) -->
@@ -205,11 +205,14 @@
           <button class="btn btn-secondary">Solution</button>
         </div>
 
-        <div class="instructions">
-          <strong>How to play:</strong> Tap a color, then tap/drag to fill cells.
-          Long-press to mark X (empty). Use Pencil mode for uncertain guesses.<br>
-          <kbd>Ctrl+Z</kbd> undo, <kbd>P</kbd> toggle pencil mode, <kbd>1-9</kbd> select colors.
-        </div>
+        <details class="instructions-collapsible" id="instructions-details">
+          <summary class="instructions-summary">How to play</summary>
+          <div class="instructions-content">
+            Tap a color, then tap/drag to fill cells.
+            Long-press to mark X (empty). Use Pencil mode for uncertain guesses.<br>
+            <kbd>Ctrl+Z</kbd> undo, <kbd>P</kbd> toggle pencil mode, <kbd>1-9</kbd> select colors.
+          </div>
+        </details>
       </div>
     </main>
   </div>

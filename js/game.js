@@ -516,8 +516,9 @@
         }
       }
 
-      document.getElementById('status').textContent = 'Select colors and fill the grid';
-      document.getElementById('status').classList.remove('won');
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Select colors and fill the grid';
+      statusEl.classList.remove('won', 'revealed');
 
       const select = document.getElementById('puzzle-select-dropdown');
       if (select) select.value = index;
@@ -1274,7 +1275,9 @@
       }
     }
 
-    document.getElementById('status').textContent = 'Solution revealed';
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = 'Solution revealed';
+    statusEl.classList.add('revealed');
     updatePencilActionsVisibility();
   }
 

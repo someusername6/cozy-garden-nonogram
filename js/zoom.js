@@ -5,10 +5,11 @@
   'use strict';
 
   // === Constants ===
-  const MIN_ZOOM = 0.35;          // Allow significant zoom out for large puzzles (18x19+)
+  const ABSOLUTE_MIN_ZOOM = 0.35; // Absolute floor for zoom (safety)
   const MAX_ZOOM = 3.0;           // Maximum zoom level
   const COMFORTABLE_ZOOM = 2.0;   // ~44px cells at this level
   const DEFAULT_ZOOM = 1.0;       // Starting zoom level
+  const FIT_ZOOM_BUFFER = 0.97;   // 3% buffer so fit isn't too tight
   const DOUBLE_TAP_DELAY = 300;   // ms between taps for double-tap
   const TOOLTIP_DISMISS_DELAY = 1500;  // ms after touch ends
   const TOOLTIP_SHOW_DELAY = 100; // ms before showing tooltip
@@ -74,7 +75,8 @@
     if (!container) return;
 
     const oldZoom = currentZoom;
-    const newZoom = clamp(level, MIN_ZOOM, MAX_ZOOM);
+    const effectiveMinZoom = getEffectiveMinZoom();
+    const newZoom = clamp(level, effectiveMinZoom, MAX_ZOOM);
 
     // Calculate center point to preserve scroll position
     let centerX, centerY;
@@ -115,11 +117,13 @@
   }
 
   function updateZoomButtons() {
+    const effectiveMinZoom = getEffectiveMinZoom();
+
     if (zoomInBtn) {
       zoomInBtn.disabled = currentZoom >= MAX_ZOOM;
     }
     if (zoomOutBtn) {
-      zoomOutBtn.disabled = currentZoom <= MIN_ZOOM;
+      zoomOutBtn.disabled = currentZoom <= effectiveMinZoom;
     }
     if (zoomFitBtn) {
       // Highlight fit button when not at fit zoom
@@ -131,12 +135,22 @@
 
   // === Auto-Fit Calculation ===
 
-  function calculateFitZoom() {
+  // Cache fit zoom per puzzle to avoid recalculation issues during zoom
+  let cachedFitZoom = null;
+  let cachedPuzzleId = null;
+
+  function calculateFitZoom(forceRecalculate = false) {
     const container = zoomContainer;
     if (!container || !window.CozyGarden?.getCurrentPuzzle) return DEFAULT_ZOOM;
 
     const puzzle = window.CozyGarden.getCurrentPuzzle();
     if (!puzzle) return DEFAULT_ZOOM;
+
+    // Use cached value if available for the same puzzle (prevents shrinking spiral)
+    const puzzleId = puzzle.title;
+    if (!forceRecalculate && cachedFitZoom !== null && cachedPuzzleId === puzzleId) {
+      return cachedFitZoom;
+    }
 
     const baseCellSize = getBaseCellSize();
 
@@ -154,20 +168,42 @@
     const totalWidthUnits = puzzle.width + clueWidthUnits;
     const totalHeightUnits = puzzle.height + clueHeightUnits;
 
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
+    // Use the viewport/screen size, not the container (which changes with content)
+    // The container's max-height is set via CSS to ~55vh, so use that as reference
+    const vh = window.innerHeight * 0.01;
+    const availableWidth = window.innerWidth - 30; // Account for padding
+    const availableHeight = vh * 55; // Match CSS max-height
 
     // Some padding for controls and breathing room
     const paddingX = 20;
-    const paddingY = 40; // More vertical padding for controls
+    const paddingY = 20;
 
-    const fitZoomX = (containerWidth - paddingX) / (totalWidthUnits * baseCellSize);
-    const fitZoomY = (containerHeight - paddingY) / (totalHeightUnits * baseCellSize);
+    const fitZoomX = (availableWidth - paddingX) / (totalWidthUnits * baseCellSize);
+    const fitZoomY = (availableHeight - paddingY) / (totalHeightUnits * baseCellSize);
 
     const fitZoom = Math.min(fitZoomX, fitZoomY);
 
-    // Clamp to valid range, allowing zoom < 1.0 for large puzzles
-    return clamp(fitZoom, MIN_ZOOM, MAX_ZOOM);
+    // Apply buffer so fit isn't too tight, then clamp to valid range
+    const result = clamp(fitZoom * FIT_ZOOM_BUFFER, ABSOLUTE_MIN_ZOOM, MAX_ZOOM);
+
+    // Cache the result
+    cachedFitZoom = result;
+    cachedPuzzleId = puzzleId;
+
+    return result;
+  }
+
+  // Invalidate fit zoom cache (call on resize/orientation change)
+  function invalidateFitZoomCache() {
+    cachedFitZoom = null;
+    cachedPuzzleId = null;
+  }
+
+  // Get effective minimum zoom - capped at fit level so user can't zoom out past where puzzle fits
+  function getEffectiveMinZoom() {
+    const fitZoom = calculateFitZoom();
+    // Min zoom is the greater of: absolute floor, or fit zoom (can't zoom out past fit)
+    return Math.max(ABSOLUTE_MIN_ZOOM, fitZoom);
   }
 
   // === Gesture Handlers ===
@@ -186,7 +222,8 @@
     if (isPinching && e.touches.length === 2) {
       const distance = getDistance(e.touches[0], e.touches[1]);
       const scale = distance / pinchStartDistance;
-      const newZoom = clamp(baseZoom * scale, MIN_ZOOM, MAX_ZOOM);
+      const effectiveMinZoom = getEffectiveMinZoom();
+      const newZoom = clamp(baseZoom * scale, effectiveMinZoom, MAX_ZOOM);
 
       // Apply zoom directly (cell-resize approach)
       if (Math.abs(newZoom - currentZoom) > 0.05) {
@@ -413,6 +450,33 @@
     }
   }
 
+  // === Resize/Orientation Handler ===
+
+  let resizeTimeout = null;
+
+  function handleResize() {
+    // Debounce resize events
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      // Only handle when on puzzle screen
+      const puzzleScreen = document.getElementById('screen-puzzle');
+      if (!puzzleScreen || puzzleScreen.classList.contains('screen-hidden')) return;
+
+      // Invalidate cache so fit zoom is recalculated with new dimensions
+      invalidateFitZoomCache();
+
+      const effectiveMinZoom = getEffectiveMinZoom();
+
+      // If current zoom is below the new effective minimum, snap to it
+      if (currentZoom < effectiveMinZoom) {
+        applyZoom(effectiveMinZoom, false);
+      }
+
+      // Update button states
+      updateZoomButtons();
+    }, 150);
+  }
+
   // === First-Time Hint ===
 
   function maybeShowZoomHint() {
@@ -479,12 +543,17 @@
     // Set up keyboard shortcuts
     document.addEventListener('keydown', handleKeyDown);
 
+    // Handle resize/orientation changes
+    window.addEventListener('resize', handleResize);
+
     initialized = true;
     console.log('[Zoom] Initialized');
   }
 
   function initForPuzzle() {
     // Called when a puzzle is loaded
+    // Invalidate cache so fit zoom is calculated fresh for this puzzle
+    invalidateFitZoomCache();
     const fitZoom = calculateFitZoom();
 
     // Always start at fit zoom if puzzle doesn't fit at 1.0
@@ -553,8 +622,11 @@
     onCellTouchMove,
     onCellTouchEnd,
 
+    // Get effective min zoom for current puzzle
+    getEffectiveMinZoom,
+
     // Constants for reference
-    MIN_ZOOM,
+    ABSOLUTE_MIN_ZOOM,
     MAX_ZOOM,
     COMFORTABLE_ZOOM
   };
