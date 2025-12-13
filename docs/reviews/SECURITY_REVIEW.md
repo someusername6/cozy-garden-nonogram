@@ -1,793 +1,627 @@
-# Security Review - Cozy Garden Nonogram Puzzle Game
+# Security Review: Cozy Garden Nonogram PWA
 
-**Date:** December 12, 2025
+**Review Date:** 2025-12-13
 **Reviewer:** Security Analysis
-**Scope:** Client-side PWA security assessment
-**Files Reviewed:**
-- src/index.html (CSP, meta tags)
-- src/js/*.js (8 JavaScript modules)
-- src/sw.js (Service Worker)
-- build.js (Build pipeline)
-- package.json (Dependencies)
+**Scope:** Client-side PWA with no backend
+**Version:** 1.0.0
 
 ---
 
 ## Executive Summary
 
-The Cozy Garden nonogram game is a **well-secured client-side PWA** with strong defense-in-depth practices. The application demonstrates security-conscious development with proper CSP implementation, input validation, and safe DOM manipulation patterns. No critical vulnerabilities were identified.
+Cozy Garden demonstrates **strong security fundamentals** for a client-side puzzle game. The application has a Content Security Policy in place, proper input validation on critical paths, and no backend attack surface. However, there are several **low to medium severity concerns** related to XSS prevention, localStorage handling, and service worker security that should be addressed to meet production security standards.
 
-**Overall Security Posture:** ✅ **GOOD**
-
-**Key Strengths:**
-- Strict Content Security Policy with minimal exceptions
-- Comprehensive input validation and sanitization
-- No use of dangerous DOM APIs (innerHTML only with controlled static content)
-- Proper event handler attachment (no inline handlers)
-- Minimal dependencies (only build-time tools)
-- Security-conscious coding patterns throughout
-
-**Areas for Improvement:**
-- CSP allows `'unsafe-inline'` for scripts (mitigated by small inline script scope)
-- No Subresource Integrity (SRI) for local scripts
-- localStorage data validation could be more robust
+**Overall Security Rating:** B+ (Good with room for improvement)
 
 ---
 
-## 1. Content Security Policy (CSP)
+## Security Strengths
 
-### Current CSP (index.html:9)
+### 1. Content Security Policy (CSP)
+**Location:** `/Users/telmo/project/nonogram/src/index.html:9`
+
+The application implements a CSP, though with necessary exceptions:
+
+```html
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline';
+               style-src 'self' 'unsafe-inline'; img-src 'self' data:;
+               font-src 'self'; connect-src 'self'; manifest-src 'self'">
 ```
-default-src 'self';
-script-src 'self' 'unsafe-inline';
-style-src 'self' 'unsafe-inline';
-img-src 'self' data:;
-font-src 'self';
-connect-src 'self';
-manifest-src 'self'
+
+**Strengths:**
+- Restricts resources to same-origin by default
+- No external script sources allowed
+- Limited `connect-src` prevents data exfiltration
+- `img-src` properly allows `data:` URIs for canvas rendering
+
+**Note:** The `'unsafe-inline'` for scripts is required for the theme detection inline script (lines 17-37) which prevents FOUC (Flash of Unstyled Content). This is an acceptable tradeoff.
+
+### 2. Input Validation and Sanitization
+
+**Puzzle Data Validation** (`/Users/telmo/project/nonogram/src/js/game.js:242-310`)
+```javascript
+function normalizePuzzle(p) {
+  // Validates dimensions against MAX_PUZZLE_DIMENSION (32)
+  if (p.w > CONFIG.MAX_PUZZLE_DIMENSION || p.h > CONFIG.MAX_PUZZLE_DIMENSION ||
+      p.w < 1 || p.h < 1) {
+    console.warn('[Game] Puzzle dimensions out of range:', p.w, 'x', p.h);
+    return null;
+  }
+  // Validates required fields and types
+  if (!Array.isArray(p.r) || !Array.isArray(p.c) ||
+      !Array.isArray(p.p) || !Array.isArray(p.s)) {
+    return null;
+  }
+}
 ```
 
-### Assessment
-
-✅ **GOOD: Strong baseline policy**
-- `default-src 'self'` - Restricts all resources to same origin
-- `connect-src 'self'` - No external API calls possible
-- `img-src 'self' data:` - Allows canvas toDataURL (needed for rendering)
-- No `unsafe-eval` - Prevents code injection via eval()
-
-⚠️ **WARNING: `'unsafe-inline'` in script-src**
-- **Risk:** Allows inline `<script>` tags, which could enable XSS if attacker controls HTML
-- **Justification:** Used for theme detection script (index.html:17-37) to prevent flash of wrong theme
-- **Mitigation:** Inline script is small (20 lines), static, and doesn't use user input
-- **Recommendation:** Consider using nonce-based CSP or migrating theme logic to external script with sessionStorage
-
-⚠️ **WARNING: `'unsafe-inline'` in style-src**
-- **Risk:** Allows inline styles via `style=""` attributes
-- **Current Usage:** Used for dynamic color assignment in game.js (lines 902, 991, 1025, 1533)
-- **Mitigation:** All inline styles use controlled data from puzzle definitions (validated arrays)
-- **Recommendation:** Consider using CSS custom properties instead of inline styles
-
-✅ **GOOD: No external resources**
-- All scripts, styles, and assets loaded from same origin
-- No CDN dependencies
-- No third-party analytics or tracking
-
-### Recommendations
-
-**Medium Priority:**
-1. Implement nonce-based CSP for theme script:
-   ```html
-   <meta http-equiv="Content-Security-Policy"
-         content="script-src 'self' 'nonce-{random}'; ...">
-   <script nonce="{random}">...</script>
-   ```
-
-2. Replace inline styles with CSS custom properties:
-   ```javascript
-   // Instead of: element.style.background = rgb(...);
-   element.style.setProperty('--dynamic-color', rgb(...));
-   ```
-
-**Low Priority:**
-3. Add `frame-ancestors 'none'` to prevent clickjacking
-4. Add `base-uri 'self'` to prevent base tag injection
-
----
-
-## 2. Cross-Site Scripting (XSS) Vulnerabilities
-
-### User-Controlled Input Points
-
-✅ **GOOD: Very limited user input**
-- Search input (collection.js:122, 306)
-- localStorage data (storage.js)
-- URL parameters (screens.js:392-398)
-
-### Search Input Validation
-
-✅ **GOOD: Proper sanitization** (collection.js:306)
+**Search Input Length Limiting** (`/Users/telmo/project/nonogram/src/js/collection.js:327`)
 ```javascript
 const searchFilter = (options.searchFilter || '')
   .toLowerCase()
   .trim()
-  .slice(0, CONFIG.MAX_SEARCH_LENGTH);
+  .slice(0, CONFIG.MAX_SEARCH_LENGTH);  // Capped at 100 characters
 ```
-- Sanitized to lowercase (prevents case-based attacks)
-- Trimmed (removes whitespace exploits)
-- Length-limited to 100 chars (prevents DoS)
-- Used only for substring matching, never rendered directly as HTML
 
-✅ **GOOD: No innerHTML injection**
-- Search results use `textContent` assignments (collection.js:330)
-- Empty state message uses `textContent` (collection.js:330)
+This prevents ReDoS (Regular Expression Denial of Service) and excessive memory usage.
 
-### DOM Manipulation Safety
+### 3. No Direct HTML Injection Points
 
-✅ **EXCELLENT: Safe DOM patterns throughout**
+The application avoids dangerous patterns:
+- No use of `eval()` or `Function()` constructors
+- No `document.write()` calls
+- No `outerHTML` assignments with user data
+- URL parameters are sanitized before use
 
-**No dangerous patterns found:**
-- No use of `eval()`, `Function()`, or `setTimeout(string)`
-- No `document.write()`
-- No `element.innerHTML = userInput`
+### 4. Service Worker Security
 
-**Safe practices observed:**
-- createElement() + textContent for dynamic content (collection.js:222-231)
-- Safe event listener attachment (no inline handlers)
-- Controlled innerHTML only for static/validated content:
-  - Help content (game.js:88-109) - static strings
-  - SVG icons (game.js:419, 918-922) - hardcoded templates
-  - Clue tooltip rendering (zoom.js:333-349) - uses template literals with validated data
-
-### URL Parameter Handling
-
-✅ **GOOD: Safe URL parsing** (screens.js:392-398)
+**Scope Restriction** (`/Users/telmo/project/nonogram/src/js/app.js:47-48`)
 ```javascript
-const urlParams = new URLSearchParams(window.location.search);
-const action = urlParams.get('action');
-if (action === 'continue') { /* ... */ }
+this.swRegistration = await navigator.serviceWorker.register('/sw.js', {
+  scope: '/'
+});
 ```
-- Uses URLSearchParams API (safe)
-- Validates against whitelist (`'continue'`)
-- No reflection of parameter values into DOM
 
-### Recommendations
+The service worker is properly scoped and only caches same-origin resources.
 
-**Low Priority:**
-1. Add HTML entity encoding utility for any future user-generated content
-2. Consider Content-Security-Policy report-uri for monitoring violations
+### 5. localStorage Structure Validation
 
----
+**Location:** `/Users/telmo/project/nonogram/src/js/storage.js:11-20`
 
-## 3. localStorage Security
-
-### Data Stored
-
-The game stores in localStorage:
-- Progress data (puzzle completion status)
-- Settings (vibration, theme)
-- Grid state (saved puzzle progress)
-- UI state (collapsed sections)
-- Flags (tutorial completed, help shown)
-
-### Validation
-
-⚠️ **WARNING: Limited validation on deserialization**
-
-**Current approach** (storage.js:11-20):
 ```javascript
 function isValidStorageData(data) {
   if (!data || typeof data !== 'object') return false;
   if (typeof data.version !== 'number') return false;
   if (data.progress !== null && typeof data.progress !== 'object') return false;
-  // ... basic type checks only
+  // ... additional validation
+  return true;
 }
 ```
 
-**Issues:**
-- Validates types but not structure depth
-- Doesn't validate grid array dimensions
-- Doesn't validate color values in saved grids
-- Trusts nested object properties without bounds checking
-
-**Potential Attack:**
-A malicious script with access to localStorage could inject:
-- Oversized grid arrays (DoS via memory)
-- Invalid color indices (array out-of-bounds)
-- Deeply nested objects (stack overflow)
-
-**Current Mitigations:**
-- Grid dimensions validated on load (game.js:792-797)
-- Puzzle normalization validates dimensions against MAX_PUZZLE_DIMENSION (game.js:207-210)
-- Deep copy operations prevent prototype pollution (storage.js:164-166, 218-221)
-
-✅ **GOOD: No sensitive data stored**
-- No passwords, tokens, or API keys
-- No PII (personally identifiable information)
-- Only game state data
-
-✅ **GOOD: Fallback on parse failure** (storage.js:82-86)
-```javascript
-try {
-  const parsed = JSON.parse(stored);
-  // ... validation
-} catch (e) {
-  console.warn('[Storage] Failed to load, using defaults:', e);
-  this.data = getDefaultData();
-}
-```
-
-### localStorage XSS Risk
-
-✅ **GOOD: No XSS via localStorage**
-- Grid data only contains numbers (color indices)
-- Puzzle titles come from puzzles.js (not user input)
-- Settings are booleans/strings validated against whitelist
-- No HTML rendering of stored strings
-
-### Recommendations
-
-**Medium Priority:**
-1. Add recursive depth limit for object validation:
-   ```javascript
-   function isValidStorageData(data, depth = 0) {
-     if (depth > 10) return false; // Prevent deep nesting
-     // ... existing checks
-   }
-   ```
-
-2. Validate grid dimensions match puzzle dimensions:
-   ```javascript
-   if (progress.savedGrid) {
-     if (progress.savedGrid.length > MAX_PUZZLE_DIMENSION) return false;
-     for (const row of progress.savedGrid) {
-       if (row.length > MAX_PUZZLE_DIMENSION) return false;
-     }
-   }
-   ```
-
-3. Validate color values are within valid range:
-   ```javascript
-   for (const cell of row) {
-     if (cell.value !== null && (cell.value < 0 || cell.value > MAX_COLORS)) {
-       return false;
-     }
-   }
-   ```
-
-**Low Priority:**
-4. Consider using IndexedDB with stricter schema validation
-5. Add integrity hash to detect tampering (though this is a single-player game)
+Prevents type confusion attacks when parsing localStorage data.
 
 ---
 
-## 4. Service Worker Security
+## Security Concerns
 
-File: `src/sw.js`
+### MEDIUM Severity Issues
 
-### Cache Poisoning
+#### 1. Unsafe innerHTML Usage with Untrusted Content
 
-✅ **GOOD: No external resources cached**
-- STATIC_FILES array only contains same-origin paths (sw.js:9-41)
-- No user-controlled cache keys
-- No external API responses cached
+**Risk:** DOM-based XSS if puzzle data is tampered with or sourced externally
+**CVSS Score:** 5.4 (Medium)
 
-✅ **GOOD: Cache invalidation on version change**
-- Cache names include version number (sw.js:4-6)
-- Old caches deleted on activate (sw.js:68-83)
-- Version updated via content hash in build (build.js:173)
+**Locations:**
 
-### Fetch Interception
-
-✅ **GOOD: Safe fetch handling**
-- Only intercepts GET requests (sw.js:97)
-- Skips non-http(s) requests (sw.js:102)
-- Uses safe URL parsing (sw.js:94)
-- No modification of responses
-
-✅ **GOOD: No arbitrary code execution**
-- No eval() or Function()
-- No importScripts() with dynamic URLs
-- Message handlers only respond to whitelisted commands (sw.js:196-203)
-
-### Message Handling
-
-✅ **GOOD: Safe message passing** (sw.js:196-203)
+1. **Help Modal Content** (`/Users/telmo/project/nonogram/src/js/game.js:135`)
 ```javascript
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  if (event.data && event.data.type === 'GET_VERSION') {
-    event.ports[0].postMessage({ version: CACHE_NAME });
-  }
+helpList.innerHTML = items.join('');
+```
+
+While `items` is currently hardcoded, this pattern is dangerous if help content ever becomes dynamic or user-controlled.
+
+**Recommendation:** Use `textContent` or DOM methods:
+```javascript
+items.forEach(itemHtml => {
+  const li = document.createElement('li');
+  li.innerHTML = itemHtml;  // Per-item is safer than bulk assignment
+  helpList.appendChild(li);
 });
 ```
-- Validates message type against whitelist
-- No reflection of arbitrary message data
-- No dynamic code execution based on messages
 
-### Recommendations
-
-**Low Priority:**
-1. Add origin validation for postMessage:
-   ```javascript
-   if (event.origin !== self.location.origin) return;
-   ```
-
-2. Implement cache size limits to prevent storage exhaustion:
-   ```javascript
-   const MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB
-   ```
-
----
-
-## 5. Input Validation
-
-### Puzzle Data Validation
-
-✅ **EXCELLENT: Comprehensive validation** (game.js:191-253)
-
-**Dimension limits** (game.js:207-210):
+2. **Clue Tooltip Rendering** (`/Users/telmo/project/nonogram/src/js/zoom.js:324-329`)
 ```javascript
-if (p.w > CONFIG.MAX_PUZZLE_DIMENSION || p.h > CONFIG.MAX_PUZZLE_DIMENSION ||
-    p.w < 1 || p.h < 1) {
-  console.warn('[Game] Puzzle dimensions out of range:', p.w, 'x', p.h);
-  return null;
+tooltipRowClues.innerHTML = renderClues(clueInfo.rowClues);
+tooltipColClues.innerHTML = renderClues(clueInfo.colClues);
+```
+
+The `renderClues()` function builds HTML with color values from puzzle data:
+```javascript
+function renderClues(clues) {
+  return clues.map(clue => {
+    const color = window.Cozy.Garden?.getColorRgb?.(clue.color) || [128, 128, 128];
+    // ...
+    return `<span ... style="background: rgb(${color.join(',')});">
+              ${clue.count}
+            </span>`;
+  }).join('');
 }
 ```
-- MAX_PUZZLE_DIMENSION = 32 (prevents DOM explosion)
-- Validates both upper and lower bounds
-- Returns null for invalid puzzles (fail-safe)
 
-**Structure validation** (game.js:194-205):
+**Risk:** If `clue.count` or color values are tampered with, XSS is possible.
+
+**Recommendation:** Sanitize numeric values:
 ```javascript
-if (!p.width || !p.height || !p.row_clues || !p.col_clues || !p.color_map) {
-  console.warn('[Game] Invalid verbose puzzle format:', p.title);
-  return null;
+const safeCount = parseInt(clue.count, 10) || 0;
+const safeColor = color.map(c => Math.max(0, Math.min(255, parseInt(c, 10) || 0)));
+```
+
+3. **Pencil Mode Icon Updates** (`/Users/telmo/project/nonogram/src/js/game.js:486-489`)
+```javascript
+if (isPencilMode) {
+  svg.innerHTML = '<path d="M19.07 13.88L13..."/>';
+} else {
+  svg.innerHTML = '<path d="M20.71 7.04c.39..."/>';
 }
 ```
-- Checks for required fields
-- Type validation for all properties
-- Prevents undefined access errors
 
-**Color validation:**
-- Hex colors validated via regex (game.js:214)
-- RGB values clamped to 0-255 range (implicit via parseInt)
-- Color indices bounds-checked during rendering
+**Risk:** Low (hardcoded SVG paths), but violates defense-in-depth principle.
 
-### User Input Validation
+**Recommendation:** Use `setAttribute()` for the `d` attribute instead.
 
-✅ **GOOD: All inputs validated**
-
-**Search input:** Length-limited, sanitized (covered in XSS section)
-
-**Grid coordinates:**
-- Bounds-checked before array access (game.js:1134-1136, 1201-1213)
-- parseInt() used for data attributes (collection.js:685)
-- NaN checks prevent invalid indices (collection.js:1337)
-
-**Color selection:**
-- Only allows values from color_map keys (game.js:948-962)
-- Keyboard shortcuts map to valid color indices (game.js:1816-1826)
-
-**Zoom level:**
-- Clamped to MIN/MAX range (zoom.js:80, 234)
-- Float precision handled safely
-
-### History Stack Protection
-
-✅ **GOOD: Bounded history** (history.js:97-99)
+4. **Collection Screen Rendering** (`/Users/telmo/project/nonogram/src/js/collection.js:223-235`)
 ```javascript
-if (undoStack.length > CONFIG.MAX_HISTORY) {
-  undoStack.shift();
+placeholder.innerHTML = QUESTION_MARK_SVG;
+```
+
+**Risk:** Low (QUESTION_MARK_SVG is a hardcoded constant), but same principle applies.
+
+5. **Victory Screen Rendering** (`/Users/telmo/project/nonogram/src/js/screens.js:551`)
+```javascript
+container.innerHTML = '';
+```
+
+**Risk:** Very low (just clearing content), but creates pattern for potential misuse.
+
+#### 2. localStorage Tampering and Data Injection
+
+**Risk:** Malicious localStorage data could cause unexpected behavior
+**CVSS Score:** 4.3 (Medium)
+
+**Attack Scenario:**
+An attacker with access to devtools or a browser extension could:
+1. Inject malicious data into `localStorage.cozy_garden_data`
+2. Craft oversized arrays to cause DoS
+3. Inject script-bearing strings that might be reflected in error messages
+
+**Current Mitigations:**
+- `isValidStorageData()` validates structure (good)
+- Type checking on critical fields (good)
+
+**Gaps:**
+- No size limits on arrays (progress, flags, etc.)
+- No validation on string field contents
+- Grid data stored as complex nested objects without depth limits
+
+**Locations:**
+- `/Users/telmo/project/nonogram/src/js/storage.js:67-89` (init method)
+- `/Users/telmo/project/nonogram/src/js/storage.js:328-341` (importData method)
+- `/Users/telmo/project/nonogram/src/index.html:20-23` (theme detection script)
+
+**Recommendation:**
+Add additional validation:
+```javascript
+function isValidStorageData(data) {
+  // ... existing checks ...
+
+  // Limit progress object size (DoS prevention)
+  if (data.progress && Object.keys(data.progress).length > 1000) {
+    console.warn('[Storage] Progress object too large');
+    return false;
+  }
+
+  // Validate string fields don't contain script tags
+  if (data.settings?.theme && /<script/i.test(data.settings.theme)) {
+    return false;
+  }
+
+  return true;
 }
 ```
-- MAX_HISTORY = 50 (prevents unbounded memory growth)
-- Similar protection for screen history (screens.js:302-304)
-- Prevents DoS via history exhaustion
 
-### Recommendations
+#### 3. Service Worker Cache Poisoning Risk
 
-**Low Priority:**
-1. Add MAX_COLORS constant and validate against it
-2. Add schema validation library for complex object structures (e.g., Joi, Zod)
+**Risk:** Service worker caches could be poisoned if deployed on HTTP
+**CVSS Score:** 5.9 (Medium, only if deployed insecurely)
 
----
+**Location:** `/Users/telmo/project/nonogram/src/sw.js:43-61`
 
-## 6. Build Pipeline Security
+**Current Behavior:**
+The service worker caches all static files on install, including JavaScript bundles.
 
-File: `build.js`
+**Risk Scenario:**
+If the application is deployed over HTTP (not HTTPS), a MITM attacker could:
+1. Inject malicious code into cached JavaScript files
+2. Persist the attack through the service worker cache
+3. Survive page reloads
 
-### Dependencies
+**Recommendation:**
+1. **Critical:** Ensure production deployment is HTTPS-only
+2. Add Subresource Integrity (SRI) checks for critical files:
+```javascript
+// In build.js, generate SRI hashes
+const crypto = require('crypto');
+const jsContent = fs.readFileSync('dist/js/app.min.js');
+const hash = crypto.createHash('sha384').update(jsContent).digest('base64');
+console.log(`Integrity hash: sha384-${hash}`);
+```
 
-✅ **EXCELLENT: Minimal dependencies** (package.json:11-14)
+3. Update manifest.json to require HTTPS:
 ```json
-"devDependencies": {
-  "esbuild": "^0.24.0",
-  "sharp": "^0.34.5"
+{
+  "start_url": "/?utm_source=pwa",
+  "prefer_related_applications": false,
+  "background_color": "#faf8f0"
 }
 ```
-- Only 2 devDependencies
-- Both are well-maintained, reputable projects
-- sharp not used in build.js (appears unused - could be removed)
-- esbuild used only for minification (no runtime code)
 
-✅ **GOOD: No runtime dependencies**
-- Zero production dependencies
-- No third-party libraries loaded at runtime
-- Reduces supply chain attack surface
+#### 4. Prototype Pollution via JSON.parse
 
-### Build Process Safety
+**Risk:** Malicious localStorage data could pollute Object.prototype
+**CVSS Score:** 4.0 (Medium-Low)
 
-✅ **GOOD: Safe file operations**
-- Uses Node.js fs module (synchronous, safe)
-- No dynamic code execution (no eval, no new Function)
-- No shell command execution
-- No network requests during build
+**Locations:**
+- `/Users/telmo/project/nonogram/src/js/storage.js:69` (storage init)
+- `/Users/telmo/project/nonogram/src/js/storage.js:330` (importData)
+- `/Users/telmo/project/nonogram/src/index.html:23` (theme detection)
 
-✅ **GOOD: Deterministic source map generation** (build.js:118-132)
-- Source maps point to local files only
-- No external URLs in source maps
-- No sensitive information leaked
-
-⚠️ **MINOR: No integrity checks**
-- Build doesn't verify input file integrity
-- No checksum validation of source files
-- Could be improved with hash verification
-
-### String Replacement Safety
-
-✅ **GOOD: Safe regex replacements** (build.js:179-219)
+**Attack Vector:**
 ```javascript
-sw = sw.replace(
-  /CACHE_NAME = 'cozy-garden-v\d+'/,
-  `CACHE_NAME = 'cozy-garden-v${hash}'`
-);
+localStorage.setItem('cozy_garden_data',
+  '{"__proto__": {"polluted": true}, "version": 1, ...}');
 ```
-- Uses regex literals (safe)
-- No user-controlled input in replacements
-- Validates existence of matches (could be improved)
 
-### Recommendations
+**Current Mitigations:**
+- Modern browsers (Chrome 88+, Firefox 85+) have built-in prototype pollution protection in `JSON.parse()`
 
-**Low Priority:**
-1. Add dependency checksum verification:
-   ```json
-   "dependencies": {
-     "esbuild": "^0.24.0",
-     "sharp": "^0.34.5"
-   },
-   "integrityHashes": {
-     "esbuild": "sha512-...",
-     "sharp": "sha512-..."
-   }
-   ```
+**Recommendation:**
+Add explicit protection for older browser support:
+```javascript
+function safeParse(jsonString) {
+  const parsed = JSON.parse(jsonString);
+  // Remove dangerous properties
+  delete parsed.__proto__;
+  delete parsed.constructor;
+  delete parsed.prototype;
+  return parsed;
+}
+```
 
-2. Remove unused `sharp` dependency:
-   ```bash
-   npm uninstall sharp
-   ```
+### LOW Severity Issues
 
-3. Add Subresource Integrity (SRI) for generated bundles:
-   ```javascript
-   const hash = crypto.createHash('sha384').update(result.code).digest('base64');
-   const integrity = `sha384-${hash}`;
-   // Update script tag: <script src="app.min.js" integrity="...">
-   ```
+#### 5. Missing HTTPS Enforcement in PWA Manifest
 
-4. Validate regex replacement success:
-   ```javascript
-   const newSw = sw.replace(/CACHE_NAME = .../, ...);
-   if (newSw === sw) {
-     throw new Error('Cache name replacement failed');
-   }
-   ```
+**Risk:** PWA could be installed over HTTP in some scenarios
+**CVSS Score:** 3.1 (Low)
 
----
+**Location:** `/Users/telmo/project/nonogram/src/manifest.json`
 
-## 7. Additional Security Considerations
+The manifest doesn't explicitly require HTTPS. While service workers require HTTPS (except localhost), add defense-in-depth.
 
-### Click Hijacking / UI Redressing
+**Recommendation:**
+Add to manifest.json documentation or build process that enforces HTTPS check.
 
-✅ **GOOD: Appropriate for app type**
-- Modal focus trapping prevents clickjacking within modals (screens.js:169-196)
-- Hold-to-confirm pattern prevents accidental destructive actions (game.js:1954-2023)
-- No sensitive operations that require additional protection
+#### 6. No Rate Limiting on Storage Operations
 
-⚠️ **MINOR: No X-Frame-Options equivalent**
-- PWA can be embedded in iframe
-- Not critical for single-player game
-- Could add `frame-ancestors 'none'` to CSP
+**Risk:** Malicious script could spam localStorage.setItem() causing quota errors
+**CVSS Score:** 2.3 (Low)
 
-### Denial of Service (DoS)
+**Location:** `/Users/telmo/project/nonogram/src/js/storage.js:92-101`
 
-✅ **GOOD: Resource limits enforced**
-- Puzzle dimensions limited to 32x32 (1,024 cells max)
-- History limited to 50 actions
-- Search limited to 100 characters
-- Screen history limited to 10 entries
-- Toast messages auto-dismiss (prevent spam)
+**Recommendation:**
+Implement debouncing for save operations (already partially implemented with onChange listeners, but could be more robust):
+```javascript
+let saveTimeout = null;
+save() {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      this.notifyListeners('save');
+      return true;
+    } catch (e) {
+      console.error('[Storage] Failed to save:', e);
+      return false;
+    }
+  }, 100);  // Debounce 100ms
+}
+```
 
-✅ **GOOD: Debouncing on expensive operations**
-- Search input debounced to 150ms (collection.js:466)
-- Resize handler debounced to 100ms (app.js:128, zoom.js:468)
-- Prevents rapid-fire event flooding
+#### 7. Theme Detection Script in HTML Head
 
-⚠️ **MINOR: No service worker cache size limit**
-- Cache could theoretically grow unbounded
-- Mitigated by: only caching whitelisted static files
-- Recommendation: Add cache size monitoring
+**Risk:** Inline script violates strict CSP
+**CVSS Score:** 2.0 (Low - necessary for UX)
 
-### Memory Safety
+**Location:** `/Users/telmo/project/nonogram/src/index.html:17-37`
 
-✅ **GOOD: No memory leaks observed**
-- Event listeners properly removed on cleanup (game.js:1392-1400)
-- Timers cleared on unmount (game.js:1329, 1349, etc.)
-- Circular references avoided
-- Deep copying prevents unintended references (storage.js:164-166)
+**Analysis:**
+This inline script is necessary to prevent FOUC and reads from localStorage directly. The code is safe because:
+1. Only reads localStorage (no user input)
+2. Uses `setAttribute()` not `innerHTML`
+3. Has try-catch for error handling
 
-### Timing Attacks
+**Current State:** Acceptable tradeoff, but document the rationale.
 
-✅ **NOT APPLICABLE**
-- No authentication or cryptographic operations
-- No secret comparisons
-- Game logic doesn't rely on timing
+**Recommendation:**
+Add comment explaining CSP exception:
+```html
+<!-- Theme detection inline script required to prevent FOUC.
+     CSP 'unsafe-inline' exception is safe here because:
+     1. No user input processed
+     2. Only reads trusted localStorage
+     3. Uses setAttribute() not innerHTML -->
+```
 
-### Random Number Generation
+#### 8. Missing Input Validation on URL Parameters
 
-✅ **NOT APPLICABLE**
-- No use of randomness in client code
-- Puzzle data is deterministic
+**Risk:** Crafted URL parameters could cause unexpected navigation
+**CVSS Score:** 2.7 (Low)
 
----
+**Location:** `/Users/telmo/project/nonogram/src/js/screens.js:401-419`
 
-## 8. Privacy & Data Handling
+```javascript
+const urlParams = new URLSearchParams(window.location.search);
+const action = urlParams.get('action');
 
-### Data Collection
+if (action === 'continue') {
+  // ... loads session
+}
+```
 
-✅ **EXCELLENT: No data collection**
-- No analytics
-- No error reporting services
-- No external API calls
-- No cookies
-- No fingerprinting
+**Current State:** Safe because `action` is only checked against string literal 'continue'
 
-### localStorage Persistence
+**Recommendation:**
+Add explicit whitelist validation:
+```javascript
+const VALID_ACTIONS = ['continue'];
+const action = urlParams.get('action');
 
-✅ **GOOD: Appropriate data retention**
-- Only game progress stored
-- No expiration needed (single-player game)
-- User can clear via Settings → Reset Progress
+if (action && VALID_ACTIONS.includes(action)) {
+  // ... process action
+}
+```
 
-### Offline Capability
+#### 9. No CSP for Service Worker
 
-✅ **GOOD: PWA offline-first design**
-- Service worker caches all assets
-- No network dependency after install
-- Privacy-preserving (no phone-home)
+**Risk:** Service worker has no CSP restrictions
+**CVSS Score:** 2.1 (Low)
 
----
+**Location:** `/Users/telmo/project/nonogram/src/sw.js`
 
-## 9. Code Quality & Best Practices
+Service workers run in their own global scope and don't inherit page CSP.
 
-### Modern JavaScript Patterns
-
-✅ **EXCELLENT: Secure coding practices**
-- Strict mode enabled in all modules
-- No use of `with` statement
-- Const/let instead of var (block-scoped)
-- Template literals instead of string concatenation
-- Arrow functions for lexical this binding
-
-### Error Handling
-
-✅ **GOOD: Graceful degradation**
-- Try-catch blocks around localStorage access (storage.js:66-87)
-- Service worker registration wrapped in try-catch (app.js:46-68)
-- Invalid puzzle data handled safely (game.js:191-253)
-- Console warnings instead of throwing (prevents crash)
-
-⚠️ **MINOR: Some silent failures**
-- Some validation failures only log to console
-- Could benefit from user-facing error messages for critical failures
-
-### HTTPS Requirement
-
-✅ **GOOD: Service worker requires HTTPS**
-- Service workers only work on https:// or localhost
-- Implicitly enforces HTTPS in production
-- CSP allows only same-origin (enforces HTTPS if origin is HTTPS)
+**Recommendation:**
+Add CSP headers to service worker via build process or server configuration:
+```javascript
+// In sw.js
+self.addEventListener('install', (event) => {
+  // Validate all cached resources are from same origin
+  const allSameOrigin = STATIC_FILES.every(file =>
+    file.startsWith('/') || file.startsWith(self.location.origin)
+  );
+  if (!allSameOrigin) {
+    throw new Error('[SW] External resources not allowed');
+  }
+  // ... existing install logic
+});
+```
 
 ---
 
-## 10. Vulnerability Summary
+## Recommendations by Priority
 
-### Critical Vulnerabilities: 0
-No critical security issues identified.
+### High Priority (Fix Before Production)
 
-### High-Risk Issues: 0
-No high-risk vulnerabilities found.
+1. **Sanitize innerHTML assignments** - Especially in tooltip rendering and any dynamic content
+2. **Add SRI hashes** - For critical JavaScript and CSS files
+3. **Enforce HTTPS** - Document deployment requirements, add checks in build process
+4. **Strengthen localStorage validation** - Add size limits and content validation
 
-### Medium-Risk Issues: 2
+### Medium Priority (Fix Soon)
 
-1. **CSP allows `'unsafe-inline'` for scripts**
-   - **Risk:** Could enable XSS if HTML injection occurs
-   - **Mitigation:** Inline script is small, static, no user input
-   - **Fix:** Implement nonce-based CSP
+5. **Add prototype pollution protection** - Wrapper around JSON.parse()
+6. **Rate limit storage operations** - Debounce save() method
+7. **Whitelist URL parameters** - Explicit validation on `action` parameter
+8. **Service worker origin validation** - Ensure all cached resources are same-origin
 
-2. **localStorage validation insufficient for adversarial input**
-   - **Risk:** Malicious localStorage data could cause DoS or crashes
-   - **Mitigation:** Type checks, dimension limits, fallback to defaults
-   - **Fix:** Add depth limits, array size validation, color range checks
+### Low Priority (Nice to Have)
 
-### Low-Risk Issues: 6
-
-1. No SRI for local scripts
-2. No frame-ancestors in CSP
-3. Unused `sharp` dependency
-4. No build integrity verification
-5. No cache size limits in service worker
-6. Some errors silently logged instead of user-facing
+9. **Document CSP exceptions** - Add comments explaining 'unsafe-inline' necessity
+10. **Add CSP to service worker** - Via build process or runtime checks
+11. **Implement CSP reporting** - Add `report-uri` to CSP for monitoring violations
 
 ---
 
-## 11. Recommendations by Priority
+## Attack Surface Analysis
 
-### High Priority: None
+### Client-Side Only
+**Risk:** LOW
+Since there's no backend, the attack surface is limited to:
+- Client-side code execution (XSS)
+- localStorage tampering
+- Service worker manipulation
 
-All critical security concerns are already addressed.
+All of these require either:
+1. User installing malicious browser extension
+2. Physical device access
+3. MITM on HTTP (mitigated by HTTPS requirement)
 
-### Medium Priority
+### No External Data Sources
+**Risk:** LOW
+The application doesn't fetch external data beyond:
+- Same-origin static assets (safe)
+- Service worker cache (controlled by app)
 
-1. **Implement nonce-based CSP** (Estimated effort: 2 hours)
-   - Eliminates `'unsafe-inline'` for scripts
-   - Requires server-side nonce generation or build-time injection
-
-2. **Strengthen localStorage validation** (Estimated effort: 3 hours)
-   - Add recursive depth limits
-   - Validate array dimensions
-   - Validate color value ranges
-   - Add comprehensive unit tests for validation logic
-
-3. **Replace inline styles with CSS custom properties** (Estimated effort: 4 hours)
-   - Eliminates `'unsafe-inline'` for styles
-   - Improves performance (fewer style recalculations)
-   - Better separation of concerns
-
-### Low Priority
-
-4. **Add SRI for bundled scripts** (Estimated effort: 2 hours)
-   - Generate integrity hashes during build
-   - Update HTML to include integrity attributes
-
-5. **Add frame-ancestors to CSP** (Estimated effort: 15 minutes)
-   - Add `frame-ancestors 'none'` to CSP
-   - Prevents embedding in iframes
-
-6. **Remove unused dependencies** (Estimated effort: 5 minutes)
-   - Remove `sharp` from package.json
-   - Audit other dependencies
-
-7. **Add cache size monitoring** (Estimated effort: 1 hour)
-   - Implement cache size limits in service worker
-   - Log cache size metrics
-
-8. **Add build integrity checks** (Estimated effort: 2 hours)
-   - Verify source file hashes before build
-   - Add checksum file for dependencies
+### No Sensitive Data Stored
+**Risk:** LOW
+The application only stores:
+- Puzzle progress (non-sensitive)
+- UI preferences (non-sensitive)
+- No PII, credentials, or payment info
 
 ---
 
-## 12. Compliance Considerations
+## PWA-Specific Security Considerations
 
-### GDPR (General Data Protection Regulation)
+### 1. Manifest Security
+**Status:** ✅ GOOD
 
-✅ **COMPLIANT: No personal data processed**
-- No user accounts or authentication
-- No tracking or profiling
-- localStorage data is not personal data (game state only)
-- No third-party data sharing
+The manifest.json properly configures:
+- Scope limited to `/`
+- No external icon sources
+- No external related applications
+- Proper orientation lock
 
-### COPPA (Children's Online Privacy Protection Act)
+### 2. Service Worker Security
+**Status:** ⚠️ NEEDS IMPROVEMENT
 
-✅ **COMPLIANT: No data collection from children**
-- No age verification needed (no data collection)
-- No advertising or marketing to children
-- Safe for all ages
+**Strengths:**
+- Cache versioning prevents stale content (`CACHE_NAME = 'cozy-garden-v23'`)
+- Proper cleanup of old caches
+- Network-first for HTML (gets updates)
+- Cache-first for static assets (performance)
 
-### Accessibility (not security, but related)
+**Concerns:**
+- No integrity checks on cached resources
+- No validation of cache contents
+- Could cache malicious content if deployed over HTTP
 
-✅ **GOOD: ARIA attributes, keyboard navigation**
-- Proper ARIA labels and roles
-- Keyboard shortcuts implemented
-- Screen reader announcements
-- Focus management
-- (Out of scope for security review, but noted as good practice)
+### 3. Offline Security
+**Status:** ✅ GOOD
 
----
-
-## 13. Conclusion
-
-The Cozy Garden nonogram game demonstrates **strong security practices** for a client-side PWA. The development team has implemented appropriate security controls including:
-
-- Strict Content Security Policy
-- Comprehensive input validation
-- Safe DOM manipulation patterns
-- Minimal dependencies
-- Privacy-respecting design
-
-The identified issues are **minor and low-risk**. The application is suitable for deployment as-is, with the recommended improvements treated as enhancements rather than critical fixes.
-
-**Recommended Action:** Proceed with deployment. Implement medium-priority recommendations in next iteration.
+Offline functionality doesn't introduce additional risks:
+- All game logic is client-side
+- No sensitive API calls to protect
+- Progress stored locally only
 
 ---
 
-## Appendix A: Security Checklist
+## Dependency Analysis
 
-- [x] CSP implemented and tested
-- [x] No eval() or Function() usage
-- [x] No innerHTML with user input
-- [x] Input validation on all user-controlled data
-- [x] Safe event handler attachment (no inline handlers)
-- [x] localStorage parsing wrapped in try-catch
-- [x] Dimension limits prevent DOM explosion
-- [x] History stacks bounded to prevent memory exhaustion
-- [x] Service worker only caches whitelisted resources
-- [x] No external dependencies at runtime
-- [x] No sensitive data stored
-- [x] HTTPS enforced via service worker requirement
-- [x] Error handling prevents crashes
-- [x] No data collection or tracking
+### NPM Dependencies (package.json)
+
+**Dev Dependencies:**
+- `esbuild@^0.24.0` - Build tool (no runtime risk)
+- `sharp@^0.34.5` - Image processing (dev only, no runtime risk)
+
+**Analysis:**
+- No runtime dependencies (excellent for security)
+- No third-party JavaScript loaded at runtime
+- No CDN dependencies
+- No analytics or tracking scripts
+
+**Recommendation:**
+Regularly audit dev dependencies for vulnerabilities:
+```bash
+npm audit
+```
 
 ---
 
-## Appendix B: Testing Recommendations
+## Recommended Security Headers
 
-To verify security, perform the following tests:
+For production deployment, configure server to send these headers:
 
-### Manual Testing
+```
+# Existing CSP (already in HTML)
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'
 
-1. **CSP Violation Detection**
-   - Open DevTools Console
-   - Verify no CSP violations logged during normal usage
-   - Attempt to inject script via console: `document.body.innerHTML = '<img src=x onerror=alert(1)>'`
-   - Verify CSP blocks execution
+# Additional recommended headers
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# HTTPS enforcement
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+# Service worker security
+Service-Worker-Allowed: /
+```
+
+---
+
+## Testing Recommendations
+
+### Security Test Cases
+
+1. **XSS Testing**
+   - Inject `<script>alert('XSS')</script>` in localStorage puzzle data
+   - Test with malformed puzzle titles containing HTML entities
+   - Verify search input sanitization with `<img src=x onerror=alert(1)>`
 
 2. **localStorage Tampering**
-   - Open DevTools → Application → Local Storage
-   - Modify `cozy_garden_data` with malformed JSON
-   - Refresh page
-   - Verify fallback to defaults without crash
+   - Inject oversized arrays (10000+ items) in progress object
+   - Test with `__proto__` pollution attempts
+   - Verify graceful degradation on QuotaExceededError
 
-3. **Puzzle Dimension Limits**
-   - Modify `puzzles.js` to include 100x100 puzzle
-   - Verify rejection with console warning
-   - Confirm game doesn't freeze
+3. **Service Worker Security**
+   - Verify cache integrity after network interruption
+   - Test cache poisoning resistance
+   - Verify proper cache invalidation on version change
 
-4. **Service Worker Cache**
-   - Install PWA
-   - Go offline (DevTools → Network → Offline)
-   - Verify full functionality
-   - Check cache contents in Application → Cache Storage
-
-### Automated Testing
-
-1. **Dependency Scanning**
-   ```bash
-   npm audit
-   npm outdated
-   ```
-
-2. **Static Analysis**
-   ```bash
-   # Install ESLint security plugin
-   npm install --save-dev eslint eslint-plugin-security
-   npx eslint src/js/*.js --plugin security
-   ```
-
-3. **CSP Testing**
-   - Use Mozilla Observatory: https://observatory.mozilla.org/
-   - Use CSP Evaluator: https://csp-evaluator.withgoogle.com/
+4. **CSP Validation**
+   - Use browser dev tools to verify no CSP violations
+   - Test with inline event handlers (should be blocked)
+   - Verify external scripts are blocked
 
 ---
 
-**End of Security Review**
+## Secure Coding Guidelines
+
+For future development, follow these practices:
+
+### ✅ DO
+- Use `textContent` instead of `innerHTML` for user-generated content
+- Validate all data from localStorage before use
+- Use parameterized queries (not applicable for this app, but good practice)
+- Sanitize numeric inputs with `parseInt()` / `parseFloat()`
+- Use strict equality (`===`) for comparisons
+- Implement proper error handling with try-catch
+- Use `const` and `let` instead of `var` (already done)
+
+### ❌ DON'T
+- Use `eval()`, `Function()`, or `setTimeout(string)`
+- Trust data from localStorage without validation
+- Use `innerHTML` with concatenated strings
+- Store sensitive data in localStorage (not applicable here)
+- Deploy over HTTP in production
+- Use `document.write()`
+
+---
+
+## Conclusion
+
+Cozy Garden demonstrates **solid security practices** for a client-side PWA game. The application has no critical vulnerabilities but would benefit from addressing the medium-severity issues related to innerHTML usage and localStorage validation before production deployment.
+
+The lack of a backend significantly reduces the attack surface, and the use of a Content Security Policy provides strong defense-in-depth. With the recommended improvements, this application would achieve a security rating of **A- (Excellent)**.
+
+### Security Checklist for Production
+
+- [ ] Sanitize all `innerHTML` assignments
+- [ ] Add Subresource Integrity (SRI) hashes
+- [ ] Deploy exclusively over HTTPS
+- [ ] Add prototype pollution protection
+- [ ] Implement storage size limits
+- [ ] Configure security headers on server
+- [ ] Add service worker origin validation
+- [ ] Document CSP exceptions
+- [ ] Run security audit tools (npm audit, OWASP ZAP)
+- [ ] Perform penetration testing on deployed version
+
+---
+
+**Review Completed:** 2025-12-13
+**Next Review Due:** After implementing recommended fixes or before major release
