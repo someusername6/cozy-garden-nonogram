@@ -4535,35 +4535,102 @@ document.addEventListener('DOMContentLoaded', () => {
         if (history) history.commitAction();
         updatePencilActionsVisibility();
       } else if (e.key === 'r' || e.key === 'R') {
-        // R key reads current row's clues for screen reader users
         e.preventDefault();
         const puzzle = getPuzzles()[currentPuzzle];
         if (puzzle) {
-          const clues = puzzle.row_clues[row];
-          const clueText = clues.length > 0
-            ? clues.map(c => {
-                const colorName = puzzle.color_names?.[c.color - 1] || `color ${c.color}`;
-                return `${c.count} ${colorName}`;
-              }).join(', ')
-            : 'empty row';
-          announce(`Row ${row + 1} clues: ${clueText}`);
+          if (e.shiftKey) {
+            // Shift+R reads current row STATE (what's filled in)
+            const stateText = buildLineStateDescription(row, 'row', puzzle);
+            announce(`Row ${row + 1} state: ${stateText}`);
+          } else {
+            // R reads current row's CLUES (what should be there)
+            const clues = puzzle.row_clues[row];
+            const clueText = clues.length > 0
+              ? clues.map(c => {
+                  const colorName = puzzle.color_names?.[c.color - 1] || `color ${c.color}`;
+                  return `${c.count} ${colorName}`;
+                }).join(', ')
+              : 'empty row';
+            announce(`Row ${row + 1} clues: ${clueText}`);
+          }
         }
       } else if (e.key === 'c' || e.key === 'C') {
-        // C key reads current column's clues for screen reader users
         e.preventDefault();
         const puzzle = getPuzzles()[currentPuzzle];
         if (puzzle) {
-          const clues = puzzle.col_clues[col];
-          const clueText = clues.length > 0
-            ? clues.map(c => {
-                const colorName = puzzle.color_names?.[c.color - 1] || `color ${c.color}`;
-                return `${c.count} ${colorName}`;
-              }).join(', ')
-            : 'empty column';
-          announce(`Column ${col + 1} clues: ${clueText}`);
+          if (e.shiftKey) {
+            // Shift+C reads current column STATE (what's filled in)
+            const stateText = buildLineStateDescription(col, 'col', puzzle);
+            announce(`Column ${col + 1} state: ${stateText}`);
+          } else {
+            // C reads current column's CLUES (what should be there)
+            const clues = puzzle.col_clues[col];
+            const clueText = clues.length > 0
+              ? clues.map(c => {
+                  const colorName = puzzle.color_names?.[c.color - 1] || `color ${c.color}`;
+                  return `${c.count} ${colorName}`;
+                }).join(', ')
+              : 'empty column';
+            announce(`Column ${col + 1} clues: ${clueText}`);
+          }
         }
       }
     };
+  }
+
+  /**
+   * Build a run-length encoded description of a row or column's current state.
+   * Groups consecutive cells with the same value into runs for concise announcement.
+   * @param {number} index - Row or column index
+   * @param {string} type - 'row' or 'col'
+   * @param {Object} puzzle - Current puzzle object
+   * @returns {string} Description like "2 unfilled, 2 green, 1 X, 3 unfilled"
+   */
+  function buildLineStateDescription(index, type, puzzle) {
+    const length = type === 'row' ? puzzle.width : puzzle.height;
+    const runs = [];
+    let currentType = null;
+    let currentCount = 0;
+
+    for (let i = 0; i < length; i++) {
+      const cell = type === 'row' ? getCell(index, i) : getCell(i, index);
+      let cellType;
+
+      if (cell.value === null) {
+        cellType = 'unfilled';
+      } else if (cell.value === 0) {
+        cellType = 'X';
+      } else {
+        cellType = puzzle.color_names?.[cell.value - 1] || `color ${cell.value}`;
+      }
+
+      if (cellType === currentType) {
+        currentCount++;
+      } else {
+        if (currentType !== null) {
+          runs.push(`${currentCount} ${currentType}`);
+        }
+        currentType = cellType;
+        currentCount = 1;
+      }
+    }
+
+    // Push the last run
+    if (currentType !== null) {
+      runs.push(`${currentCount} ${currentType}`);
+    }
+
+    // Handle edge case of completely empty
+    if (runs.length === 0) {
+      return 'empty';
+    }
+
+    // Simplify "N unfilled" for entire line
+    if (runs.length === 1 && currentType === 'unfilled') {
+      return 'all unfilled';
+    }
+
+    return runs.join(', ');
   }
 
   // === Drag Helpers (shared between mouse and touch handlers) ===
