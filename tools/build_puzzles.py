@@ -86,6 +86,12 @@ def perceptual_color_distance(c1: tuple, c2: tuple) -> float:
 
     Uses weighted Euclidean distance that accounts for human perception
     (green is more perceptible than red, red more than blue).
+
+    Note: This differs from palette.py's color_distance() which uses the
+    compuphase formula. This simpler formula is kept here because
+    MIN_COLOR_DISTANCE (35) was empirically tuned for this specific formula.
+    The compuphase formula gives ~3x larger values, so switching would
+    require re-tuning the threshold.
     """
     r1, g1, b1 = c1
     r2, g2, b2 = c2
