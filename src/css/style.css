@@ -34,7 +34,7 @@ html[data-theme="light"] {
   /* Text colors - improved contrast, forest greens */
   --color-text: #2d3a24;
   --color-text-light: #5a6652;
-  --color-text-muted: #8a8a7a;
+  --color-text-muted: #737365;
 
   /* Additional UI colors */
   --color-shadow: rgba(0, 0, 0, 0.15);

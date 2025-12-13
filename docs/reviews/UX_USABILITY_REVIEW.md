@@ -1,748 +1,759 @@
-# UX/Usability Review - Cozy Garden Nonogram Puzzle Game
+# UX & Usability Review: Cozy Garden Nonogram Puzzle Game
 
-**Date:** December 12, 2025
-**Reviewer:** Claude Opus 4.5
-**Version:** 1.0.0
-**Scope:** Complete UX/Usability review of PWA game application
+**Review Date:** December 13, 2025
+**Reviewed By:** Claude (Sonnet 4.5)
+**Platform Focus:** Mobile-first PWA with desktop support
+
+---
 
 ## Executive Summary
 
-Cozy Garden demonstrates exceptional attention to user experience with a cohesive design philosophy focused on relaxation and accessibility. The game successfully implements "quality over quantity" across all interaction patterns, with particularly strong mobile support, progressive enhancement, and thoughtful feedback mechanisms. Key strengths include comprehensive keyboard navigation, intelligent touch handling, and a well-designed screen management system. Areas for improvement include some minor consistency issues, a few accessibility gaps, and opportunities to enhance error prevention.
+Cozy Garden demonstrates **strong UX fundamentals** with a polished, cohesive design that successfully achieves its "zen nonogram" positioning. The game excels at progressive disclosure, accessibility, and thoughtful interaction design. Mobile touch interactions are well-implemented with appropriate feedback mechanisms, and the visual design is clean and thematic.
 
-**Overall Rating: 8.5/10** - Excellent UX with minor areas for improvement. Ready for production with the critical issues addressed.
+**Overall UX Score: 8.2/10**
 
----
+**Key Strengths:**
+- Excellent haptic and visual feedback throughout
+- Strong accessibility foundations (keyboard navigation, ARIA labels, focus management)
+- Thoughtful progressive enhancement (desktop vs mobile experiences)
+- Cohesive visual design with strong theming
+- Minimal cognitive load with clear affordances
 
-## 1. User Flow & Navigation
-
-### Screen Structure & Transitions
-
-✅ **Clean screen hierarchy**: Splash → Tutorial/Home → Collection → Puzzle → Victory flow is logical and intuitive
-
-✅ **Consistent back button placement**: Left-aligned header back buttons follow platform conventions across Collection, Puzzle, and Settings screens
-
-✅ **Smart history management**: Screen history limited to `MAX_SCREEN_HISTORY` (config-based) prevents unbounded memory growth
-
-✅ **Browser back button integration**: `popstate` event handling allows native browser navigation to work correctly
-
-✅ **Escape key navigation**: Global handler provides consistent keyboard-based back navigation across all screens
-
-✅ **State preservation**: Current puzzle grid saved before navigation prevents data loss when switching between screens
-
-✅ **Session resume**: PWA supports `?action=continue` URL parameter to resume last puzzle via app shortcut
-
-✅ **Victory screen animation**: Flying stamp animation from victory to collection provides satisfying visual continuity and sense of accomplishment
-
-✅ **Back button stamp animation**: Navigating back from puzzle shows partial progress via flying canvas animation - excellent feedback for incomplete work
-
-⚠️ **Collection search behavior**: Filter-as-you-type with 150ms debounce is excellent, but search state clears when navigating away. Consider: should search persist when returning to collection from puzzle? Current behavior (clear on show) may frustrate users doing multiple searches.
-
-⚠️ **Puzzle loading race condition**: `isLoadingPuzzle` guard prevents concurrent loads, but no user feedback shown if a second load attempt is ignored. Silent failure could confuse users rapidly clicking puzzle cards.
-
-⚠️ **Victory screen "Continue" focus**: Button receives focus automatically (good), but no indication of what "Continue" does. Consider more descriptive text like "Back to Collection" or "Continue Puzzling".
-
-### Tutorial Flow
-
-✅ **First-time detection**: `tutorialCompleted` flag properly gates tutorial, shown only once
-
-✅ **Skip button placement**: Top-right placement follows convention for dismissible flows
-
-✅ **Step indicators**: Dot navigation shows progress through 4-step tutorial
-
-✅ **Next button text**: Changes to "Start Playing" on final step - clear call to action
-
-⚠️ **Tutorial re-access**: Available via Settings → "Show Tutorial" but button text doesn't indicate it's the same content. Consider "Replay Tutorial" or "How to Play (Tutorial)".
-
-❌ **Tutorial content**: Static illustrations with SVG icons. No interactive demo puzzle. Specifically missing:
-  - How to interpret clue numbers (consecutive cells of same color)
-  - Clue satisfaction feedback (dim + strikethrough)
-  - Pen vs Pencil mode distinction and use cases
-  - **Recommendation**: Add interactive 3x3 or 4x4 demo puzzle to practice during tutorial
+**Primary Opportunities:**
+- Onboarding could be more contextual and less front-loaded
+- Search UX in collection could be more discoverable
+- Some feedback loops could be tightened
+- Modal focus trapping has minor edge cases
+- Victory flow could be more celebratory
 
 ---
 
-## 2. Visual Hierarchy & Clarity
+## 1. Touch Interactions & Mobile UX
 
-### Layout & Structure
+### ✅ Strengths
 
-✅ **Mobile-first responsive design**: Breakpoints at 360px, 768px, 1200px with appropriate cell size scaling (20px → 24px → 28px → 32px)
+**Gesture Recognition (Excellent)**
+- **Long-press for X mark** (600ms delay) is well-calibrated - feels intentional without being slow
+- **Drag-to-fill** works smoothly with appropriate touch event handling
+- **Pinch-to-zoom** is properly isolated from cell interaction (multi-touch detection prevents conflicts)
+- **Clue cells as color selectors** - smart reuse that reduces UI clutter
 
-✅ **Gradient backgrounds**: Subtle `--color-bg-start` to `--color-bg-end` gradient adds depth without distraction
+**Touch Feedback (Very Good)**
+- Haptic feedback is appropriately varied:
+  - Light (10ms) for cell fills - unobtrusive
+  - Medium (50ms) for long-press trigger - confirms mode change
+  - Pattern (50ms-100ms-50ms) for victory - celebratory
+  - 20ms for batch operations - distinct from single fills
+- Visual feedback on `:active` states (scale transforms) provides immediate response even before haptic fires
 
-✅ **Card-based UI**: Puzzle cards, settings groups, and modal dialogs use consistent rounded corners (12px radius) and elevation (box-shadow)
+**Zoom & Pan System (Good)**
+- Automatic zoom-to-fit on puzzle load maximizes usable space
+- Minimum zoom is intelligently capped at fit level (prevents zooming out past useful range)
+- Contextual clue tooltip appears when zoomed - excellent progressive disclosure
+- Double-tap on non-cell areas toggles between fit and comfortable zoom (2.0x)
+- Trackpad pinch on desktop is properly detected and handled
 
-✅ **Themed color system**: Well-organized CSS custom properties with "Day in the Garden" (warm, sunlit) and "Night in the Garden" (cool, moonlit) themes
+**Hold-to-Confirm Pattern (Very Good)**
+- Reset and Solution buttons use 1200ms hold duration - good balance between safety and friction
+- Visual fill animation clearly communicates progress
+- Works across mouse, touch, and keyboard (Enter/Space)
+- Disabled state when action is unavailable (e.g., Reset when puzzle is empty)
 
-✅ **Safe area insets**: Proper handling of notches and rounded corners via `env(safe-area-inset-*)` on all edges
+### ⚠️ Areas for Improvement
 
-✅ **Dynamic viewport height**: Custom `--vh` property (set by JS) prevents mobile browser chrome issues
+**Touch Target Sizing**
+- **Status:** Acknowledged by design as intentional trade-off
+- Palette buttons scale down to 38px on iPhone SE width (≤379px) for 8-button layouts
+- This is below the 44px recommendation but necessary to fit the palette on small screens
+- **Mitigation:** Responsive scaling maintains largest possible size for available space
+- **Note:** Cell size is intentionally below 44px - this is game design constraint, not a UX issue
 
-### Typography & Readability
+**Zoom Hint Timing**
+- First-time zoom hint appears 500ms after puzzle load
+- On complex puzzles, user may already be interacting with cells by then
+- **Recommendation:** Show hint earlier (200ms) or defer until first pinch gesture attempt
 
-✅ **Font stack**: Georgia-based serif stack with modern fallbacks provides warmth and readability
+**Tooltip Positioning**
+- Tooltip appears at fixed bottom (180px) or top (160px) positions
+- On very small phones or in landscape, tooltip may cover significant puzzle area
+- **Recommendation:** Make tooltip position more dynamic based on available space, or allow tap-to-dismiss
 
-✅ **Text contrast**: Light theme uses `--color-text: #2d3a24` on `#faf8f0` background (good contrast). Dark theme uses `#e8eef0` on `#0a1018` (excellent contrast).
-
-✅ **Font sizing**: Base 14px-16px with appropriate scaling for headers (1.2rem-2.5rem) provides good hierarchy
-
-⚠️ **Clue text size**: Clue cells use `max(5px, calc(var(--cell-size) * 0.42))` which can get very small on small screens. At 360px width (20px cells), this is ~8px text. Consider minimum 9-10px for readability.
-
-⚠️ **Collection card text**: `puzzle-card-name` has `height: 3.6em` with centered flex layout. Long puzzle names may overflow or appear cramped. Actual overflow is `hidden`, so text gets cut off invisibly - should use `text-overflow: ellipsis` or increase height.
-
-❌ **Puzzle title too small**: Header title at 1.2rem can be hard to read during gameplay. **Recommendation**: Increase to 1.4rem and consider adding puzzle metadata (dimensions, colors) as subtitle.
-
-### Visual Feedback
-
-✅ **Color buttons**: Selected state uses scale(1.15) transform + double-ring border (2px gap + 5px outer ring) - highly visible
-
-✅ **Puzzle cards**: Completed state uses subtle background tint (`color-mix`) + border color change + checkmark prefix in dropdown
-
-✅ **Clue satisfaction**: Dimmed opacity (0.4) + strikethrough when line complete - clear visual confirmation
-
-✅ **Pencil mode indicator**: Body class `pencil-mode` changes menu button from solid pen to dashed pencil icon + border style change
-
-✅ **Pencil mark badge**: Red dot with count (99+ cap) on menu button when marks exist - excellent visibility
-
-✅ **Hold-to-confirm buttons**: Fill bar animation with `--hold-duration` CSS variable provides clear progress indication
-
-✅ **Toast notifications**: Bottom-positioned, auto-dismiss toasts with success/info variants. Single-toast pattern (new replaces old) prevents spam.
-
-⚠️ **Mode menu position**: Fixed positioning with dynamic JS placement. Could be cut off by viewport on very small screens. Check minimum 320px width devices.
-
-❌ **Mode menu button cryptic**: Pen/pencil icon without label. First-time users may not understand what it does. **Recommendation**: Add text label "Mode" below icon or use more explicit icon.
-
-❌ **Crosshair hover**: Disabled on touch devices (`@media (hover: none)`), but this media query can fail on hybrid devices (Surface, iPad with mouse). Consider detecting actual hover capability or providing toggle.
-
-❌ **No visual feedback when drag-filling**: Cells change instantly but no preview/highlight while dragging over. **Recommendation**: Add `dragging-over` highlight class.
-
----
-
-## 3. Mobile vs Desktop Experience
-
-### Touch Interaction
-
-✅ **Touch target sizes**: 44px minimum on all interactive elements (buttons, color palette, puzzle cards) meets WCAG AAA standards
-
-✅ **Palette button scaling**: Responsive sizing for 8-button palettes (44px → 40px → 38px) with documented rationale in CSS comments
-
-✅ **Long-press for X mark**: 450ms delay (CONFIG.LONG_PRESS_DELAY) with haptic feedback - well-calibrated, not too sensitive
-
-✅ **Drag-to-fill**: `touchmove` uses `elementFromPoint` to handle dragging across cells - works smoothly
-
-✅ **Touch prevention**: Cells use `e.stopPropagation()` to prevent zoom container from interfering with cell interaction
-
-✅ **Multi-touch handling**: Pinch gesture properly detected with `e.touches.length === 2` and doesn't interfere with single-touch drawing
-
-✅ **Contextual clue tooltip**: Shows row/column clues when touching cells while zoomed - excellent discoverability aid
-
-⚠️ **Long-press visual feedback**: Timer starts but no visual indicator until action completes. Consider showing a growing ring or dimming effect during the 450ms hold.
-
-❌ **Palette unusable on small phones with 8 buttons**: Shrinks to 38px buttons on iPhone SE (375px width). While technically meets 44px minimum with min-width override, the visual size is small and gaps are tight (4px). **Recommendation**: Consider vertical stacked palette or scrollable horizontal layout for 7+ colors.
-
-❌ **Touch target exception**: Grid cells intentionally below 44px target size (as small as 20px on small phones). This is documented as intentional and will be addressed with pinch-to-zoom. Acceptable for current version but should auto-suggest zooming on puzzles >15x15. **Recommendation**: Show zoom hint toast on first interaction with large puzzle.
-
-### Zoom & Pan System
-
-✅ **Pinch-to-zoom**: Two-finger pinch gesture properly detected and applied with smooth scaling
-
-✅ **Zoom range**: 0.35x (ABSOLUTE_MIN_ZOOM) to 3.5x (CONFIG.MAX_ZOOM) provides appropriate flexibility
-
-✅ **Fit-to-view calculation**: Smart algorithm accounts for grid + clue areas + padding, cached per puzzle to prevent recalculation issues
-
-✅ **Effective minimum zoom**: Capped at fit level - prevents over-zooming-out past where content fits
-
-✅ **Scroll behavior**: Overflow switches from `hidden` to `auto` when zoomed beyond fit (`.is-zoomed` class)
-
-✅ **Double-tap zoom**: Non-cell areas support double-tap to toggle between fit and comfortable zoom (2.0x)
-
-✅ **Zoom buttons**: Floating bottom-right controls with disabled states, visible only on touch devices
-
-✅ **Fit button highlight**: Visual indicator when not at fit zoom - helps users understand current state
-
-✅ **Wheel/trackpad zoom**: Ctrl+scroll and trackpad pinch supported on desktop with proper preventDefault
-
-⚠️ **Zoom hint dismissal**: First-time users see zoom hint, but no way to redisplay it. Consider adding to help modal.
-
-⚠️ **Zoom controls visibility**: `@media (hover: hover)` hides zoom buttons on desktop, but hybrid devices may need them. Consider showing on first zoom or providing settings toggle.
-
-❌ **Tooltip positioning**: Fixed with `bottom: calc(var(--safe-area-bottom) + 180px)` and `position-top` variant. The 180px offset is magic number - should be calculated based on controls height or viewport percentage. **Recommendation**: Use `calc(var(--safe-area-bottom) + var(--controls-height) + 20px)`.
-
-❌ **Clue tooltip can be obscured by virtual keyboard**: When zoomed and touching cells, keyboard may cover bottom-positioned tooltip. **Recommendation**: Detect keyboard state (viewport resize) and dynamically switch to top position.
-
-### Desktop-Specific Features
-
-✅ **Crosshair hover effect**: Row/column highlighting on hover provides excellent spatial awareness on desktop
-
-✅ **Keyboard navigation**: Full arrow key support in both grid (cell-to-cell) and collection (card-to-card)
-
-✅ **Keyboard shortcuts**: Comprehensive set (Ctrl+Z/Y, P, 1-9, 0/X, Escape) all documented in help modal
-
-✅ **Focus visible**: Strong `:focus-visible` indicators (3px solid outline) across all interactive elements
-
-✅ **Roving tabindex**: Grid cells and collection cards use roving tabindex pattern - only one focusable at a time, reducing tab stops
-
-⚠️ **Mouse vs keyboard focus**: Grid cells support both mouse (hover) and keyboard (arrow keys) navigation, but mouse click doesn't update roving tabindex focus tracking. Could cause confusion if user switches between input methods.
-
-⚠️ **Help modal keyboard shortcuts**: Lists shortcuts for non-touch devices, but doesn't indicate zoom shortcuts (+/-) which work on desktop with keyboard.
+**Pan Threshold**
+- `PAN_THRESHOLD` constant is defined (10px) in zoom.js but not actually used in touch handling
+- Touch move immediately triggers drag-to-fill without requiring minimum movement
+- **Recommendation:** Implement threshold to prevent accidental fills on intended taps
 
 ---
 
-## 4. Feedback Mechanisms
+## 2. Visual Feedback & Affordances
 
-### Visual Feedback
+### ✅ Strengths
 
-✅ **Button states**: Active (scale 0.95-0.98), hover (background change), disabled (opacity 0.4) all present
+**Clue Satisfaction Indicators (Excellent)**
+- Satisfied clues dim to 40% opacity + strikethrough
+- Provides immediate feedback that a line is complete without checking solution
+- Helps players track progress and identify which sections still need work
 
-✅ **Card hover**: Collection cards use `translateY(-2px)` + shadow enhancement on hover - satisfying microinteraction
+**Cell State Visualization (Very Good)**
+- **Certain cells:** Solid fill with puzzle color
+- **Uncertain (pencil) cells:** Solid fill + corner fold indicator (40% of cell size)
+- **Empty cells:** X mark with muted color
+- **Maybe-empty:** X mark + corner fold
+- Corner fold uses adaptive outline color based on cell brightness - excellent contrast handling
+- Visual distinction between certain and uncertain is clear and consistent
 
-✅ **Cell fill animation**: Instant color change but smooth transitions on other properties - feels responsive
+**Crosshair Hover Effect (Desktop) (Good)**
+- Row/column highlighting with subtle overlay (`rgba(92, 107, 74, 0.12)`)
+- Clue highlighting with background tint
+- Active cell gets inset box shadow in primary color
+- Properly disabled on touch devices (no false affordance)
 
-✅ **Clue satisfaction**: Updates immediately on cell change, no lag
+**Mode Indication (Good)**
+- Palette menu button changes from dashed border (pen) to solid border + accent color (pencil)
+- Menu button icon switches between pen and pencil SVG
+- Body class `pencil-mode` allows global styling adjustments
+- Badge shows pencil mark count when marks exist
 
-✅ **Victory screen**: Clean presentation with rendered puzzle, puzzle name, and single "Continue" action
+**Theme Consistency (Excellent)**
+- Light theme: "Day in the Garden" - warm sunlit palette with vibrant greens (#4a7c3f, #8fbc6b)
+- Dark theme: "Night in the Garden" - deep navy with moonlit silvers (#a8d4a0, #0a1018)
+- All color variables properly cascade through CSS custom properties
+- Theme-specific adjustments for fold outlines, shadows, and borders
 
-✅ **Toast positioning**: Overlays bottom of grid (inside zoom container) so it moves with content when panning
+### ⚠️ Areas for Improvement
 
-⚠️ **Undo/redo feedback**: Buttons update disabled state, but no visual indication of what changed. Consider briefly highlighting affected cells.
+**Pencil Mode Discovery**
+- Mode menu button (palette trailing item) uses dashed border to indicate menu functionality
+- **Issue:** Dashed border may not clearly communicate "this opens a menu" to new users
+- **Recommendation:** Add subtle down-chevron or three-dot icon overlay, or show menu automatically on first puzzle load
 
-⚠️ **Pencil mode toggle**: Announces mode change to screen reader but no visual toast for sighted users. Icon change in menu button is subtle.
+**Loading States**
+- No loading indicator when switching puzzles in collection
+- `isLoadingPuzzle` guard flag prevents concurrent loads but doesn't show user feedback
+- **Recommendation:** Add subtle spinner or fade transition when loading large puzzles
 
-❌ **No feedback when returning from unsolved puzzle**: User might wonder if progress was saved. **Recommendation**: Show brief toast "Progress saved" when navigating back to collection.
+**Zoom Button Visibility**
+- Zoom controls default to 40% opacity, increase to 80% when zoomed
+- On light backgrounds or in bright conditions, buttons may be hard to spot
+- **Recommendation:** Increase base opacity to 60%, or add subtle shadow/border for better definition
 
-### Haptic Feedback
-
-✅ **Consistent vibration API**: All haptic feedback goes through `window.Cozy.App.vibrate()` wrapper
-
-✅ **Settings control**: User can disable vibration via Settings → Feedback toggle
-
-✅ **Graduated patterns**:
-  - Light tap: 10ms (cell fill)
-  - Short: 15ms (undo/redo)
-  - Medium: 20ms (clear pencil)
-  - Long: 50ms (long-press trigger, completion)
-  - Pattern: [20,50,20], [50,100,50] (batch actions, victory)
-
-✅ **Appropriate usage**: Haptics enhance but don't replace visual feedback
-
-⚠️ **Vibration check**: No check for `navigator.vibrate` support before calling. Should gracefully degrade on browsers without support.
-
-### Screen Reader Announcements
-
-✅ **Live region**: `#sr-announcer` with `aria-live="polite"` for non-intrusive announcements
-
-✅ **Mode changes**: Announces "Pencil mode" / "Pen mode" when toggling
-
-✅ **Cell labels**: Grid cells have `aria-label="Row X, Column Y"` for spatial context
-
-✅ **Color buttons**: `aria-pressed` state on color palette buttons
-
-✅ **Modal dialogs**: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` all properly set
-
-✅ **Focus trap**: Modals (help, confirm) implement focus trapping with Tab key handling
-
-⚠️ **Victory announcement**: No screen reader announcement when puzzle completes. Should announce "Puzzle complete!" or similar.
-
-⚠️ **Collection card state**: Cards show completion visually but `aria-label` should include completion status ("Completed" suffix).
-
-❌ **Section collapse**: Collection sections collapse/expand but no `aria-expanded` attribute on header buttons. Screen reader users can't tell if section is collapsed.
+**Progress Indication**
+- Collection cards show completion (checkmark) or partial progress (mini canvas)
+- In-progress indicator is clear, but **no percentage or time estimate**
+- **Recommendation:** Consider adding subtle progress ring or "X% complete" text for in-progress puzzles
 
 ---
 
-## 5. Error States & Edge Cases
+## 3. Error Handling & User Messaging
 
-### Error Prevention
+### ✅ Strengths
 
-✅ **Hold-to-confirm pattern**: Reset and Solution buttons require 1200ms hold, preventing accidental clicks
+**Toast Notification System (Good)**
+- Positioned relative to puzzle (not floating at top/bottom of viewport)
+- Auto-dismisses after 3 seconds (CONFIG.TOAST_DURATION)
+- Non-intrusive (overlays bottom of grid, max-width prevents text overflow)
+- Single-toast pattern: new messages replace old ones immediately (appropriate for rapid actions)
 
-✅ **Disabled states**: Buttons appropriately disabled when action not available (Reset when empty, Solution when solved, Undo/Redo when no history)
+**Hold-to-Confirm Safety (Very Good)**
+- Destructive actions (Reset, Solution) require 1200ms hold
+- Visual progress bar clearly shows commitment progress
+- Cancels if user releases early or moves away (`mouseleave`, `blur`)
+- Disabled state when action is invalid (prevents errors)
 
-✅ **Puzzle load guard**: `isLoadingPuzzle` flag prevents concurrent puzzle loads (race condition)
+**Confirm Modals (Good)**
+- Used for critical actions: Reset All Progress, Solve All Puzzles
+- Clear title, message, and action button labels
+- Danger styling (red button) for destructive actions
+- Focus management (auto-focus confirm button on open)
+- Backdrop click closes modal (escape hatch)
 
-✅ **Grid bounds checking**: Arrow key navigation stops at edges instead of wrapping or erroring
+### ⚠️ Areas for Improvement
 
-✅ **Dimension validation**: Puzzle dimensions checked against `CONFIG.MAX_PUZZLE_DIMENSION` before rendering (prevents DOM explosion from malicious data)
+**Validation Feedback**
+- No explicit "wrong move" feedback - nonogram rules allow experimentation
+- **Good:** Matches zen positioning (no pressure, no penalties)
+- **Issue:** Complete beginners may not realize they made a mistake until trying to solve
+- **Recommendation:** Optional setting to highlight mistakes in real-time (off by default)
 
-✅ **Normalized puzzle caching**: Invalid puzzles filtered out at load time, cache invalidated when data reference changes
+**Undo/Redo Announcements**
+- Undo/Redo buttons update `disabled` state correctly
+- **Missing:** Screen reader announcement when action succeeds/fails
+- **Recommendation:** Add `announce()` calls after undo/redo with "Undone" or "Nothing to undo"
 
-✅ **Safe color distance**: Minimum 35 perceptual distance between palette colors prevents confusion
+**Solution Button Feedback**
+- "Solution revealed" toast appears after solution is shown
+- **Issue:** Toast is generic info style, not clearly indicating this is a significant action
+- **Recommendation:** Use warning style or add confirmation modal ("This will reveal the answer")
 
-⚠️ **Reset confirmation**: Hold-to-confirm provides friction, but no explicit confirmation dialog. Users might accidentally hold too long. Consider adding confirm modal for non-empty puzzles.
+**Search Empty State**
+- Collection shows clear empty state when search has no results: "No puzzles match 'X'"
+- **Good:** Message is clear and actionable (change search term)
+- **Missing:** Suggestion to clear search or keyboard shortcut to focus search input
+- **Recommendation:** Add "Press Escape to clear" hint or clickable "Clear search" link
 
-❌ **Network errors**: No offline/online handling visible in UI. Service worker provides offline capability, but no indication to user if update check fails. **Recommendation**: Add offline indicator in footer or status bar.
-
-❌ **Search length limit**: `MAX_SEARCH_LENGTH` (100 chars) prevents DoS, but no user feedback if input truncated. Silent truncation could confuse users.
-
-❌ **No indication when puzzle is unsolvable**: Users can make errors early that make puzzle impossible to complete, but no feedback until they're stuck. **Recommendation**: Optional "Check for Errors" feature (respects "no hints" philosophy by being opt-in).
-
-### Error Recovery
-
-✅ **Undo/redo**: Full history with batch operations (clear pencil, confirm all, reset, solution) - comprehensive recovery
-
-✅ **Session persistence**: Grid auto-saved to localStorage on every change, survives crashes/refreshes
-
-✅ **Puzzle state restore**: Saved grids loaded on puzzle selection, preserving partial progress
-
-✅ **History cleared on win**: Prevents confusing undo after completing puzzle
-
-❌ **LocalStorage quota**: No handling for localStorage quota exceeded. On iOS Safari with "Prevent Cross-Site Tracking", quota can be very small (~5-10MB). Should wrap in try/catch and show error message: "Unable to save progress. Please free up storage space."
-
-❌ **Corrupt data handling**: JSON.parse wrapped in try/catch (theme detection), but puzzle data loading has no error handling. Corrupt `PUZZLE_DATA` could crash app. **Recommendation**: Wrap in try/catch and show error screen "Unable to load puzzles. Please refresh the page."
-
-### Empty States
-
-✅ **Collection search**: "No puzzles match [query]" message when search returns empty
-
-✅ **Disabled buttons**: Clear visual feedback (opacity 0.4) + aria-label update ("Reset (puzzle is empty)")
-
-❌ **Empty puzzle grid**: No special message for brand new puzzle. **Recommendation**: Show hint toast "Tap a color to begin" for first-time users or after 5 seconds of inactivity.
-
-❌ **Zero puzzles loaded**: App assumes `PUZZLE_DATA` has content. Should show error screen if array is empty or malformed.
-
-❌ **First-time user sees blank "?" cards**: No context on collection screen. **Recommendation**: Add header text "Tap a puzzle to start" or "Solve puzzles to reveal artwork".
-
----
-
-## 6. Onboarding & Tutorial Effectiveness
-
-### Tutorial Content
-
-✅ **Progressive structure**: 4 steps covering: Welcome → Clues → Colors → Victory progression makes sense
-
-✅ **Visual aids**: SVG icons (magnifying glass, palette, celebration) support each concept
-
-✅ **Concise text**: 1-2 sentences per step, focused on core mechanics
-
-✅ **Device-aware**: Touch vs desktop instructions generated dynamically based on `isTouchDevice()`
-
-✅ **Skippable**: Top-right skip button with clear label
-
-✅ **Navigation**: Dots + Next button provide clear progress
-
-❌ **Tutorial doesn't teach actual game mechanics**: Critical gap. Specifically missing:
-  - **How to interpret clue numbers**: "3 2 1" means three consecutive cells, gap, two consecutive cells, gap, one cell
-  - **Clue satisfaction feedback**: Doesn't explain dim/strikethrough means line is complete
-  - **Pen vs Pencil distinction**: Doesn't explain when/why to use pencil mode
-  - **Colored clue clickability**: Users don't discover they can click clues to select colors
-  - **Recommendation**: Replace static tutorial with interactive 4x4 demo puzzle that walks through:
-    1. "Fill 3 cells with red in this row"
-    2. "Notice the clue dims when correct"
-    3. "Try pencil mode to mark uncertain cells"
-    4. "Click this clue to select its color"
-
-### First-Time Experience
-
-✅ **Splash screen**: 1.5 second delay gives app time to load, shows branding
-
-✅ **Tutorial gating**: `tutorialCompleted` flag prevents repeat for returning users
-
-✅ **Help modal auto-show**: First puzzle load shows help modal after 500ms delay (stored in `helpShown` flag)
-
-✅ **Progressive disclosure**: Complex features (zoom, pencil actions) shown contextually (tooltip when zoomed, menu actions when marks exist)
-
-⚠️ **Zoom hint**: Shows once when first zooming, but timing unclear. Could appear during tutorial or first puzzle with >15x15 grid.
-
-❌ **Help modal timing**: 500ms delay on first puzzle might interrupt users who start playing immediately. **Recommendation**: Show before first interaction (on puzzle load, not first cell tap) or make dismissible without setting flag (only set flag on explicit close).
-
-### Help System
-
-✅ **Accessible help button**: Fixed position in controls, clear "?" icon
-
-✅ **Dynamic content**: Help modal populated based on device (touch vs desktop shortcuts)
-
-✅ **Keyboard support**: ESC to close, focus trap working
-
-✅ **Settings re-access**: "Show Tutorial" button in settings for re-learning
-
-⚠️ **No context-sensitive help**: Same help content shown regardless of user's current state. Could tailor based on whether pencil mode is active, if zoomed, etc.
-
-❌ **Missing zoom documentation**: Help modal mentions "Pinch to zoom" on touch but doesn't document:
-  - Double-tap to zoom in/out
-  - Zoom button locations (bottom-right)
-  - Desktop zoom shortcuts (+/- keys, Ctrl+scroll)
-  - **Recommendation**: Add "Zoom & Pan" section to help
-
-❌ **Colored clue clickability not discoverable**: This is a major time-saver but not documented. **Recommendation**: Add to help modal and tutorial.
+**Error Recovery**
+- No error boundary or global error handling visible in code
+- If puzzle data is malformed, `normalizePuzzle()` returns `null` with console warning
+- **Issue:** User sees empty collection with no explanation
+- **Recommendation:** Add error screen with "Try reloading" message if critical data fails
 
 ---
 
-## 7. Settings & Customization
+## 4. Navigation Flow Between Screens
 
-### Settings Organization
+### ✅ Strengths
 
-✅ **Grouped sections**: Feedback, Appearance, Help, Data groups provide clear information architecture
+**Screen Transition Architecture (Excellent)**
+- Clean state machine with defined screens (SPLASH, HOME, COLLECTION, PUZZLE, VICTORY, SETTINGS, TUTORIAL)
+- Proper cleanup on screen exit (zoom system destroyed when leaving puzzle)
+- History management with max limit (20 screens) prevents memory leaks
+- Browser back button support via `popstate` event
 
-✅ **Section headers**: Uppercase, muted color, smaller size (`0.85rem`) - clear visual separation
+**Focus Management (Very Good)**
+- Each screen sets focus to primary action on enter:
+  - Home → Play button
+  - Collection → Search input
+  - Settings → First interactive element (vibration toggle)
+  - Victory → Continue button
+  - Tutorial → Next button
+- Modal focus trapping implemented for help modal and confirm modal
+- Roving tabindex pattern in collection grid (single tab stop, arrow navigation)
 
-✅ **Consistent spacing**: 16px margin between groups, proper padding inside cards
+**Screen-Specific Initialization (Good)**
+- Data passing via `showScreen(screenId, data)` is clean and type-safe
+- Each screen can respond to custom events (`screen:puzzle`, `screen:collection`)
+- Conditional rendering based on data (e.g., blank placeholder for stamp animation)
 
-✅ **Max width**: 400px max width prevents excessive line length on large screens
+**Breadcrumb Clarity (Good)**
+- Back button consistently placed in header (top-left)
+- Back button label shows context: "Back to home" / "Back to collection"
+- Escape key navigation works contextually per screen
 
-### Individual Settings
+### ⚠️ Areas for Improvement
 
-✅ **Vibration toggle**: Clear label, toggle slider with animation, state persisted
+**Splash Screen Duration**
+- Splash shown for hardcoded 1500ms
+- **Issue:** On fast devices/connections, this is pure delay with no benefit
+- **Recommendation:** Show splash until assets loaded OR 1500ms, whichever is shorter
 
-✅ **Theme selection**: Light/Dark buttons (not "Day/Night") follow accessibility convention, visual icons (sun/moon), aria-pressed state
+**Deep Linking**
+- URL parameter support exists for `?action=continue` (resume session)
+- **Missing:** Direct links to specific puzzles (e.g., `?puzzle=dandelion_2`)
+- **Recommendation:** Add puzzle ID parameter support for sharing/bookmarking
 
-✅ **Tutorial access**: "Show Tutorial" button for re-learning
+**Tutorial Skip Confirmation**
+- Tutorial "Skip" button immediately marks tutorial as complete and exits
+- **Issue:** Accidental tap loses tutorial access (must go to Settings → Show Tutorial)
+- **Recommendation:** Add "Are you sure?" confirmation, or make Skip less prominent
 
-✅ **Reset progress**: Danger styling (red), confirmation modal with destructive action warning
+**Victory → Collection Transition**
+- Stamp animation flies from victory screen to collection card
+- **Issue:** Animation calculates card position immediately after screen transition
+- **Timing Risk:** If collection render is slow, card may not be in final position yet
+- **Current Mitigation:** 50ms delay + scroll delay helps, but not guaranteed
+- **Recommendation:** Wait for `requestAnimationFrame` + layout stability check
 
-✅ **Debug feature**: "Solve All Puzzles" clearly labeled as debug, blue color distinguishes from danger actions
-
-⚠️ **Limited settings**: Only vibration toggle under Feedback. No options for toast duration, auto-save frequency, etc. This might be intentional minimalism.
-
-⚠️ **No undo for reset**: Reset all progress is permanent (confirmation warns this). Could implement temporary "trash" to recover from accidental resets.
-
-⚠️ **Theme default**: Defaults to system preference if no saved theme, but no "System" option in settings to restore default behavior. User can only choose explicit Light/Dark. **Recommendation**: Add third "System" button to restore auto-detection.
-
-⚠️ **Version display**: Shows "Version 1.0.0" but no link to changelog or "What's new" content.
-
-### Settings Persistence
-
-✅ **Unified storage**: All settings go through `window.Cozy.Storage` API (localStorage wrapper)
-
-✅ **Immediate save**: Settings saved on change (no "Save" button needed)
-
-✅ **Synced UI**: Settings screen reads current values from storage on init
-
-⚠️ **No export/import**: No way to backup or transfer settings and progress to another device. For a PWA, cloud sync would be valuable.
-
-⚠️ **No reset settings**: Can reset progress but not individual settings to defaults without clearing all data.
-
----
-
-## 8. Interaction Patterns
-
-### Drawing Mechanics
-
-✅ **Pen vs Pencil modes**: Clear distinction between certain (solid) and uncertain (corner fold + lighter) marks
-
-✅ **Tap toggle behavior**: Tapping same cell+color toggles to blank - intuitive eraser alternative
-
-✅ **Pencil→Pen conversion**: Tapping uncertain cell in pen mode makes it certain - smooth workflow
-
-✅ **Drag consistency**: First tap determines color/certain state, drag maintains it - no accidental mode switches mid-drag
-
-✅ **Skip toggle on drag**: `skipToggle` parameter prevents toggling during multi-cell drag - correct behavior
-
-✅ **Eraser integration**: Color 0 treated as special "mark empty" state, shown as X
-
-✅ **Long-press X mark**: Hold cell for 450ms to mark empty - alternative to eraser selection
-
-❌ **Pen vs Pencil distinction unclear**: Users may not understand when to use pencil mode. "Pen" and "Pencil" aren't obviously "certain" vs "uncertain". **Recommendation**: Rename to "Fill" and "Mark" or add explanatory text "(certain)" and "(maybe)".
-
-⚠️ **Pencil mark confusion**: Users might not understand distinction between "maybe empty" and "maybe color". Tutorial should explain use case (trying possibilities).
-
-⚠️ **No selection preview**: When dragging, cells change immediately. Could show hover preview before committing.
-
-### Batch Operations
-
-✅ **Clear all pencil marks**: Confirmation prompt, batch recorded in history for undo
-
-✅ **Confirm all as certain**: Converts all pencil marks to certain in one action
-
-✅ **Reset puzzle**: Clears entire grid, recorded as batch for single undo
-
-✅ **Show solution**: Fills entire grid, recorded as batch for undo
-
-✅ **Contextual menu**: Pencil actions only visible when marks exist - reduces clutter
-
-❌ **Pencil mark confirmation requires 3 steps**: Open menu → Select "Confirm all as certain" → Close menu. **Recommendation**: Add keyboard shortcut "C" to confirm all pencil marks directly.
-
-⚠️ **No "Clear all cells"**: Only reset (clears all) or individual erasing. Could add "Clear all certain" or "Clear all of color X" for advanced users.
-
-⚠️ **Solution undo**: Showing solution is undoable, but does this undermine the purpose? Consider making solution non-undoable or showing confirmation.
-
-### History Management
-
-✅ **Granular undo**: Individual cell changes recorded separately
-
-✅ **Batch actions**: Multi-cell operations (drag, reset, solution) grouped as single undo step
-
-✅ **Action types**: Named actions ('fill', 'batch-clear', 'batch-confirm', 'reset', 'solution') for potential future features (history list)
-
-✅ **Redo support**: Full redo stack maintained until next user action
-
-✅ **History cleared on win**: Prevents confusing state after completion
-
-✅ **History cleared on puzzle switch**: Each puzzle has independent history
-
-✅ **Keyboard shortcuts**: Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y all work correctly
-
-⚠️ **No history limit**: Undo stack unbounded could grow very large on complex puzzles. Consider cap at 100-200 actions.
-
-⚠️ **No history visualization**: Users can't see how many steps available to undo. Could show count or list.
+**Modal Stacking**
+- Confirm modal has higher z-index (3000) than help modal (2000)
+- **Good:** Proper layering
+- **Issue:** If confirm modal is shown from settings (which has help button), and user somehow opens help while confirm is visible, z-index layering would be correct but focus trap would conflict
+- **Recommendation:** Disable help button while modals are open, or manage global modal stack
 
 ---
 
-## 9. Performance & Responsiveness
+## 5. Onboarding & Help System
 
-### Rendering Optimization
+### ✅ Strengths
 
-✅ **Cell element cache**: 2D array `cellElements[row][col]` prevents repeated querySelector calls - O(1) lookup
+**Tutorial Design (Good)**
+- 4-step slideshow with clear progression
+- Visual illustrations (SVG icons) for each concept
+- Dots indicator shows progress through tutorial
+- "Skip" option always visible (respects user agency)
+- Final step button changes to "Start Playing" (clear call-to-action)
+- Only shown once (flag: `tutorialCompleted`)
 
-✅ **Clue element cache**: `rowClueElements` and `colClueElements` arrays for fast updates
+**Help Modal Content (Good)**
+- Device-specific instructions (touch vs mouse/keyboard)
+- Grouped into logical sections (gameplay basics + keyboard shortcuts for desktop)
+- Accessible via ? button in puzzle controls (always available)
+- Also accessible from Settings → Show Tutorial
 
-✅ **Crosshair optimization**: Targeted clearing of previous row/col only - O(n) instead of O(n²)
+**First-Time Help (Good)**
+- Help modal auto-shows on first puzzle load (500ms delay so puzzle renders first)
+- Flag `helpShown` prevents repeat annoyance
+- **Smart:** Shows in context (during gameplay) not during tutorial
 
-✅ **Normalized puzzle cache**: Puzzles normalized once and cached with reference tracking
+### ⚠️ Areas for Improvement
 
-✅ **Canvas rendering**: Mini-puzzle previews use canvas with `image-rendering: pixelated` for crisp scaling
+**Tutorial Timing**
+- Tutorial shown immediately after splash on first launch
+- **Issue:** User hasn't seen the game yet - abstract instructions without context
+- **Alternative:** Consider letting user see collection first, then trigger tutorial on first puzzle tap
+- **Benefit:** Context makes instructions more meaningful
 
-✅ **Debounced search**: 150ms debounce on collection search prevents excessive re-renders
+**Tutorial Content**
+- Step 3: "Long-press to mark cells as empty"
+- **Missing:** Visual demonstration of long-press (could show animated gesture)
+- **Missing:** Explanation of pencil vs pen modes (introduced in help modal but not tutorial)
+- **Recommendation:** Add step 5 showing pencil mode, or add pencil to step 3
 
-✅ **Puzzle count**: 130 puzzles is reasonable, no lazy loading needed per CLAUDE.md
+**Help Modal Discoverability**
+- ? button is circular icon in controls footer
+- On crowded control bar, may blend in with other buttons
+- **Recommendation:** Add subtle pulse animation on first puzzle load to draw attention
 
-⚠️ **No virtual scrolling**: Collection renders all visible puzzle cards at once. At 130 puzzles across sections, this is ~130 DOM nodes + 130 canvas elements. Probably fine, but monitor on low-end devices.
+**Zoom Hint**
+- First-time hint "Tip: Pinch to zoom" appears on large puzzles (>12x12)
+- Toast-style hint at bottom of screen, 4-second duration
+- **Good:** Contextual and non-intrusive
+- **Issue:** Only shown once - if user misses it, they may not discover zoom
+- **Recommendation:** Show hint again if user struggles with small cells (e.g., 3+ pencil marks in a row on small puzzle)
 
-⚠️ **Zoom recalculation**: Fit zoom cached per puzzle, but invalidated on every resize event. Could debounce resize handler.
-
-### Memory Management
-
-✅ **Event listener cleanup**: Grid rebuild removes old mouseup/mouseleave handlers before adding new ones
-
-✅ **Screen history limit**: `MAX_SCREEN_HISTORY` config prevents unbounded stack growth
-
-✅ **Toast timer cleanup**: `clearTimeout` called before setting new timeout
-
-✅ **Reference tracking**: Normalized puzzle cache invalidated when raw data reference changes
-
-⚠️ **No intersection observer**: Collection cards all render immediately. For future scale (500+ puzzles), IntersectionObserver would help.
-
-⚠️ **Flying stamp cleanup**: Stamp animation removes element after 650ms, but if navigation happens during animation, orphan element could remain.
-
-### Loading States
-
-⚠️ **No loading indicators**: Puzzle loading is synchronous, no spinner shown. On slow devices, could feel unresponsive.
-
-⚠️ **No progress for batch operations**: "Solve All Puzzles" debug feature processes all 130 puzzles synchronously. Should show progress bar.
-
-⚠️ **Splash screen timing**: Fixed 1.5s delay regardless of actual load time. Could hide splash as soon as ready or use minimum 1.5s with actual load check.
-
----
-
-## 10. Accessibility (WCAG 2.1)
-
-### Keyboard Navigation
-
-✅ **Level AAA**: Full keyboard navigation with visible focus indicators throughout
-
-✅ **Focus trap**: Modals properly trap focus within focusable elements
-
-✅ **Roving tabindex**: Grid and collection use pattern correctly - single tab stop, arrow navigation
-
-✅ **Keyboard shortcuts**: Documented in help modal, don't conflict with browser defaults (except Ctrl+Z/Y which is standard override)
-
-⚠️ **Focus restoration**: When returning to collection from puzzle, focus should return to last selected card. Currently uses `focusedCardId` tracking but only on explicit navigation, not on back button.
-
-⚠️ **Shortcut discovery**: Keyboard shortcuts only documented in help modal. Consider adding `title` attributes or aria-keyshortcuts.
-
-### Screen Reader Support
-
-✅ **Semantic HTML**: Proper heading hierarchy (h1→h2→h3), landmark regions, button elements
-
-✅ **ARIA labels**: Buttons have aria-label, gridcells have row/col context, modals have labelledby
-
-✅ **Live regions**: `aria-live="polite"` announcer for mode changes
-
-✅ **Role attributes**: `role="dialog"`, `role="grid"`, `role="button"` appropriately used
-
-❌ **Missing expanded state**: Collection section headers don't have `aria-expanded` attribute. Screen reader users can't tell if sections are collapsed.
-
-❌ **Victory announcement**: No announcement when puzzle completes. Should announce "Puzzle complete! [Puzzle name]".
-
-❌ **Collection card completion**: Card visual shows completion but aria-label doesn't include state. Should append "Completed" for solved puzzles.
-
-⚠️ **Color identification**: Grid cells labeled "Row X, Column Y" but no mention of current color. Screen reader users can't verify cell state without tabbing to palette.
-
-### Visual Accessibility
-
-✅ **Color contrast**: Both themes pass WCAG AA (4.5:1 for normal text, 3:1 for large text)
-
-✅ **Not relying on color alone**: Clue satisfaction uses both dimming AND strikethrough
-
-✅ **Resizable text**: Uses rem units, respects browser zoom
-
-✅ **High contrast mode**: `@media (prefers-contrast: high)` adds explicit borders and stronger outlines
-
-✅ **Reduced motion**: `@media (prefers-reduced-motion)` disables animations
-
-⚠️ **Pencil vs pen visual**: Corner fold indicator is subtle. Consider additional marker (icon?) for stronger distinction.
-
-❌ **Toast low contrast**: Toast uses `opacity: 0.95` which slightly reduces text contrast. Should be fully opaque for WCAG compliance.
-
-### Motor Accessibility
-
-✅ **Large touch targets**: 44px minimum meets WCAG AAA
-
-✅ **Hold-to-confirm**: Destructive actions require sustained input, helping users with tremor
-
-✅ **Sticky positioning**: Section headers and search bar sticky, reducing need for precise scrolling
-
-⚠️ **Double-tap zoom**: 300ms window might be too short for users with motor impairments. Consider extending to 500ms or adding settings option.
-
-❌ **Drag requirement**: Multi-cell fills require drag gesture. No alternative for users unable to drag. **Recommendation**: Add shift+click range selection for desktop users.
+**Settings Tooltips**
+- Settings screen has no explanatory text for options
+- "Vibration" toggle is self-explanatory, but themes are just icons + labels
+- **Recommendation:** Add subtle help text under each setting ("Feel taps and actions" for vibration)
 
 ---
 
-## 11. Cognitive Load & Information Architecture
+## 6. Settings & Customization
 
-### Collection Organization
+### ✅ Strengths
 
-✅ **Difficulty grouping**: Logical organization (Easy → Expert) matches user mental model
+**Settings Organization (Good)**
+- Logical grouping: Feedback, Appearance, Help, Data
+- Clear section headers with visual separation
+- Dangerous actions (Reset Progress) visually distinct (red button)
 
-✅ **Collapsible sections**: Reduces initial information overload, state persisted
+**Theme Selection (Very Good)**
+- Two theme options: Light and Dark (no "system" option shown - system is default)
+- Visual preview via sun/moon icons
+- Active state clearly indicated (highlighted button + `aria-pressed`)
+- Theme persists to localStorage and applies instantly (no flash)
+- Respects system preference for new users
 
-✅ **Smart defaults**: First incomplete section auto-expands, others collapsed
+**Settings Persistence (Excellent)**
+- All settings stored in unified `CozyStorage` system
+- Settings survive across sessions
+- Theme change applies immediately without reload
 
-✅ **Search functionality**: Filter-as-you-type with instant results
+**Debug Features (Good)**
+- "Solve All Puzzles" clearly labeled as debug feature
+- Confirmation modal prevents accidental activation
+- Useful for testing and content creation
 
-✅ **Progress indicators**: "X/Y" counts per section show completion at a glance
+### ⚠️ Areas for Improvement
 
-✅ **Visual completion**: Completed sections use accent color, completed cards show checkmark
+**Vibration Toggle**
+- Toggles vibration feedback globally
+- **Missing:** No indication of device support - toggle shown even if vibration API unavailable
+- **Recommendation:** Add "(Not available on this device)" text if `navigator.vibrate` is undefined
 
-⚠️ **130 puzzles overwhelming**: Even with sections, first-time users see dozens of "?" cards. Consider progressive unlock or "Start Here" recommendation.
+**Theme Labels**
+- Buttons labeled "Light" and "Dark" (accessibility convention)
+- **Mismatch:** Code comments refer to "Day in the Garden" and "Night in the Garden"
+- **Recommendation:** Use thematic names in UI too ("Day" / "Night") for brand consistency, or stick with Light/Dark everywhere
 
-⚠️ **No difficulty explanation**: Users don't know what makes "Challenging" vs "Expert". Could add tooltip or help text.
+**Reset Progress Confirmation**
+- Modal message: "Are you sure you want to reset all progress? This cannot be undone."
+- **Good:** Clear warning
+- **Missing:** Indication of what will be lost (e.g., "X completed puzzles")
+- **Recommendation:** Show completion count in confirmation message
 
-### Puzzle Metadata
+**Show Tutorial Button**
+- Button text: "Show Tutorial"
+- **Issue:** Ambiguous - does this show the tutorial or show the help content?
+- **Reality:** It navigates to the 4-step tutorial screen
+- **Recommendation:** Rename to "Replay Tutorial" or "View Tutorial Again"
 
-✅ **Concise format**: "Name (8x7, easy)" provides dimension and difficulty in compact form
-
-✅ **Color count badge**: "8×7 · 5c" shows dimensions and color count on cards
-
-⚠️ **Color count not explained**: Users might not understand "5c" means 5 colors. Consider "5 colors" or tooltip.
-
-⚠️ **No time estimate**: Users don't know if puzzle takes 5 minutes or 30 minutes. Could add estimated solve time based on difficulty + dimensions.
-
-### Pen vs Pencil Cognitive Model
-
-❌ **Unclear mental model**: "Pen" vs "Pencil" naming doesn't clearly communicate "certain" vs "uncertain". Users familiar with pencil-and-paper sudoku will understand, but nonogram-specific users may not. **Recommendations**:
-  - Rename to "Fill" and "Mark" (clearer action verbs)
-  - Add explanatory text "(certain)" and "(maybe)"
-  - Tutorial step explaining use case: "Use Mark mode to try possibilities before committing"
-
-### Clue Interpretation
-
-❌ **Colored clue numbers not discoverable**: Major usability feature (click clue to select color) is hidden. First-time users will manually select from palette. **Recommendations**:
-  - Add to tutorial: "Tap clues to quickly select colors"
-  - Show hint toast on first puzzle after 10 seconds: "Tip: Tap clues to select their color"
-  - Add subtle animation (pulse) to clues on first puzzle load
-
----
-
-## 12. Delight & Engagement
-
-### Strengths
-
-✅ **Stamp collection animation**: Victory → Collection flying stamp is delightful and reinforces sense of accomplishment
-
-✅ **Partial progress animation**: Back button stamp shows work in progress, making incomplete puzzles feel valuable
-
-✅ **Haptic patterns**: Graduated vibrations add tactile satisfaction without being annoying
-
-✅ **Smooth theme transitions**: Light/Dark mode switch is instant and polished
-
-✅ **Clue satisfaction feedback**: Dim + strikethrough provides satisfying confirmation of correct lines
-
-✅ **Color palette**: Visually appealing, warm color schemes match "cozy garden" branding
-
-### Opportunities
-
-❌ **No celebration on section completion**: Completing all Easy puzzles feels the same as completing one puzzle. **Recommendation**: Confetti animation or special badge when difficulty section reaches 100%.
-
-❌ **Victory screen is static**: After solving, puzzle just... appears. **Recommendation**: Cell-by-cell reveal animation or fade-in effect to increase satisfaction.
-
-⚠️ **No progression visualization**: Users can't see overall progress toward "collecting them all". Consider progress bar or garden visualization that fills as puzzles are completed.
-
-⚠️ **No daily challenge**: Mentioned as "not yet implemented" in CLAUDE.md. Would add engagement without competing with relaxation focus.
+**Version Number**
+- Shows "Version 1.0.0" hardcoded at bottom
+- **Issue:** No auto-update detection or indication of available updates
+- **Recommendation:** Show "Update available" message if service worker detects new version
 
 ---
 
-## Summary of Critical Issues
+## 7. Victory & Completion Experience
 
-### Must Fix (Pre-Launch)
+### ✅ Strengths
 
-1. **Tutorial doesn't teach mechanics**: Add interactive demo showing clue interpretation, satisfaction feedback, and mode distinction
-2. **Collection section `aria-expanded`**: Screen reader users can't tell if sections are collapsed
-3. **Victory announcement**: Screen reader users don't get confirmation when puzzle completes
-4. **LocalStorage quota handling**: iOS Safari can fail silently, needs try/catch and user notification
-5. **Corrupt data handling**: No error boundary if `PUZZLE_DATA` is malformed
-6. **Pen/Pencil naming confusion**: Rename or add explanatory text "(certain)" / "(maybe)"
+**Victory Detection (Excellent)**
+- Win detection via clue satisfaction (not pixel-perfect solution matching)
+- Allows winning without explicitly marking empty cells (low frustration)
+- No uncertain (pencil) cells allowed in win state (prevents accidental wins)
 
-### High Priority (Launch Window)
+**Victory Screen (Good)**
+- Clean, focused design with puzzle image showcase
+- Large canvas render (200x200 config) shows detail
+- Puzzle name extracted from title (removes dimension/difficulty info)
+- "Complete!" title is celebratory without being over-the-top
 
-7. **Clue clickability not discoverable**: Add to tutorial and/or show hint toast
-8. **First-time empty state**: Add context "Tap a puzzle to start" on collection
-9. **Palette on small screens**: 8 buttons at 38px is tight, consider alternative layout
-10. **Puzzle title too small**: Increase to 1.4rem for better visibility during gameplay
-11. **Collection card completion state**: Include "Completed" in aria-label
-12. **Toast contrast**: Remove opacity for WCAG compliance
-13. **Section completion celebration**: Add visual reward for completing difficulty section
+**Stamp Animation (Very Good)**
+- Flying canvas from victory → collection card is visually smooth
+- Preserves aspect ratio during flight
+- Targets exact mini-canvas size for seamless replacement
+- 650ms duration feels snappy without being rushed
+- Also triggers on back-from-puzzle navigation (shows progress)
 
-### Medium Priority (Post-Launch Polish)
+**Progress Tracking (Good)**
+- Completed puzzles marked with checkmark in collection
+- Completion persists to localStorage
+- Collection stats show "X/Y" completion per difficulty
+- Home screen shows global "X / Y puzzles solved"
 
-14. **Long-press visual feedback**: Show progress during 450ms hold
-15. **Drag-fill preview**: Add highlight class for cells being dragged over
-16. **Help modal timing**: Don't auto-show on first cell tap, show on puzzle load instead
-17. **Zoom documentation**: Add to help modal with keyboard shortcuts
-18. **Focus restoration**: Return to last selected card when backing out of puzzle
-19. **Search persistence**: Remember search term when navigating away
-20. **Offline indicator**: Show status when service worker update fails
-21. **Undo visualization**: Show number of available undo/redo steps
-22. **History limit**: Cap undo stack at 100-200 actions
+### ⚠️ Areas for Improvement
 
-### Nice to Have (Future Enhancements)
+**Victory Moment**
+- Win triggers → immediate screen transition to victory screen
+- **Missing:** Brief pause or animation BEFORE transition (confetti, pulse, etc.)
+- **Recommendation:** Add 500ms celebration animation on grid before transition (subtle particle effect or grid pulse)
 
-23. **Interactive tutorial puzzle**: 4x4 demo with guided steps
-24. **Victory screen animation**: Cell-by-cell reveal or fade-in
-25. **Progress visualization**: Overall completion bar or garden metaphor
-26. **Error checking feature**: Opt-in validation for stuck users
-27. **Settings export**: Backup and restore progress
-28. **System theme option**: Restore auto-detection of light/dark preference
-29. **Drag alternatives**: Shift+click range selection for accessibility
-30. **Time estimates**: Show expected solve time for puzzles
+**Victory Screen Composition**
+- Layout: Title, image, button
+- **Missing:** Completion stats (e.g., "12 of 38 Easy puzzles complete")
+- **Missing:** Time to complete or move count (if tracking added)
+- **Recommendation:** Add small stat line under puzzle name
+
+**Stamp Animation Failure Handling**
+- If collection card not found, stamp is removed immediately
+- **Issue:** User sees stamp appear then vanish with no motion
+- **Recommendation:** Fade out stamp over 300ms instead of instant remove
+
+**Completion Milestones**
+- No special recognition for completing all puzzles in a difficulty
+- No achievement system or milestone celebrations
+- **Recommendation:** Show modal on completing a difficulty tier ("All 38 Easy puzzles complete!")
+
+**Replay Option**
+- No way to replay completed puzzle from victory screen
+- User must navigate back to collection, find puzzle, tap to play again
+- **Recommendation:** Add "Play Again" button on victory screen for immediate retry
 
 ---
 
-## Final Verdict
+## 8. Mobile vs Desktop Considerations
 
-### Strengths
+### ✅ Mobile-First Strengths
 
-1. **Cohesive UX vision**: "Cozy, quality-focused, zen" philosophy executed consistently
-2. **Excellent mobile support**: Touch handling, zoom, haptics are production-grade
-3. **Strong accessibility foundation**: Keyboard navigation and screen reader support well-implemented
-4. **Thoughtful feedback**: Visual, haptic, and lack-of-audio all support relaxation goal
-5. **Smart performance**: Caching, debouncing, and optimization throughout
-6. **Progressive disclosure**: Features appear contextually, reducing cognitive load
-7. **Polished animations**: Stamp collection, theme transitions, button states all smooth
+**Responsive Breakpoints (Excellent)**
+- Small phones (≤360px): 20px cells, compact palette
+- Medium phones (361-767px): 24px cells (default)
+- Tablets (768-1199px): 28px cells
+- Desktops (≥1200px): 32px cells
+- Landscape mode (<500px height): Compressed header/footer
 
-### Weaknesses
+**Touch Optimizations (Good)**
+- Hover effects disabled via `@media (hover: none)`
+- Crosshair highlight removed on touch devices
+- Zoom controls hidden on desktop (keyboard shortcuts sufficient)
+- Help modal content adapts (shows keyboard shortcuts only on desktop)
 
-1. **Tutorial gaps**: Doesn't teach core mechanics (clue interpretation, satisfaction feedback, mode distinction)
-2. **Onboarding clarity**: First-time users lack context on empty collection screen
-3. **Mobile palette**: 8-button layouts get tight on small screens
-4. **Discoverability**: Key features (clue clicking, double-tap zoom) are hidden
-5. **Accessibility gaps**: Missing `aria-expanded`, no victory announcement, incomplete card labels
-6. **Error handling**: No localStorage quota or corrupt data fallbacks
+**PWA Features (Very Good)**
+- Safe area insets respected (notch/home indicator avoidance)
+- Viewport height calculated in JS for accurate 100vh on mobile
+- Service worker for offline capability
+- Installable with manifest and icons
+- `?action=continue` shortcut for resuming from home screen
 
-### Recommendation
+### ✅ Desktop Enhancements
 
-**With the 6 critical issues fixed, this is a 9/10 experience ready for launch.** The game demonstrates exceptional attention to detail and user experience principles rarely seen in web-based puzzle games. The development team should be commended for:
+**Keyboard Navigation (Very Good)**
+- Arrow keys for grid cell navigation (roving tabindex)
+- Ctrl+Z / Ctrl+Y for undo/redo
+- P to toggle pencil mode
+- 1-9 to select colors by number
+- 0 or X to select eraser
+- Escape for back navigation (context-aware)
+- +/- for zoom in/out
+- Space/Enter for cell interaction
 
-- Mobile-first design with sophisticated touch handling
-- Comprehensive accessibility (keyboard nav, screen readers, reduced motion)
-- Thoughtful feedback systems (haptics, clue satisfaction, toast notifications)
-- Performance optimization (caching, debouncing, efficient rendering)
-- Cohesive design language aligned with "cozy" positioning
+**Mouse Interactions (Good)**
+- Right-click for eraser (context menu suppressed)
+- Click-and-drag for multi-cell fills
+- Crosshair hover effect with row/column highlighting
+- Wheel + Ctrl for zoom (trackpad pinch)
+- Clue cell click to select color
 
-The critical issues are straightforward fixes (ARIA attributes, error handling, tutorial improvements) that will elevate this from "very good" to "exceptional". The recommended improvements would add polish but are not blockers for a successful launch.
+### ⚠️ Cross-Platform Issues
 
-**Primary Focus Areas:**
-1. Tutorial effectiveness (teach actual mechanics, not just concepts)
-2. Accessibility compliance (ARIA states, announcements, labels)
-3. Error resilience (storage quotas, corrupt data, offline states)
-4. Mobile refinement (palette layouts, touch feedback, tooltip positioning)
-5. Feature discoverability (clue clicking, zoom controls, keyboard shortcuts)
+**Palette Sizing on Desktop**
+- Desktop (≥1200px) uses 48px color buttons
+- If puzzle has 8 colors, palette width is ~500px (8×48 + gaps + padding)
+- **Issue:** On narrow desktop windows (e.g., split screen), palette may overflow
+- **Recommendation:** Add max-width and allow wrapping on desktop too, or use horizontal scroll
 
-This is a polished, professional product with a clear target audience and strong execution of its design philosophy. With minor fixes to onboarding and accessibility, it's ready to delight nonogram enthusiasts looking for a relaxing mobile puzzle experience.
+**Zoom Control Visibility (Desktop)**
+- Zoom controls are hidden on desktop (`@media (hover: hover)`)
+- **Assumption:** Desktop users will use keyboard shortcuts or trackpad pinch
+- **Issue:** Users with mice (no pinch) may not discover zoom
+- **Recommendation:** Show zoom controls on desktop in semi-transparent corner, or add menu bar hint
+
+**Text Selection**
+- `user-select: none` applied to `body` and game controls
+- **Good:** Prevents accidental text selection during gameplay
+- **Issue:** Prevents text selection in modals (help text, settings)
+- **Recommendation:** Scope `user-select: none` more narrowly to `.board-wrapper`, `.palette`, `.controls`
+
+**Focus Indicators**
+- Excellent `:focus-visible` styles for keyboard navigation
+- **Issue:** Focus ring uses solid outline, which may obscure content on small cells
+- **Recommendation:** Use `outline-offset: -2px` for grid cells to keep ring inside cell bounds
+
+---
+
+## 9. Accessibility Review
+
+### ✅ Strengths
+
+**ARIA Labels (Very Good)**
+- Screen reader announcer: `<div id="sr-announcer" aria-live="polite">`
+- Grid cells: `role="gridcell"`, `aria-label="Row X, Column Y"`
+- Color buttons: `aria-label="Color X"`, `aria-pressed` state
+- Modal dialogs: `role="dialog"`, `aria-modal="true"`, `aria-labelledby`
+- Menu items: `role="menuitemradio"`, `aria-checked` state
+- Puzzle cards: `role="button"`, descriptive labels
+
+**Keyboard Navigation (Excellent)**
+- Full keyboard support for all interactive elements
+- Roving tabindex pattern in collection and grid (single tab stop + arrow nav)
+- Focus trapping in modals (Tab cycles within modal)
+- Escape key closes modals and navigates back contextually
+- Enter/Space activates buttons and cells
+
+**Focus Management (Very Good)**
+- Focus automatically moved to primary action on screen enter
+- Focus returned to triggering element on modal close (in some cases)
+- `autofocus` avoided (JS focus management is more reliable)
+- `tabindex="-1"` on non-focused roving items
+
+**Color Contrast (Good)**
+- Text colors chosen based on background brightness (ITU-R BT.601 luma)
+- Light text on dark clues, dark text on light clues
+- Primary text has good contrast ratio in both themes
+- Focus indicators use distinct accent color
+
+### ⚠️ Areas for Improvement
+
+**Screen Reader Announcements**
+- `announce()` function is well-implemented and used for mode changes
+- **Missing:** Announcements for many state changes:
+  - Puzzle loaded ("Loaded: Dandelion 2, 8 by 7, Easy")
+  - Cell filled ("Filled row 3 column 4 with color 2")
+  - Victory ("Puzzle complete!")
+  - Clue satisfaction ("Row 5 complete")
+- **Recommendation:** Add announcements for major state changes (prioritize victory and puzzle load)
+
+**ARIA Live Regions**
+- Announcer uses `aria-live="polite"` (non-intrusive)
+- Toast notifications have `role="status"` and `aria-live="polite"`
+- **Missing:** Live region for clue tooltip (current cell clues)
+- **Recommendation:** Add `aria-live="polite"` to tooltip or announce clues when cell gets focus
+
+**Modal Focus Return**
+- Help modal: Focus moves to close button on open
+- **Missing:** Focus return to help button on close
+- Confirm modal: Focus moves to confirm button on open
+- **Missing:** Focus return to triggering element on cancel
+- **Recommendation:** Store triggering element on modal open, restore focus on close
+
+**Color-Only Information**
+- Clue satisfaction indicated by dimming + strikethrough
+- **Good:** Not color-only (strikethrough provides alternate cue)
+- Pencil mode indicated by corner fold + badge count
+- **Good:** Not color-only (visual shape change)
+- Palette buttons rely on color alone
+- **Issue:** Color-blind users may struggle to distinguish similar colors
+- **Recommendation:** Add number overlays on palette buttons (1-6) or pattern fills
+
+**Alt Text**
+- Tutorial illustrations use SVG with no alt text
+- **Issue:** `<img src="*.svg" alt="...">` should have descriptive alt text
+- Victory screen canvas has no text alternative
+- **Recommendation:** Add `aria-label` to victory canvas container describing puzzle
+
+---
+
+## 10. Performance & Responsiveness
+
+### ✅ Strengths (Observed in Code)
+
+**Efficient Rendering**
+- Cell elements cached in `cellElements[][]` array (avoids repeated querySelector)
+- Clue elements cached in `rowClueElements[]`, `colClueElements[]`
+- Visual updates use cached elements for O(1) access
+
+**Debounced Operations**
+- Search input debounced at 150ms to avoid excessive re-renders
+- Window resize debounced at 150ms for zoom recalculation
+
+**Memory Management**
+- Event listener cleanup on puzzle unload (prevents leaks)
+- Screen history capped at 20 entries (prevents unbounded growth)
+- Zoom cache invalidated appropriately
+
+**Optimized Canvas Rendering**
+- Mini-canvases use shared `renderOutlinedCanvas` utility
+- Canvas size capped at sensible limits (MINI_CANVAS_SIZE: 80px, VICTORY_CANVAS_SIZE: 200px)
+
+### ⚠️ Potential Concerns (Not Tested)
+
+**Large Puzzle Loading**
+- No loading indicator when loading complex puzzles
+- Grid building is synchronous (could block for >100ms on 30×30 grids)
+- **Recommendation:** Add loading state or use `requestIdleCallback` for grid building
+
+**Collection Rendering**
+- All puzzle cards rendered at once (no virtual scrolling)
+- For 130 puzzles, this creates ~130 DOM nodes + canvases
+- **Current Mitigation:** Collapsible sections limit visible cards
+- **Recommendation:** Monitor performance on low-end devices; consider lazy canvas rendering if needed
+
+**Animation Jank**
+- Stamp animation uses CSS transitions (GPU-accelerated)
+- **Good:** Should be smooth on most devices
+- **Potential Issue:** On very low-end devices, canvas scaling during animation could jank
+- **Recommendation:** Test on older devices; consider using `will-change` on flying stamp
+
+---
+
+## Detailed Recommendations by Priority
+
+### 🔴 High Priority (Strong UX Impact)
+
+1. **Add Loading States**
+   - Show spinner when switching puzzles (especially large ones)
+   - Prevents perceived unresponsiveness
+
+2. **Improve Tutorial Timing**
+   - Defer tutorial until user taps first puzzle
+   - Provides context for instructions
+
+3. **Add Victory Celebration**
+   - Brief animation on grid before screen transition (500ms)
+   - Increases sense of achievement
+
+4. **Enhance Error Recovery**
+   - Add error boundary for malformed puzzle data
+   - Show friendly error message with reload option
+
+5. **Improve Modal Focus Return**
+   - Store triggering element on modal open
+   - Restore focus on modal close
+   - Critical for keyboard users
+
+### 🟡 Medium Priority (Good UX Impact)
+
+6. **Add Screen Reader Announcements**
+   - Announce puzzle load, victory, major state changes
+   - Improves accessibility for blind users
+
+7. **Add Zoom Hint Retry Logic**
+   - Show hint again if user struggles with small cells
+   - Improves discoverability
+
+8. **Add Completion Milestones**
+   - Celebrate completing all puzzles in a difficulty tier
+   - Increases engagement and satisfaction
+
+9. **Improve Search Empty State**
+   - Add "Clear search" link or keyboard hint
+   - Reduces friction when no results found
+
+10. **Add Validation Feedback (Optional)**
+    - Setting to highlight mistakes in real-time
+    - Off by default (preserves zen positioning)
+    - Helpful for beginners
+
+### 🟢 Low Priority (Polish & Nice-to-Have)
+
+11. **Add Color Palette Numbers**
+    - Overlay 1-6 numbers on palette buttons
+    - Helps color-blind users and keyboard users
+
+12. **Add Progress Percentage**
+    - Show completion percentage on in-progress cards
+    - Provides clearer progress indication
+
+13. **Add Replay Option**
+    - "Play Again" button on victory screen
+    - Reduces friction for puzzle replay
+
+14. **Improve Theme Labels**
+    - Use "Day" / "Night" throughout (not "Light" / "Dark")
+    - Reinforces brand identity
+
+15. **Add Deep Linking**
+    - Support `?puzzle=dandelion_2` URL parameter
+    - Enables sharing/bookmarking specific puzzles
+
+---
+
+## Platform-Specific Scores
+
+### Mobile (Primary Platform): 8.5/10
+**Strengths:**
+- Touch interactions are polished and responsive
+- Zoom system works excellently
+- PWA features are robust
+- Responsive design is thorough
+
+**Weaknesses:**
+- Palette overflow on very small screens
+- Tooltip positioning could be smarter
+- Loading states missing
+
+### Desktop (Secondary Platform): 7.8/10
+**Strengths:**
+- Keyboard navigation is comprehensive
+- Mouse interactions are smooth
+- Crosshair effect enhances precision
+
+**Weaknesses:**
+- Zoom controls hidden (may reduce discoverability)
+- Text selection blocked in modals
+- Palette may overflow on narrow windows
+
+### Accessibility: 7.9/10
+**Strengths:**
+- Keyboard navigation is excellent
+- ARIA labels are thorough
+- Focus management is good
+- Color contrast is good
+
+**Weaknesses:**
+- Screen reader announcements are sparse
+- Modal focus return is incomplete
+- Color-only palette information
+- Some alt text missing
+
+---
+
+## Conclusion
+
+Cozy Garden demonstrates **mature UX design** with attention to detail across touch interactions, visual feedback, navigation flow, and accessibility. The game successfully balances simplicity with sophistication, providing a polished experience that respects player time and attention.
+
+The core interaction loops (select color → fill cells → see progress) are tight and satisfying. Progressive disclosure is used effectively (zoom controls, contextual help, pencil mode). The visual design is cohesive and thematic, with excellent dark mode support.
+
+**Primary opportunities** center on:
+1. **Onboarding timing** (defer tutorial to first puzzle)
+2. **Feedback completeness** (loading states, announcements)
+3. **Accessibility depth** (more announcements, focus management polish)
+4. **Celebration moments** (victory animation, milestones)
+
+These are polish items rather than fundamental flaws. The foundation is strong, and the game is already highly usable across platforms.
+
+**Recommended Next Steps:**
+1. Add loading states for puzzle switching
+2. Implement victory celebration animation
+3. Enhance screen reader announcements
+4. Improve modal focus return
+5. Add completion milestone celebrations
+
+With these enhancements, Cozy Garden would achieve **9.0+ UX score** and set a new standard for puzzle game UX on mobile web.
+
+---
+
+**Review Completed:** December 13, 2025
+**Files Reviewed:** index.html, game.js, screens.js, collection.js, zoom.js, style.css
+**Total Lines Reviewed:** ~5,200 lines across 6 files
