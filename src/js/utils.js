@@ -96,41 +96,48 @@
     canvas.width = width * cellSize + padding;
     canvas.height = height * cellSize + padding;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
-
-    // Get theme-aware outline color from CSS variable
-    const outlineColor = getComputedStyle(document.documentElement)
-      .getPropertyValue('--color-text-muted').trim() || '#8a8a7a';
-
-    // Draw outlines first
-    ctx.fillStyle = outlineColor;
-    for (let row = 0; row < height; row++) {
-      for (let col = 0; col < width; col++) {
-        const color = getColorAt(row, col);
-        if (color) {
-          const px = offset + col * cellSize;
-          const py = offset + row * cellSize;
-          ctx.fillRect(
-            px - CONFIG.OUTLINE_THICKNESS,
-            py - CONFIG.OUTLINE_THICKNESS,
-            cellSize + padding,
-            cellSize + padding
-          );
-        }
-      }
+    if (!ctx) {
+      console.warn('[Utils] Failed to get 2D context for canvas');
+      return canvas;
     }
 
-    // Draw all fills on top
-    for (let row = 0; row < height; row++) {
-      for (let col = 0; col < width; col++) {
-        const color = getColorAt(row, col);
-        if (color) {
-          ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-          const px = offset + col * cellSize;
-          const py = offset + row * cellSize;
-          ctx.fillRect(px, py, cellSize, cellSize);
+    try {
+      // Get theme-aware outline color from CSS variable
+      const outlineColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--color-text-muted').trim() || '#8a8a7a';
+
+      // Draw outlines first
+      ctx.fillStyle = outlineColor;
+      for (let row = 0; row < height; row++) {
+        for (let col = 0; col < width; col++) {
+          const color = getColorAt(row, col);
+          if (color) {
+            const px = offset + col * cellSize;
+            const py = offset + row * cellSize;
+            ctx.fillRect(
+              px - CONFIG.OUTLINE_THICKNESS,
+              py - CONFIG.OUTLINE_THICKNESS,
+              cellSize + padding,
+              cellSize + padding
+            );
+          }
         }
       }
+
+      // Draw all fills on top
+      for (let row = 0; row < height; row++) {
+        for (let col = 0; col < width; col++) {
+          const color = getColorAt(row, col);
+          if (color) {
+            ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+            const px = offset + col * cellSize;
+            const py = offset + row * cellSize;
+            ctx.fillRect(px, py, cellSize, cellSize);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[Utils] Failed to render canvas:', e);
     }
 
     return canvas;

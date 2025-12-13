@@ -504,6 +504,19 @@ body {
 
 /* Corner fold indicator for all maybe states */
 /* Note: Must override highlight ::before which sets inset: 0 */
+/* Size is 40% of cell for visibility, with adaptive outline for contrast */
+
+/* Default outline color on the cell (inherited by ::before) */
+.cell.maybe-color,
+.cell.maybe-empty {
+  --fold-outline-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Dark theme: lighter outline for maybe-empty (which has theme background) */
+html[data-theme="dark"] .cell.maybe-empty {
+  --fold-outline-color: rgba(255, 255, 255, 0.6);
+}
+
 .cell.maybe-color::before,
 .cell.maybe-empty::before {
   content: "";
@@ -514,10 +527,14 @@ body {
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 0 7px 7px 0;
+  /* 40% of cell size for better visibility */
+  --fold-size: calc(var(--cell-size) * 0.4);
+  border-width: 0 var(--fold-size) var(--fold-size) 0;
   border-color: transparent var(--color-primary) transparent transparent;
   background-color: transparent; /* Reset highlight's background */
-  filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.15));
+  /* Outline inherits --fold-outline-color from parent cell */
+  filter: drop-shadow(-1px 1px 0 var(--fold-outline-color))
+          drop-shadow(1px -1px 0 var(--fold-outline-color));
   pointer-events: none;
   z-index: 1;
 }

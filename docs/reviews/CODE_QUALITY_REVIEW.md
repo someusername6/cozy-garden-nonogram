@@ -1,527 +1,763 @@
-# Code Quality Review: Cozy Garden Nonogram Game
+# Code Quality Review
 
-**Review Date:** 2025-12-12
-**Reviewer:** Claude Code (Automated Review)
-**Codebase Size:** 5,639 lines of JavaScript (8 modules)
-**Architecture:** Modular IIFE pattern with unified `window.Cozy` namespace
-
----
+**Date:** 2025-12-12
+**Reviewer:** Claude (Sonnet 4.5)
+**Scope:** Complete codebase review of Cozy Garden nonogram puzzle game
 
 ## Executive Summary
 
-**Overall Quality Score: 8.2/10** (Very Good)
+The Cozy Garden codebase demonstrates **strong overall quality** with excellent architectural decisions, consistent naming, and thoughtful design patterns. The code is production-ready with a few areas for improvement in error handling, documentation, and code duplication.
 
-The Cozy Garden codebase demonstrates **strong engineering practices** with excellent separation of concerns, comprehensive documentation, and robust error handling. The code is production-ready with only minor improvements recommended.
+**Overall Grade:** A- (85/100)
 
-### Key Strengths
-- **Excellent architecture**: Clean module separation with unified namespace
-- **Comprehensive error handling**: Validation, null checks, and defensive coding throughout
-- **Performance optimization**: DOM caching, debouncing, efficient algorithms
-- **Accessibility**: ARIA labels, keyboard navigation, screen reader support
-- **Memory management**: Event listener cleanup, timeout management
+Key Strengths:
+- Excellent modular architecture with clear separation of concerns
+- Consistent global state management via `window.Cozy` namespace
+- Comprehensive DOM element caching for performance
+- Well-designed IIFE pattern preventing global pollution
+- Strong accessibility implementation (ARIA, keyboard navigation, screen reader support)
 
-### Areas for Improvement
-- Minor code duplication in rendering functions (Low Priority)
-- Some complex functions exceeding 50 lines (Refactoring opportunity)
-- A few magic numbers that could be centralized (Documentation)
-
-### Critical Issues Found: 0
-### Warnings: 3
-### Minor Issues: 12
+Areas for Improvement:
+- Inconsistent error handling patterns across modules
+- Some code duplication in event handlers and rendering logic
+- Missing JSDoc documentation in several modules
+- Opportunities for further extraction of magic numbers to constants
 
 ---
 
-## Detailed Analysis by Module
+## 1. Code Organization and Architecture
 
-### 1. utils.js (149 lines)
+### ✅ Excellent
 
-**Quality Score: 9.5/10** - Excellent foundation module
+**Modular Design:**
+- Clean separation into 8 JavaScript modules with clear responsibilities:
+  - `utils.js` - Shared utilities and configuration
+  - `storage.js` - Persistence layer
+  - `history.js` - Undo/redo system
+  - `screens.js` - Screen management
+  - `collection.js` - Puzzle collection UI
+  - `app.js` - PWA lifecycle
+  - `game.js` - Core gameplay logic
+  - `zoom.js` - Zoom and pan system
 
-**Strengths:**
-- Centralized configuration constants (single source of truth)
-- Well-documented functions with JSDoc comments
-- Pure utility functions with no side effects
-- Proper validation in `parsePuzzleTitle()`
-
-**Issues:**
-None - this is exemplary code.
-
-**Best Practices:**
+**Dependency Order:**
 ```javascript
-// Excellent use of centralized config
-const CONFIG = {
-  STAMP_CANVAS_SIZE: 180,
-  OUTLINE_THICKNESS: 2,
-  MAX_PUZZLE_DIMENSION: 32,  // Security limit!
-  // ...
-};
+// build.js enforces correct load order
+const JS_FILES = [
+  'src/js/utils.js',     // Loaded first - creates window.Cozy
+  'src/js/storage.js',   // Adds to Cozy namespace
+  // ... rest follow
+];
 ```
 
+**Global Namespace Management:**
+```javascript
+// utils.js - Creates namespace
+window.Cozy = window.Cozy || {};
+window.Cozy.Utils = { CONFIG, getPuzzleId, ... };
+
+// Other modules extend it
+window.Cozy.Storage = storage;
+window.Cozy.History = History;
+```
+
+This is a **best practice** for avoiding global namespace pollution while maintaining discoverability.
+
+### ⚠️ Minor Issues
+
+**Python Tools Organization:**
+The Python pipeline has some overlap between modules:
+- `build_puzzles.py` duplicates color distance formula from `palette.py` (lines 84-92)
+- `generator.py` and `process_images.py` appear to have overlapping functionality (not fully reviewed)
+
+**Recommendation:** Consider consolidating color utilities into a single `color_utils.py`.
+
 ---
 
-### 2. storage.js (356 lines)
+## 2. Naming Conventions and Consistency
 
-**Quality Score: 8.5/10** - Robust persistence layer
+### ✅ Excellent
 
-**Strengths:**
-- Comprehensive data validation (`isValidStorageData()`)
-- Graceful degradation on errors
-- Deep copy pattern for grid data
-- Change notification system with listener cleanup
-- Export/import functionality
+**JavaScript:**
+- Consistent camelCase for variables/functions: `currentPuzzle`, `getPuzzleId`, `updateCellVisual`
+- Clear, descriptive names: `normalizePuzzle()`, `renderOutlinedCanvas()`, `updateClueSatisfaction()`
+- Constants properly named: `MAX_PUZZLE_DIMENSION`, `TOAST_DURATION`, `MIN_COLOR_DISTANCE`
 
-**Issues:**
+**Python:**
+- Proper snake_case: `process_single_image`, `color_distance`, `calculate_difficulty`
+- Type hints throughout: `def solve_line(line: list[int | None], clues: list[Clue]) -> list[int | None] | None:`
 
-**⚠️ Warning: Unhandled localStorage quota errors**
+**CSS:**
+- BEM-like conventions: `.puzzle-card`, `.puzzle-card-preview`, `.puzzle-card-name`
+- Semantic variable names: `--color-primary`, `--color-text-muted`, `--cell-size`
+
+### ⚠️ Minor Inconsistencies
+
+**Boolean naming:**
 ```javascript
-// Line 93-100
-save() {
+// Inconsistent boolean prefixes
+let isDragging = false;        // ✅ Good (is-)
+let pencilMode = false;        // ⚠️ Could be isPencilMode
+let tooltipLocked = false;     // ⚠️ Could be isTooltipLocked
+```
+
+**Event Handler Naming:**
+```javascript
+// Mixed patterns
+function handleTouchStart(e) { }  // ✅ handle-
+function onScreenEnter() { }      // ✅ on-
+cell.onmousedown = (e) => { }     // ⚠️ Inline assignment
+```
+
+**Recommendation:** Standardize on boolean prefixes (`is`, `has`, `should`) and event handler patterns.
+
+---
+
+## 3. Error Handling
+
+### ✅ Good Practices
+
+**Storage Module (`storage.js`):**
+```javascript
+init() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
-    // ...
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (!isValidStorageData(parsed)) {
+        console.warn('[Storage] Invalid data structure, using defaults');
+        this.data = getDefaultData();
+        this.save();
+      } else {
+        this.data = parsed;
+      }
+    } else {
+      this.data = getDefaultData();
+      this.save();
+    }
   } catch (e) {
-    console.error('[Storage] Failed to save:', e);
-    return false;  // ⚠️ Caller may not check return value
+    console.warn('[Storage] Failed to load, using defaults:', e);
+    this.data = getDefaultData();
+    this.save();
+  }
+  return this;
+}
+```
+**Excellent:** Validates data structure, gracefully degrades, auto-repairs corrupted data.
+
+**Python Solver (`solver.py`):**
+```python
+def timeout_handler(signum, frame):
+    raise TimeoutError("Processing timed out")
+
+signal.signal(signal.SIGALRM, timeout_handler)
+signal.alarm(timeout_seconds)
+try:
+    # ... processing
+finally:
+    signal.alarm(0)
+    signal.signal(signal.SIGALRM, old_handler)
+```
+**Excellent:** Proper timeout handling with cleanup in `finally` block.
+
+### ❌ Missing Error Handling
+
+**Puzzle Normalization (`game.js` lines 188-254):**
+```javascript
+function normalizePuzzle(p) {
+  if (!p) return null;
+  if (p.title !== undefined) {
+    if (!p.width || !p.height || !p.row_clues || !p.col_clues || !p.color_map) {
+      console.warn('[Game] Invalid verbose puzzle format:', p.title);
+      return null;
+    }
+    return p;
+  }
+  // ... conversion logic with no try-catch
+}
+```
+
+**Issue:** Conversion logic (hex parsing, array mapping) could throw but isn't wrapped in try-catch.
+
+**Recommendation:**
+```javascript
+try {
+  return {
+    title: p.t,
+    width: p.w,
+    height: p.h,
+    row_clues: convertClues(p.r),
+    col_clues: convertClues(p.c),
+    color_map: convertPalette(p.p),
+    solution: convertSolution(p.s)
+  };
+} catch (e) {
+  console.error('[Game] Failed to normalize puzzle:', e);
+  return null;
+}
+```
+
+**Canvas Rendering (`utils.js` lines 89-137):**
+```javascript
+function renderOutlinedCanvas(width, height, targetSize, getColorAt) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;  // ⚠️ Returns empty canvas silently
+
+  // ... rendering logic with no error handling
+}
+```
+
+**Issue:** Rendering failures are silent. DOM manipulation could fail but isn't caught.
+
+**Collection Rendering (`collection.js` lines 246-268):**
+```javascript
+function createMiniSolution(puzzle) {
+  try {
+    const canvas = renderOutlinedCanvas(...);
+    // ...
+    return canvas;
+  } catch (e) {
+    console.error('[Collection] Error creating mini solution:', e);
+    return null;  // ✅ Good: caught and logged
   }
 }
 ```
-**Recommendation:** Most callers ignore the return value. Consider adding a user-facing notification when storage fails (quota exceeded).
+**Good:** Error caught and logged, graceful degradation.
 
-**Minor Issue: Redundant null check**
-```javascript
-// Line 301 - optional chaining already handles null
-getFlag(key) {
-  return this.data.flags?.[key] || false;  // flags could be undefined
-}
-```
-**Fix:** `this.data.flags?.[key] ?? false` (use nullish coalescing for explicit false values)
+### Recommendations
+
+1. **Add try-catch to puzzle normalization** (high priority)
+2. **Wrap canvas rendering in try-catch** and return placeholder on failure
+3. **Add error boundaries for critical UI sections** (modal rendering, screen transitions)
+4. **Standardize logging:** Use consistent prefixes like `[Module]` already used in some places
 
 ---
 
-### 3. history.js (236 lines)
+## 4. Code Duplication
 
-**Quality Score: 9.0/10** - Excellent undo/redo implementation
+### ❌ Significant Duplication
 
-**Strengths:**
-- Action grouping for drag operations
-- Duplicate change filtering (lines 64-78)
-- No-op change filtering (lines 89-91)
-- Bounded history depth (CONFIG.MAX_HISTORY)
-- Clean separation between pending and committed actions
+**Cell Event Handlers (`game.js` lines 1232-1383):**
 
-**Issues:**
-
-**Minor Issue: Inconsistent state checking**
+Touch handlers and mouse handlers have nearly identical logic:
 ```javascript
-// Line 55 - checks both conditions
-if (before.value === after.value && before.certain === after.certain) {
-  return;
+// Mouse handler (lines 1236-1263)
+cell.onmousedown = (e) => {
+  e.preventDefault();
+  cell.focus();
+  const history = getHistory();
+  if (history) history.beginAction('fill');
+  isDragging = true;
+  dragColor = e.button === 2 ? 0 : selectedColor;
+  dragCertain = !pencilMode;
+  fillCell(row, col, dragColor, dragCertain);
+  // ... capture value
+};
+
+// Touch handler (lines 1275-1320)
+cell.ontouchstart = (e) => {
+  // ... multi-touch check
+  e.preventDefault();
+  e.stopPropagation();
+  const history = getHistory();
+  if (history) history.beginAction('fill');
+  isDragging = true;
+  dragColor = selectedColor;
+  dragCertain = !pencilMode;
+  fillCell(row, col, dragColor, dragCertain);
+  // ... same capture value logic
+};
+```
+
+**Recommendation:** Extract shared logic:
+```javascript
+function startDrag(row, col, isRightClick = false) {
+  const history = getHistory();
+  if (history) history.beginAction('fill');
+  isDragging = true;
+  dragColor = isRightClick ? 0 : selectedColor;
+  dragCertain = !pencilMode;
+  fillCell(row, col, dragColor, dragCertain);
+  const cellAfterFill = getCell(row, col);
+  dragColor = cellAfterFill.value;
+  dragCertain = cellAfterFill.certain;
 }
 
-// Line 90 - checks same conditions again
+// Then use in both handlers
+cell.onmousedown = (e) => {
+  e.preventDefault();
+  cell.focus();
+  startDrag(row, col, e.button === 2);
+};
+```
+
+**Clue Rendering (`game.js` lines 965-1036):**
+
+Row and column clue rendering are nearly identical:
+```javascript
+// Column clues (lines 975-1002)
+puzzle.col_clues.forEach((clues, colIndex) => {
+  const col = document.createElement('div');
+  col.className = 'col-clue';
+  // ... rendering logic
+  colClueElements[colIndex] = col;
+  colCluesEl.appendChild(col);
+});
+
+// Row clues (lines 1009-1036)
+puzzle.row_clues.forEach((clues, rowIndex) => {
+  const rowClues = document.createElement('div');
+  rowClues.className = 'row-clues';
+  // ... nearly identical rendering logic
+  rowClueElements[rowIndex] = rowClues;
+  rowContainer.appendChild(rowClues);
+});
+```
+
+**Recommendation:** Extract `renderClue(clue, puzzle)` helper function.
+
+**Color Distance Formulas:**
+
+`build_puzzles.py` duplicates `palette.py`'s color distance:
+```python
+# build_puzzles.py lines 84-92
+def perceptual_color_distance(c1: tuple, c2: tuple) -> float:
+    r1, g1, b1 = c1
+    r2, g2, b2 = c2
+    return ((r1-r2)**2 * 0.30 + (g1-g2)**2 * 0.59 + (b1-b2)**2 * 0.11) ** 0.5
+
+# palette.py lines 10-31
+def color_distance(c1: tuple[int, int, int], c2: tuple[int, int, int]) -> float:
+    # Different formula (compuphase metric vs simple weighted)
+    # ...
+```
+
+**Issue:** Two different formulas for same purpose creates inconsistency.
+
+**Recommendation:** Consolidate into `color_utils.py` with both formulas as options.
+
+---
+
+## 5. Maintainability
+
+### ✅ Excellent
+
+**Configuration Centralization:**
+```javascript
+// utils.js - Single source of truth
+const CONFIG = {
+  STAMP_CANVAS_SIZE: 180,
+  VICTORY_CANVAS_SIZE: 180,
+  MINI_CANVAS_SIZE: 80,
+  OUTLINE_THICKNESS: 2,
+  MAX_PUZZLE_DIMENSION: 32,
+  MAX_HISTORY: 50,
+  // ... all constants in one place
+};
+```
+**Excellent:** All magic numbers extracted to named constants.
+
+**DOM Element Caching:**
+```javascript
+// game.js - Performance optimization
+let cellElements = [];      // 2D array: cellElements[row][col]
+let rowClueElements = [];   // rowClueElements[row]
+let colClueElements = [];   // colClueElements[col]
+
+// Used instead of repeated querySelector calls:
+const cellEl = cellElements[row]?.[col];  // O(1) lookup
+```
+**Excellent:** Avoids expensive DOM queries in tight loops.
+
+**Memory Leak Prevention:**
+```javascript
+// collection.js lines 452-468
+init(containerId, puzzles, onPuzzleSelect) {
+  // Remove old handler if exists (prevents stacking on re-init)
+  if (this.searchInputHandler) {
+    this.searchInput.removeEventListener('input', this.searchInputHandler);
+  }
+  // Create and store new handler
+  this.searchInputHandler = (e) => { /* ... */ };
+  this.searchInput.addEventListener('input', this.searchInputHandler);
+}
+```
+**Excellent:** Cleanup old listeners before adding new ones.
+
+**Build Script Quality (`build.js`):**
+- Clear separation of concerns (functions for each step)
+- Proper error handling with try-catch
+- Progress reporting throughout
+- Hash-based cache busting for service worker
+
+### ⚠️ Areas for Improvement
+
+**Magic Numbers Still Present:**
+
+```javascript
+// zoom.js lines 14-17
+const DOUBLE_TAP_DELAY = 300;  // ✅ Named constant
+const TOOLTIP_DISMISS_DELAY = 1500;  // ✅ Named constant
+
+// But also has inline magic numbers:
+if (best_dist < 200) {  // ❌ What does 200 represent?
+  // build_puzzles.py line 234
+}
+
+if (dist < 150) {  // ❌ Threshold for what?
+  // build_puzzles.py line 292
+}
+```
+
+**Long Functions:**
+
+`game.js` has several functions >150 lines:
+- `loadPuzzle()` - 119 lines (754-873) - borderline
+- `buildGrid()` - 64 lines (1385-1449) - acceptable
+- `checkWin()` - 56 lines (1637-1693) - acceptable
+
+`collection.js`:
+- `renderCollection()` - 131 lines (301-431) - could be split
+- `animateStampTo()` - 99 lines (719-817) - acceptable
+
+**Recommendation:** Consider breaking `renderCollection()` into:
+- `renderCollectionSections()`
+- `renderEmptyState()`
+- `createCollectionSection()`
+
+---
+
+## 6. Documentation (Inline Comments)
+
+### ✅ Good Examples
+
+**Function Headers:**
+```javascript
+/**
+ * Render pixel art to a canvas with outlined edges
+ * @param {number} width - Grid width in cells
+ * @param {number} height - Grid height in cells
+ * @param {number} targetSize - Target canvas size in pixels
+ * @param {Function} getColorAt - Callback (row, col) => [r,g,b] or null for empty
+ * @returns {HTMLCanvasElement} Canvas with outlined pixel art
+ */
+function renderOutlinedCanvas(width, height, targetSize, getColorAt) {
+```
+**Excellent:** JSDoc format with types and descriptions.
+
+**Module-Level Documentation:**
+```javascript
+// Cozy Garden - History Module
+// Handles undo/redo functionality with action grouping for drag operations
+```
+
+**Algorithm Explanations:**
+```javascript
+// Filter out no-op changes (before === after)
 pendingAction.changes = pendingAction.changes.filter(c =>
   c.before.value !== c.after.value || c.before.certain !== c.after.certain
 );
 ```
-**Recommendation:** Extract to `function hasChanged(before, after)` to avoid logic duplication.
 
----
+### ❌ Missing Documentation
 
-### 4. screens.js (874 lines)
+**No JSDoc for Many Functions:**
 
-**Quality Score: 7.8/10** - Good but complex
-
-**Strengths:**
-- Comprehensive modal system with focus trapping
-- Proper event listener cleanup (`data-initialized` pattern)
-- Theme management with system preference detection
-- Accessibility features (ARIA, keyboard navigation)
-
-**Issues:**
-
-**⚠️ Warning: Large init functions**
 ```javascript
-// initSettingsScreen() spans 152 lines (lines 610-761)
-// Contains multiple responsibilities: UI binding, theme logic, debug features
-```
-**Recommendation:** Extract sub-functions:
-- `setupSettingsUI()`
-- `setupThemeSelector()`
-- `setupDebugFeatures()`
+// storage.js - Good JSDoc
+/**
+ * Get a setting
+ * @param {string} key - Setting key
+ * @returns {*} Setting value
+ */
+getSetting(key) {
+  return this.data.settings[key];
+}
 
-**Minor Issue: Repeated focus timeout pattern**
-```javascript
-// Lines 462, 476, 578, 759, 820 - same pattern
-setTimeout(() => element.focus(), 100);
-```
-**Fix:** Extract to `focusAfterRender(element, delay = 100)` utility
-
-**Minor Issue: Magic number in confirmation delay**
-```javascript
-// Line 143 - Why 200ms specifically?
-if (callback) setTimeout(callback, 200);
-```
-**Fix:** Add constant `MODAL_TRANSITION_DURATION = 200` with comment
-
----
-
-### 5. collection.js (825 lines)
-
-**Quality Score: 8.3/10** - Complex but well-structured
-
-**Strengths:**
-- Roving tabindex implementation for keyboard navigation
-- Smart card caching and visual direction-finding (lines 541-607)
-- Debounced search (CONFIG.SEARCH_DEBOUNCE)
-- Flying stamp animation with precise positioning
-- Proper cleanup of event handlers (lines 455-468)
-
-**Issues:**
-
-**⚠️ Warning: Complex navigation algorithm**
-```javascript
-// Lines 541-607: findCardInDirection() is 66 lines
-// Manhattan vs Euclidean distance logic, tolerance calculations
-```
-**Recommendation:** This is actually well-done for the complexity, but consider adding inline diagrams/examples in comments.
-
-**Minor Issue: Debounce constant defined inline**
-```javascript
-// Line 466 - CONFIG.SEARCH_DEBOUNCE exists but also hardcoded here
-this.searchDebounceTimeout = setTimeout(() => this.render(), 150);
-```
-**Fix:** Use `CONFIG.SEARCH_DEBOUNCE` consistently
-
-**Minor Issue: Repetitive mini canvas creation**
-```javascript
-// createMiniSolution (246-269) and createMiniProgress (272-296) are nearly identical
-```
-**Fix:** Extract common logic to `createMiniCanvas(puzzle, getColorAt)`
-
----
-
-### 6. app.js (220 lines)
-
-**Quality Score: 8.0/10** - Solid PWA foundation
-
-**Strengths:**
-- Service worker lifecycle management
-- Update notification system
-- Debounced resize handler
-- Vibration API integration with settings check
-
-**Issues:**
-
-**Minor Issue: Unused return values**
-```javascript
-// Line 191 - share() returns true/false but callers might not check
-async share(title, text, url) {
+// But many others lack it:
+updateStreak() {  // ❌ No JSDoc
+  const today = new Date().toDateString();
   // ...
-  return true; // or false
 }
-```
-**Recommendation:** Document return value usage or remove if not needed
 
-**Minor Issue: Message channel timeout**
-```javascript
-// Line 183 - Magic number
-setTimeout(() => resolve('unknown'), 1000);
-```
-**Fix:** Add constant `SW_MESSAGE_TIMEOUT = 1000`
+onAppFocus() {  // ❌ No JSDoc
+  console.log('[App] App focused');
+}
 
----
-
-### 7. game.js (2,336 lines)
-
-**Quality Score: 7.5/10** - Comprehensive but needs refactoring
-
-**Strengths:**
-- Extensive puzzle normalization and validation (lines 188-254)
-- Cached puzzle normalization with invalidation (lines 256-269)
-- DOM element caching for performance (cellElements, rowClueElements, colClueElements)
-- Comprehensive keyboard shortcuts
-- Crosshair hover optimization (O(n) instead of O(n²), lines 1090-1126)
-- Touch event handling with long-press detection
-- Hold-to-confirm button pattern (lines 1954-2023)
-
-**Issues:**
-
-**⚠️ Warning: Very long functions**
-- `loadPuzzle()` - 119 lines (754-873)
-- `buildGrid()` - 63 lines (1385-1448)
-- `fillCell()` - 48 lines (1450-1497)
-
-**Recommendation:** Extract sub-functions:
-```javascript
-// loadPuzzle could be broken into:
-function loadPuzzle(index) {
-  if (!validatePuzzleLoad(index)) return;
-  const puzzle = initializePuzzleState(index);
-  restorePuzzleGrid(puzzle);
-  renderPuzzle(puzzle);
-  finalizeLoad(puzzle);
+setupHoldButton(btn, onConfirm) {  // ❌ No JSDoc - complex logic
+  // ... 50+ lines
 }
 ```
 
-**Minor Issue: Toast notification pattern**
-```javascript
-// Lines 45-65 - Single toast pattern is good but inconsistent with other notification systems
+**Python Docstrings:**
+Mixed quality - some excellent, some missing:
+
+```python
+# ✅ Good
+def calculate_difficulty(puzzle: Puzzle, metrics: SolverMetrics | None = None) -> DifficultyReport:
+    """
+    Calculate difficulty score for a puzzle.
+
+    Args:
+        puzzle: The puzzle to score
+        metrics: Pre-computed solver metrics (will solve if not provided)
+
+    Returns:
+        DifficultyReport with score and breakdown
+    """
+
+# ❌ Missing
+def rgb_to_hsl(r: int, g: int, b: int) -> tuple:
+    """Convert RGB to HSL."""  # Too brief
 ```
-**Recommendation:** Document why single-toast (vs queue) is intentional
 
-**Excellent Patterns:**
+### Recommendations
 
-**1. DOM Cache Initialization**
+1. Add JSDoc to all public functions (high priority for `game.js`, `screens.js`)
+2. Document complex algorithms (puzzle normalization, zoom calculations)
+3. Add module-level documentation explaining architecture decisions
+4. Expand brief Python docstrings with Args/Returns
+
+---
+
+## 7. Separation of Concerns
+
+### ✅ Excellent
+
+**Clear Module Boundaries:**
+
+```
+utils.js      → Shared utilities (no external dependencies)
+storage.js    → LocalStorage abstraction (depends on utils)
+history.js    → Undo/redo (depends on utils)
+screens.js    → Screen management (coordinates all screens)
+collection.js → Collection UI (depends on utils, storage)
+game.js       → Gameplay (depends on utils, storage, history)
+zoom.js       → Zoom system (depends on utils, integrates with game)
+app.js        → PWA lifecycle (independent)
+```
+
+**Data Layer Separation:**
 ```javascript
-// Lines 1402-1406 - Pre-allocate 2D array
-cellElements = [];
-for (let r = 0; r < puzzle.height; r++) {
-  cellElements[r] = [];
+// Storage provides clean API
+window.Cozy.Storage.getPuzzleProgress(puzzleId);
+window.Cozy.Storage.savePuzzleGrid(puzzleId, grid);
+
+// Game uses it without knowing implementation
+const savedGrid = storage.getPuzzleGrid(puzzleId);
+```
+
+**UI/Logic Separation:**
+```javascript
+// Logic
+function checkWin(puzzle) {
+  // ... validation logic
+  if (allCluesSatisfied) {
+    showVictory(puzzle);  // Delegates to UI layer
+  }
+}
+
+// UI
+function showVictory(puzzle) {
+  window.Cozy.Screens.showScreen(SCREENS.VICTORY, { ... });
 }
 ```
 
-**2. Event Listener Cleanup**
+### ⚠️ Minor Coupling
+
+**Screen Manager and Game Logic:**
+
+`screens.js` calls game-specific functions:
 ```javascript
-// Lines 1392-1400 - Removes old handlers before adding new
-if (gridMouseLeaveHandler) {
-  gridEl.removeEventListener('mouseleave', gridMouseLeaveHandler);
+// screens.js line 286
+if (currentScreen === SCREENS.PUZZLE && window.Cozy.Zoom) {
+  window.Cozy.Zoom.destroy();  // ⚠️ Knows about Zoom internals
 }
 ```
 
-**3. Security Validation**
+**Collection Knows Game Internals:**
 ```javascript
-// Lines 206-210 - Dimension validation prevents DOM explosion
-if (p.w > CONFIG.MAX_PUZZLE_DIMENSION || p.h > CONFIG.MAX_PUZZLE_DIMENSION || p.w < 1 || p.h < 1) {
-  console.warn('[Game] Puzzle dimensions out of range:', p.w, 'x', p.h);
-  return null;
+// collection.js lines 792-811
+if (puzzle) {
+  const storage = getStorage();
+  const isCompleted = storage ? storage.isPuzzleCompleted(puzzleId) : false;
+
+  if (isCompleted) {
+    preview.appendChild(createMiniSolution(puzzle));  // ✅ Good
+  } else {
+    const savedGrid = storage ? storage.getPuzzleGrid(puzzleId) : null;
+    if (savedGrid) {
+      preview.appendChild(createMiniProgress(puzzle, savedGrid));  // ⚠️ Knows grid format
+    }
+  }
 }
 ```
 
+**Recommendation:** Consider introducing a `PuzzleRenderer` module to handle all puzzle visualization (mini canvases, stamps, etc.).
+
 ---
 
-### 8. zoom.js (643 lines)
+## 8. Global State Management
 
-**Quality Score: 8.8/10** - Excellent pinch-to-zoom implementation
+### ✅ Excellent Design
 
-**Strengths:**
-- Fit zoom caching with invalidation (lines 142-202)
-- Double-tap detection
-- Tooltip positioning based on touch location
-- Debounced resize handling
-- Keyboard shortcuts (+, -, 0)
-- Trackpad pinch support (Ctrl+wheel)
-- Smooth zoom animation (lines 593-616)
-
-**Issues:**
-
-**Minor Issue: Magic numbers**
+**Namespace Pattern:**
 ```javascript
-// Line 14 - Why these specific values?
-const DOUBLE_TAP_DELAY = 300;
-const TOOLTIP_DISMISS_DELAY = 1500;
-const TOOLTIP_SHOW_DELAY = 100;
-const PAN_THRESHOLD = 10;
+window.Cozy = {
+  Utils: { CONFIG, getPuzzleId, ... },
+  Storage: storageInstance,
+  History: historyObject,
+  Screens: screenManagerObject,
+  Collection: collectionManager,
+  App: appObject,
+  Garden: gameAPI,
+  Zoom: zoomAPI
+};
 ```
-**Fix:** These are fine as module constants but should have comments explaining the UX rationale.
 
-**Minor Issue: Complex fit calculation**
+**Benefits:**
+1. Single global object (no pollution)
+2. Clear module discovery
+3. Easy debugging (`console.log(window.Cozy)`)
+4. Type-safe access with null checks
+
+**State Encapsulation:**
 ```javascript
-// Lines 145-195 - calculateFitZoom() is 50 lines with math
-```
-**Recommendation:** Add diagram in comments showing what clueWidthUnits/totalWidthUnits represent visually.
+// storage.js - Private state
+class GameStorage {
+  constructor() {
+    this.data = null;          // ✅ Private
+    this.listeners = [];       // ✅ Private
+  }
 
----
-
-## Cross-Cutting Concerns
-
-### Error Handling - Grade: A
-
-**Strengths:**
-- Consistent try-catch in I/O operations (storage, normalization)
-- Null checks before DOM operations
-- Bounds validation (puzzle dimensions, history depth)
-- Graceful degradation (missing elements, optional features)
-
-**Recommendations:**
-- Add error boundary for localStorage quota exceeded (show user notification)
-- Consider adding telemetry for error rates in production
-
----
-
-### Performance - Grade: A-
-
-**Strengths:**
-- DOM element caching (cellElements, clueElements)
-- Debounced search (150ms)
-- Debounced resize (150ms)
-- Normalized puzzle caching with invalidation
-- O(n) crosshair clearing instead of O(n²)
-- requestAnimationFrame for animations
-- Event listener cleanup prevents memory leaks
-
-**Minor Optimizations:**
-- Consider lazy rendering for collection cards (>500 puzzles)
-- Current approach is appropriate for ~130 puzzles
-
----
-
-### Accessibility - Grade: A
-
-**Strengths:**
-- ARIA labels on all interactive elements
-- Roving tabindex for keyboard navigation (game grid, collection cards)
-- Focus trapping in modals
-- Screen reader announcements (sr-announcer live region)
-- Keyboard shortcuts well-documented
-- Escape key navigation
-- Focus management on screen transitions
-
-**Note:**
-Cell touch targets below 44×44px is **intentional by design** (documented in CLAUDE.md). This will be addressed via pinch-to-zoom.
-
----
-
-### Memory Management - Grade: A
-
-**Strengths:**
-- Event listener cleanup with `data-initialized` flags
-- Explicit handler removal in buildGrid() (lines 1392-1400)
-- Timeout cleanup (toastTimeout, resizeTimeout, etc.)
-- Storage listener cleanup with unsubscribe function
-- DOM element dereferencing on destroy
-
----
-
-### Code Style & Consistency - Grade: B+
-
-**Strengths:**
-- Consistent IIFE module pattern
-- JSDoc comments on key functions
-- Descriptive variable names
-- Consistent indentation (2 spaces)
-- Module-level constants grouped at top
-- Console logging with module prefixes ([Storage], [Game], etc.)
-
-**Areas for Improvement:**
-1. Inconsistent comment style (some use `===`, others don't)
-2. Mixed string quotes (mostly single, some double)
-3. Magic numbers scattered (while CONFIG exists)
-
----
-
-## Security Review
-
-**Grade: A-**
-
-**Strengths:**
-- Input validation on puzzle dimensions (prevents DOM explosion)
-- Max length limits (MAX_SEARCH_LENGTH, MAX_HISTORY, MAX_SCREEN_HISTORY)
-- No use of innerHTML with user content (only static content)
-- No eval() or Function() constructor
-- localStorage data validation before use
-- Service worker scope properly limited
-
-**Potential Issues:**
-
-**Minor: Puzzle data trust**
-```javascript
-// game.js - assumes PUZZLE_DATA is well-formed
-// If PUZZLE_DATA is compromised (e.g., via CDN injection), could cause DoS via large puzzles
-```
-**Mitigation:** Already validated via `normalizePuzzle()` but could add additional bounds:
-```javascript
-// Limit total cells
-if (p.w * p.h > 1024) {  // 32×32 max
-  console.warn('[Game] Puzzle too large');
-  return null;
+  getPuzzleProgress(puzzleId) {  // ✅ Public API
+    return this.data.progress[puzzleId] || { ... };
+  }
 }
+
+// Create singleton
+const storage = new GameStorage().init();
+window.Cozy.Storage = storage;  // ✅ Only exposes instance
+```
+
+**State Synchronization:**
+```javascript
+// storage.js - Observer pattern
+onChange(callback) {
+  this.listeners.push(callback);
+  return () => {
+    this.listeners = this.listeners.filter(l => l !== callback);
+  };
+}
+
+notifyListeners(event) {
+  this.listeners.forEach(l => l(event, this.data));
+}
+
+// game.js - Subscribes to changes
+storage.onChange((event) => {
+  if (event === 'reset') {
+    grid = [];
+    currentPuzzle = 0;
+  }
+});
+```
+**Excellent:** Clean observer pattern for cross-module communication.
+
+### ⚠️ Minor Issues
+
+**Module-Level Mutable State:**
+
+Many modules use module-level variables:
+```javascript
+// game.js
+let currentPuzzle = 0;       // ⚠️ Module-level state
+let selectedColor = 1;
+let grid = [];
+let isDragging = false;
+// ... 20+ module-level variables
+```
+
+While this works with the singleton pattern, it makes testing harder.
+
+**Recommendation (for future):** Consider encapsulating in a `GameState` class:
+```javascript
+class GameState {
+  constructor() {
+    this.currentPuzzle = 0;
+    this.selectedColor = 1;
+    this.grid = [];
+    this.isDragging = false;
+  }
+
+  reset() {
+    this.grid = [];
+    this.currentPuzzle = 0;
+  }
+}
+
+const gameState = new GameState();
 ```
 
 ---
 
-## File-by-File Summary
+## Summary and Recommendations
 
-| File | Lines | Complexity | Quality | Issues |
-|------|-------|------------|---------|--------|
-| utils.js | 149 | Low | 9.5/10 | 0 |
-| app.js | 220 | Low | 8.0/10 | 3 minor |
-| history.js | 236 | Medium | 9.0/10 | 1 minor |
-| storage.js | 356 | Medium | 8.5/10 | 1 warning, 1 minor |
-| screens.js | 874 | High | 7.8/10 | 1 warning, 4 minor |
-| collection.js | 825 | High | 8.3/10 | 1 warning, 3 minor |
-| zoom.js | 643 | High | 8.8/10 | 3 minor |
-| game.js | 2,336 | Very High | 7.5/10 | 1 warning, 4 minor |
-| **Total** | **5,639** | - | **8.2/10** | **3 warnings, 12 minor** |
+### Overall Assessment
 
----
+The Cozy Garden codebase demonstrates **professional-grade quality** with thoughtful architecture, consistent patterns, and attention to performance. The code is production-ready with room for incremental improvements.
 
-## Prioritized Recommendations
+### Priority Recommendations
 
-### High Priority (Do First)
+#### High Priority (Fix Soon)
+1. **Add error handling to puzzle normalization** (`game.js` lines 188-254)
+2. **Wrap canvas rendering in try-catch** with fallback placeholders
+3. **Extract cell event handler duplication** (reduce 150+ lines to ~50)
+4. **Add JSDoc to public API functions** (especially `game.js`, `screens.js`)
 
-1. **Add user notification for localStorage quota errors** (storage.js)
-   - Impact: High (data loss prevention)
-   - Effort: Low (1 hour)
+#### Medium Priority (Next Iteration)
+5. **Standardize boolean naming** (`isXXX`, `hasXXX`)
+6. **Extract clue rendering helper** (reduce duplication in `buildClues`)
+7. **Consolidate Python color utilities** (single source of truth)
+8. **Document magic numbers** in Python (200, 150 thresholds)
 
-2. **Extract long functions in screens.js and game.js**
-   - Impact: Medium (maintainability)
-   - Effort: Medium (4-6 hours)
-   - Focus on: `initSettingsScreen()`, `loadPuzzle()`, `buildGrid()`
+#### Low Priority (Future)
+9. **Consider encapsulating game state** in a class for better testability
+10. **Replace innerHTML with safe DOM creation** in tooltip rendering
+11. **Add module-level JSDoc** explaining architecture decisions
+12. **Extract `renderCollection` sub-functions** (131 lines → 3 functions)
 
-3. **Document complex algorithms with diagrams**
-   - Impact: Medium (onboarding, debugging)
-   - Effort: Low (2-3 hours)
-   - Files: collection.js (direction-finding), zoom.js (fit calculation)
+### Code Metrics
 
-### Medium Priority (Do Soon)
-
-4. **Centralize remaining magic numbers to CONFIG**
-   - Impact: Low (consistency)
-   - Effort: Low (1 hour)
-
-5. **Add JSDoc to all public functions**
-   - Impact: Medium (API clarity)
-   - Effort: Medium (3-4 hours)
-
-6. **Create API documentation**
-   - Impact: Medium (developer experience)
-   - Effort: Medium (2-3 hours)
-   - Document: `window.Cozy` namespace structure
-
-### Low Priority (Nice to Have)
-
-7. **Unify duplicate mini canvas creation**
-   - Impact: Low (code size)
-   - Effort: Low (30 minutes)
-
-8. **Add unit tests for core logic**
-   - Impact: High (long-term quality)
-   - Effort: High (2-3 days)
-   - Focus: puzzle normalization, clue validation, history
-
-9. **Consider TypeScript migration**
-   - Impact: High (type safety)
-   - Effort: Very High (1-2 weeks)
+| Category | Score | Notes |
+|----------|-------|-------|
+| Architecture | 95/100 | Excellent modular design |
+| Naming | 90/100 | Consistent, minor boolean inconsistencies |
+| Error Handling | 75/100 | Good in storage/Python, missing in normalization |
+| Documentation | 70/100 | Good examples, but many functions lack JSDoc |
+| Maintainability | 90/100 | Well-organized, cached DOM, good constants |
+| Performance | 90/100 | Excellent caching, debouncing, lazy rendering |
+| Security | 85/100 | Good validation, minor innerHTML concerns |
+| Code Duplication | 75/100 | Event handlers and rendering need extraction |
+| **Overall** | **85/100** | **Production-ready, professional quality** |
 
 ---
 
 ## Conclusion
 
-The Cozy Garden codebase is **very well-engineered** with few significant issues. The code demonstrates:
+The Cozy Garden codebase is **well-architected and production-ready**. The namespace pattern, DOM caching, and separation of concerns are exemplary. The main areas for improvement are error handling consistency, reducing code duplication in event handlers, and adding comprehensive documentation.
 
-- Strong software engineering fundamentals
-- Attention to performance and accessibility
-- Comprehensive error handling
-- Good separation of concerns
-- Production-ready quality
+The Python pipeline demonstrates strong type safety and proper resource management. The build system is well-designed with clear separation and hash-based cache invalidation.
 
-The main areas for improvement are:
-1. Refactoring a few long functions for readability
-2. Adding automated tests for regression prevention
-3. Improving documentation for complex algorithms
-
-**Recommendation: Ship it.** The identified issues are minor and can be addressed incrementally post-launch.
+**Recommendation:** Ship current codebase, address high-priority items in next maintenance cycle.
 
 ---
 
-**End of Review**
+**Reviewed Files:**
+- `/Users/telmo/project/nonogram/src/js/*.js` (8 files, ~2,337 lines)
+- `/Users/telmo/project/nonogram/src/css/style.css` (~1,900 lines)
+- `/Users/telmo/project/nonogram/build.js` (362 lines)
+- `/Users/telmo/project/nonogram/tools/build_puzzles.py` (705 lines)
+- `/Users/telmo/project/nonogram/tools/solver.py` (partial review)
+- `/Users/telmo/project/nonogram/tools/difficulty.py` (148 lines)
+- `/Users/telmo/project/nonogram/tools/palette.py` (partial review)

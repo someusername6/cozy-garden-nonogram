@@ -26,7 +26,7 @@
   let lastTapTarget = null;
   let tooltipDismissTimer = null;
   let tooltipShowTimer = null;
-  let tooltipLocked = false;      // Lock tooltip during drag
+  let isTooltipLocked = false;      // Lock tooltip during drag
   let currentTooltipRow = -1;
   let currentTooltipCol = -1;
   let initialized = false;
@@ -309,7 +309,7 @@
   }
 
   function updateTooltipContent(row, col) {
-    if (!tooltip || tooltipLocked) return;
+    if (!tooltip || isTooltipLocked) return;
     if (row === currentTooltipRow && col === currentTooltipCol) return;
 
     currentTooltipRow = row;
@@ -382,7 +382,7 @@
   function onCellTouchStart(row, col, touchY) {
     if (!isZoomedBeyondFit()) return;
 
-    tooltipLocked = false;
+    isTooltipLocked = false;
     cancelTooltipDismissTimer();
 
     // Delay showing tooltip slightly to avoid flicker on quick taps
@@ -398,7 +398,7 @@
     if (!isZoomedBeyondFit()) return;
 
     // Lock tooltip to initial cell during drag
-    tooltipLocked = true;
+    isTooltipLocked = true;
     tooltip?.classList.add('dragging');
   }
 
@@ -406,7 +406,7 @@
     if (!isZoomedBeyondFit()) return;
 
     clearTimeout(tooltipShowTimer);
-    tooltipLocked = false;
+    isTooltipLocked = false;
     tooltip?.classList.remove('dragging');
     startTooltipDismissTimer();
   }

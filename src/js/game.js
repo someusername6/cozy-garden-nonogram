@@ -17,7 +17,7 @@
   let isDragging = false;
   let dragColor = null;
   let dragCertain = true;  // Whether current drag creates certain or maybe cells
-  let pencilMode = false;  // Pencil mode for uncertain marks
+  let isPencilMode = false;  // Pencil mode for uncertain marks
   let isLoadingPuzzle = false;  // Guard against concurrent puzzle loads
 
   // Keyboard navigation state (roving tabindex)
@@ -198,9 +198,10 @@
       }
       return p;
     }
-    // Validate concise format has required fields
-    if (!p.t || !p.w || !p.h || !p.r || !p.c || !p.p || !p.s) {
-      console.warn('[Game] Invalid concise puzzle format, missing required fields');
+    // Validate concise format has required fields with correct types
+    if (!p.t || !p.w || !p.h || !Array.isArray(p.r) || !Array.isArray(p.c) ||
+        !Array.isArray(p.p) || !Array.isArray(p.s)) {
+      console.warn('[Game] Invalid concise puzzle format, missing or malformed fields:', p.t);
       return null;
     }
     // Validate dimensions are within limits
@@ -242,15 +243,20 @@
       return solution.map(row => row.map(c => c < 0 ? 0 : c + 1));
     }
 
-    return {
-      title: p.t,
-      width: p.w,
-      height: p.h,
-      row_clues: convertClues(p.r),
-      col_clues: convertClues(p.c),
-      color_map: convertPalette(p.p),
-      solution: convertSolution(p.s)
-    };
+    try {
+      return {
+        title: p.t,
+        width: p.w,
+        height: p.h,
+        row_clues: convertClues(p.r),
+        col_clues: convertClues(p.c),
+        color_map: convertPalette(p.p),
+        solution: convertSolution(p.s)
+      };
+    } catch (e) {
+      console.error('[Game] Failed to convert puzzle:', p.t, e);
+      return null;
+    }
   }
 
   // Cache for normalized puzzles (with reference tracking for invalidation)
@@ -382,14 +388,14 @@
   // === Pencil Mode ===
 
   function setPencilMode(enabled) {
-    pencilMode = enabled;
+    isPencilMode = enabled;
     updatePencilModeUI();
     announce(enabled ? 'Pencil mode' : 'Pen mode');
     closeModeMenu(); // Close menu after selection
   }
 
   function togglePencilMode() {
-    setPencilMode(!pencilMode);
+    setPencilMode(!isPencilMode);
   }
 
   function updatePencilModeUI() {
@@ -398,12 +404,12 @@
     const menuBtn = document.getElementById('palette-menu-btn');
 
     if (penBtn) {
-      penBtn.classList.toggle('active', !pencilMode);
-      penBtn.setAttribute('aria-checked', String(!pencilMode));
+      penBtn.classList.toggle('active', !isPencilMode);
+      penBtn.setAttribute('aria-checked', String(!isPencilMode));
     }
     if (pencilBtn) {
-      pencilBtn.classList.toggle('active', pencilMode);
-      pencilBtn.setAttribute('aria-checked', String(pencilMode));
+      pencilBtn.classList.toggle('active', isPencilMode);
+      pencilBtn.setAttribute('aria-checked', String(isPencilMode));
     }
 
     // Update menu button icon based on mode
@@ -414,7 +420,7 @@
         svg.removeAttribute('stroke');
         svg.removeAttribute('stroke-width');
         svg.setAttribute('fill', 'currentColor');
-        if (pencilMode) {
+        if (isPencilMode) {
           // Pencil icon (dashed lines indicate uncertainty)
           svg.innerHTML = '<path d="M19.07 13.88L13 19.94l-1.41-1.41 6.07-6.06 1.41 1.41zm-5.66-5.66l-6.06 6.07-1.42-1.41 6.07-6.07 1.41 1.41zM17.66 5.99l-2.34 2.34 1.41 1.41 2.34-2.34-1.41-1.41zM3 18v3h3l.01-.01L3 18zm3-3l-1 1 3 3 1-1-3-3z" opacity="0.5"/><path d="M9.17 16.17L7.76 17.59l3.54 3.54 1.41-1.41-3.54-3.55zm10.6-10.6l-3.53-3.54-1.42 1.42 3.54 3.53 1.41-1.41z"/>';
         } else {
@@ -424,7 +430,7 @@
       }
     }
 
-    document.body.classList.toggle('pencil-mode', pencilMode);
+    document.body.classList.toggle('pencil-mode', isPencilMode);
   }
 
   // === Mode Menu ===
@@ -774,7 +780,7 @@
       if (history) history.clear();
 
       // Reset pencil mode when loading a new puzzle
-      pencilMode = false;
+      isPencilMode = false;
       updatePencilModeUI();
 
       // Reset keyboard focus to top-left cell
@@ -1214,7 +1220,7 @@
         e.preventDefault();
         const history = getHistory();
         if (history) history.beginAction('fill');
-        fillCell(row, col, selectedColor, !pencilMode);
+        fillCell(row, col, selectedColor, !isPencilMode);
         if (history) history.commitAction();
         updatePencilActionsVisibility();
       } else if (e.key === 'x' || e.key === 'X') {
@@ -1223,7 +1229,7 @@
         e.stopPropagation(); // Prevent global handler from selecting eraser
         const history = getHistory();
         if (history) history.beginAction('fill');
-        fillCell(row, col, 0, !pencilMode);
+        fillCell(row, col, 0, !isPencilMode);
         if (history) history.commitAction();
         updatePencilActionsVisibility();
       }
@@ -1242,7 +1248,7 @@
 
       isDragging = true;
       dragColor = e.button === 2 ? 0 : selectedColor;
-      dragCertain = !pencilMode;
+      dragCertain = !isPencilMode;
       fillCell(row, col, dragColor, dragCertain);
       // Capture actual value after toggle logic for consistent drag
       const cellAfterFill = getCell(row, col);
@@ -1294,7 +1300,7 @@
 
       isDragging = true;
       dragColor = selectedColor;
-      dragCertain = !pencilMode;
+      dragCertain = !isPencilMode;
 
       // Long press timer for X mark
       longPressTimer = setTimeout(() => {
@@ -1507,6 +1513,7 @@
     cellEl.classList.remove('marked-empty', 'maybe-empty', 'maybe-color');
     cellEl.style.background = '';
     cellEl.style.setProperty('--cell-color', '');
+    cellEl.style.setProperty('--fold-outline-color', '');
 
     if (cell.value === null) {
       // Blank cell
@@ -1531,6 +1538,12 @@
         } else {
           cellEl.classList.add('maybe-color');
           cellEl.style.setProperty('--cell-color', colorStr);
+          // Set fold outline color based on cell brightness for visibility
+          const brightness = getBrightness(colorRgb);
+          const outlineColor = brightness > 128
+            ? 'rgba(0, 0, 0, 0.6)'
+            : 'rgba(255, 255, 255, 0.7)';
+          cellEl.style.setProperty('--fold-outline-color', outlineColor);
         }
       }
     }
@@ -2244,7 +2257,7 @@
     selectedColor = 1;
     isDragging = false;
     dragColor = null;
-    pencilMode = false;
+    isPencilMode = false;
 
     const history = getHistory();
     if (history) history.clear();
