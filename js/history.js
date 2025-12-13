@@ -5,7 +5,7 @@
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG } = window.CozyUtils;
+  const { CONFIG } = window.Cozy.Utils;
 
   let undoStack = [];
   let redoStack = [];
@@ -232,5 +232,5 @@
   };
 
   // Expose globally
-  window.CozyHistory = History;
+  window.Cozy.History = History;
 })();

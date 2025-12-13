@@ -5,7 +5,7 @@
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG } = window.CozyUtils;
+  const { CONFIG } = window.Cozy.Utils;
 
   // === Constants ===
   const ABSOLUTE_MIN_ZOOM = 0.35; // Absolute floor for zoom (safety)
@@ -144,9 +144,9 @@
 
   function calculateFitZoom(forceRecalculate = false) {
     const container = zoomContainer;
-    if (!container || !window.CozyGarden?.getCurrentPuzzle) return DEFAULT_ZOOM;
+    if (!container || !window.Cozy.Garden?.getCurrentPuzzle) return DEFAULT_ZOOM;
 
-    const puzzle = window.CozyGarden.getCurrentPuzzle();
+    const puzzle = window.Cozy.Garden.getCurrentPuzzle();
     if (!puzzle) return DEFAULT_ZOOM;
 
     // Use cached value if available for the same puzzle (prevents shrinking spiral)
@@ -316,7 +316,7 @@
     currentTooltipCol = col;
 
     // Get clue info from game.js
-    const clueInfo = window.CozyGarden?.getClueInfo?.(row, col);
+    const clueInfo = window.Cozy.Garden?.getClueInfo?.(row, col);
     if (!clueInfo) return;
 
     // Render row clues
@@ -336,7 +336,7 @@
     }
 
     return clues.map(clue => {
-      const color = window.CozyGarden?.getColorRgb?.(clue.color) || [128, 128, 128];
+      const color = window.Cozy.Garden?.getColorRgb?.(clue.color) || [128, 128, 128];
       const isSatisfied = clue.satisfied;
       const brightness = (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
       const textColor = brightness > 128 ? '#333' : '#fff';
@@ -488,18 +488,18 @@
   // === First-Time Hint ===
 
   function maybeShowZoomHint() {
-    const puzzle = window.CozyGarden?.getCurrentPuzzle?.();
+    const puzzle = window.Cozy.Garden?.getCurrentPuzzle?.();
     if (!puzzle) return;
 
     // Only show for large puzzles
     if (puzzle.width <= 10 && puzzle.height <= 10) return;
 
     // Only show once
-    if (window.CozyStorage?.getFlag('zoomHintShown')) return;
+    if (window.Cozy.Storage?.getFlag('zoomHintShown')) return;
 
     // Show hint toast
     showZoomHint();
-    window.CozyStorage?.setFlag('zoomHintShown', true);
+    window.Cozy.Storage?.setFlag('zoomHintShown', true);
   }
 
   function showZoomHint() {
@@ -617,7 +617,7 @@
 
   // === Public API ===
 
-  window.CozyZoom = {
+  window.Cozy.Zoom = {
     init,
     initForPuzzle,
     destroy,

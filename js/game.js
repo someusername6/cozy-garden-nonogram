@@ -1,13 +1,13 @@
 // Cozy Garden - Nonogram Game Logic
 // Uses window.PUZZLE_DATA loaded from data/puzzles.js
-// Uses window.CozyStorage for progress persistence
-// Uses window.CozyHistory for undo/redo
+// Uses window.Cozy.Storage for progress persistence
+// Uses window.Cozy.History for undo/redo
 
 (function() {
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG, getPuzzleId, getPuzzleTitle, renderOutlinedCanvas } = window.CozyUtils;
+  const { CONFIG, getPuzzleId, getPuzzleTitle, renderOutlinedCanvas } = window.Cozy.Utils;
 
   // Game state
   let currentPuzzle = 0;
@@ -39,11 +39,14 @@
   // === Toast Notification ===
   let toastTimeout = null;
 
+  // Show a toast notification. Uses single-toast pattern: new messages replace
+  // previous ones immediately. This is intentional - rapid actions show latest
+  // feedback only, which is appropriate for non-critical UI messages.
   function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     if (!toast) return;
 
-    // Clear any existing timeout
+    // Clear any existing timeout (new toast replaces old one)
     clearTimeout(toastTimeout);
 
     // Update content and style
@@ -173,11 +176,11 @@
 
   function maybeShowFirstTimeHelp() {
     // Show help modal automatically on first visit
-    if (!window.CozyStorage?.getFlag('helpShown')) {
+    if (!window.Cozy.Storage?.getFlag('helpShown')) {
       // Small delay so the puzzle renders first
       setTimeout(() => {
         showHelpModal();
-        window.CozyStorage?.setFlag('helpShown', true);
+        window.Cozy.Storage?.setFlag('helpShown', true);
       }, 500);
     }
   }
@@ -303,11 +306,11 @@
   }
 
   function getStorage() {
-    return window.CozyStorage || null;
+    return window.Cozy.Storage || null;
   }
 
   function getHistory() {
-    return window.CozyHistory || null;
+    return window.Cozy.History || null;
   }
 
   // Check if the puzzle grid is completely empty (all cells null)
@@ -324,7 +327,11 @@
     return true;
   }
 
-  // Check if the puzzle matches the solution exactly
+  // Check if the puzzle grid matches the solution exactly (all cells including empties).
+  // NOTE: This is stricter than winning. Players win via checkWin() by satisfying clues,
+  // which does NOT require marking empty cells. This function requires exact match where
+  // solution empty cells (0) must be explicitly marked (not left as null). This is
+  // intentional - the Solution button staying enabled after winning is harmless.
   function isPuzzleSolved() {
     const puzzle = getPuzzles()[currentPuzzle];
     if (!puzzle) return false;
@@ -558,7 +565,7 @@
       }
 
       // Haptic feedback
-      if (window.CozyApp) window.CozyApp.vibrate(20);
+      if (window.Cozy.App) window.Cozy.App.vibrate(20);
     }
 
     updatePencilActionsVisibility();
@@ -593,7 +600,7 @@
       }
 
       // Haptic feedback
-      if (window.CozyApp) window.CozyApp.vibrate([20, 50, 20]);
+      if (window.Cozy.App) window.Cozy.App.vibrate([20, 50, 20]);
     }
 
     updatePencilActionsVisibility();
@@ -618,7 +625,7 @@
     }
 
     // Haptic feedback
-    if (window.CozyApp) window.CozyApp.vibrate(15);
+    if (window.Cozy.App) window.Cozy.App.vibrate(15);
 
     updatePencilActionsVisibility();
     updateClueSatisfaction(puzzle);
@@ -641,7 +648,7 @@
     }
 
     // Haptic feedback
-    if (window.CozyApp) window.CozyApp.vibrate(15);
+    if (window.Cozy.App) window.Cozy.App.vibrate(15);
 
     updatePencilActionsVisibility();
     updateClueSatisfaction(puzzle);
@@ -851,8 +858,8 @@
       updateClueSatisfaction(puzzle);
 
       // Initialize zoom system for this puzzle
-      if (window.CozyZoom) {
-        window.CozyZoom.initForPuzzle(puzzle);
+      if (window.Cozy.Zoom) {
+        window.Cozy.Zoom.initForPuzzle(puzzle);
       }
 
       // Show help modal on first-ever puzzle load
@@ -1277,9 +1284,9 @@
       initialTouchCol = col;
 
       // Notify zoom system for tooltip (pass touch Y for positioning)
-      if (window.CozyZoom) {
+      if (window.Cozy.Zoom) {
         const touchY = e.touches[0]?.clientY ?? 0;
-        window.CozyZoom.onCellTouchStart(row, col, touchY);
+        window.Cozy.Zoom.onCellTouchStart(row, col, touchY);
       }
 
       const history = getHistory();
@@ -1300,7 +1307,7 @@
           dragColor = cellAfterFill.value;
           dragCertain = cellAfterFill.certain;
           // Haptic feedback for long-press
-          if (window.CozyApp) window.CozyApp.vibrate(50);
+          if (window.Cozy.App) window.Cozy.App.vibrate(50);
         }
       }, CONFIG.LONG_PRESS_DELAY);
 
@@ -1330,8 +1337,8 @@
         if (!isNaN(r) && !isNaN(c)) {
           fillCell(r, c, dragColor, dragCertain, true); // skipToggle=true
           // Notify zoom system for tooltip update
-          if (window.CozyZoom) {
-            window.CozyZoom.onCellTouchMove(r, c);
+          if (window.Cozy.Zoom) {
+            window.Cozy.Zoom.onCellTouchMove(r, c);
           }
         }
       }
@@ -1355,8 +1362,8 @@
       updatePencilActionsVisibility();
 
       // Notify zoom system to hide tooltip
-      if (window.CozyZoom) {
-        window.CozyZoom.onCellTouchEnd();
+      if (window.Cozy.Zoom) {
+        window.Cozy.Zoom.onCellTouchEnd();
       }
     };
 
@@ -1369,8 +1376,8 @@
       if (history) history.cancelAction();
 
       // Notify zoom system to hide tooltip
-      if (window.CozyZoom) {
-        window.CozyZoom.onCellTouchEnd();
+      if (window.Cozy.Zoom) {
+        window.Cozy.Zoom.onCellTouchEnd();
       }
     };
   }
@@ -1481,7 +1488,7 @@
     updateCellVisual(row, col, puzzle);
 
     // Light haptic on fill
-    if (window.CozyApp) window.CozyApp.vibrate(10);
+    if (window.Cozy.App) window.Cozy.App.vibrate(10);
 
     updateClueSatisfaction(puzzle);
     updateHoldButtonStates();
@@ -1662,7 +1669,7 @@
     // (Victory screen provides the feedback, no toast needed)
 
     // Success haptic
-    if (window.CozyApp) window.CozyApp.vibrate([50, 100, 50]);
+    if (window.Cozy.App) window.Cozy.App.vibrate([50, 100, 50]);
 
     // Record completion
     const storage = getStorage();
@@ -1672,7 +1679,7 @@
       clearSession();
       updateDropdown();
       // Refresh collection to show completion
-      const collection = window.CozyCollection;
+      const collection = window.Cozy.Collection;
       if (collection) collection.refresh();
     }
 
@@ -1738,8 +1745,8 @@
     if (!puzzle) return;
 
     // Zoom to fit to show full solution
-    if (window.CozyZoom) {
-      window.CozyZoom.zoomToFit();
+    if (window.Cozy.Zoom) {
+      window.Cozy.Zoom.zoomToFit();
     }
 
     const history = getHistory();
@@ -1821,7 +1828,7 @@
       if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey) {
         const helpModal = document.getElementById('help-modal');
         const isHelpModalOpen = helpModal?.classList.contains('visible');
-        const isOnPuzzleScreen = window.ScreenManager?.getCurrentScreen() === window.ScreenManager?.SCREENS?.PUZZLE;
+        const isOnPuzzleScreen = window.Cozy.Screens?.getCurrentScreen() === window.Cozy.Screens?.SCREENS?.PUZZLE;
 
         if (isOnPuzzleScreen && !isHelpModalOpen) {
           e.preventDefault();
@@ -1845,15 +1852,15 @@
   // Navigate to collection screen, saving current puzzle first
   function showCollection() {
     saveCurrentPuzzle();
-    if (window.ScreenManager) {
-      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.COLLECTION);
+    if (window.Cozy.Screens) {
+      window.Cozy.Screens.showScreen(window.Cozy.Screens.SCREENS.COLLECTION);
     }
   }
 
   // Navigate to puzzle screen
   function showGame(puzzleIndex) {
-    if (window.ScreenManager) {
-      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.PUZZLE, { puzzleId: puzzleIndex });
+    if (window.Cozy.Screens) {
+      window.Cozy.Screens.showScreen(window.Cozy.Screens.SCREENS.PUZZLE, { puzzleId: puzzleIndex });
     }
   }
 
@@ -1884,7 +1891,7 @@
     saveCurrentPuzzle();
 
     const data = event.detail || {};
-    const collection = window.CozyCollection;
+    const collection = window.Cozy.Collection;
 
     if (collection) {
       // If animating stamp, render with blank placeholder for target
@@ -1915,12 +1922,12 @@
 
   // Show victory screen instead of just updating status
   function showVictory(puzzle) {
-    if (window.ScreenManager) {
+    if (window.Cozy.Screens) {
       const puzzleId = getPuzzleId(puzzle);
       const match = puzzle.title.match(/^(.+?)\s*\(/);
       const puzzleName = match ? match[1].trim() : puzzle.title;
 
-      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.VICTORY, {
+      window.Cozy.Screens.showScreen(window.Cozy.Screens.SCREENS.VICTORY, {
         puzzleId: puzzleId,
         puzzleName: puzzleName,
         solution: puzzle.solution,
@@ -2069,8 +2076,8 @@
     const collectionBackBtn = document.querySelector('#screen-collection .header-back-btn');
     if (collectionBackBtn) {
       collectionBackBtn.addEventListener('click', () => {
-        if (window.ScreenManager) {
-          window.ScreenManager.showScreen(window.ScreenManager.SCREENS.HOME);
+        if (window.Cozy.Screens) {
+          window.Cozy.Screens.showScreen(window.Cozy.Screens.SCREENS.HOME);
         }
       });
     }
@@ -2101,14 +2108,14 @@
     }
 
     // Initialize collection screen
-    const collection = window.CozyCollection;
+    const collection = window.Cozy.Collection;
     const puzzles = getPuzzles();
 
     if (collection && puzzles.length > 0) {
       collection.init('collection-screen', puzzles, (index) => {
         // Navigate to puzzle via ScreenManager
-        if (window.ScreenManager) {
-          window.ScreenManager.showScreen(window.ScreenManager.SCREENS.PUZZLE, { puzzleId: index });
+        if (window.Cozy.Screens) {
+          window.Cozy.Screens.showScreen(window.Cozy.Screens.SCREENS.PUZZLE, { puzzleId: index });
         }
       });
     }
@@ -2220,8 +2227,8 @@
 
     // Save and navigate to collection with animation
     saveCurrentPuzzle();
-    if (window.ScreenManager) {
-      window.ScreenManager.showScreen(window.ScreenManager.SCREENS.COLLECTION, {
+    if (window.Cozy.Screens) {
+      window.Cozy.Screens.showScreen(window.Cozy.Screens.SCREENS.COLLECTION, {
         scrollToPuzzleId: puzzleId,
         animateStamp: true,
         flyingStamp: flyingStamp,
@@ -2299,7 +2306,7 @@
   }
 
   // Expose globally
-  window.CozyGarden = {
+  window.Cozy.Garden = {
     resetPuzzle: resetPuzzle,
     showSolution: showSolution,
     performUndo: performUndo,

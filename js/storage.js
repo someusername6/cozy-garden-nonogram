@@ -352,5 +352,5 @@
   const storage = new GameStorage().init();
 
   // Expose globally
-  window.CozyStorage = storage;
+  window.Cozy.Storage = storage;
 })();

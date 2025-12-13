@@ -5,14 +5,14 @@
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG, getPuzzleId, getPuzzleTitle, parsePuzzleTitle, renderOutlinedCanvas } = window.CozyUtils;
+  const { CONFIG, getPuzzleId, getPuzzleTitle, parsePuzzleTitle, renderOutlinedCanvas } = window.Cozy.Utils;
 
   // Difficulty display order (derived from puzzles, but with preferred ordering)
   const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'challenging', 'expert'];
 
   // Get collapsed sections from CozyStorage
   function getCollapsedSections() {
-    const stored = window.CozyStorage?.getUIState('collapsedSections');
+    const stored = window.Cozy.Storage?.getUIState('collapsedSections');
     if (stored && typeof stored === 'object') {
       return stored;
     }
@@ -21,7 +21,7 @@
 
   // Save collapsed sections to CozyStorage
   function saveCollapsedSections(collapsed) {
-    window.CozyStorage?.setUIState('collapsedSections', collapsed);
+    window.Cozy.Storage?.setUIState('collapsedSections', collapsed);
   }
 
   // Toggle section collapsed state
@@ -48,7 +48,7 @@
 
   // Get storage instance
   function getStorage() {
-    return window.CozyStorage || null;
+    return window.Cozy.Storage || null;
   }
 
   // Group puzzles by difficulty
@@ -174,8 +174,8 @@
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         // Track this card as focused so we return to it
-        if (window.CozyCollection) {
-          window.CozyCollection.focusedCardId = item.id;
+        if (window.Cozy.Collection) {
+          window.Cozy.Collection.focusedCardId = item.id;
         }
         onClick(item.index);
         return;
@@ -184,8 +184,8 @@
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         e.stopPropagation();
-        if (window.CozyCollection) {
-          window.CozyCollection.navigateFromCard(card, e.key);
+        if (window.Cozy.Collection) {
+          window.Cozy.Collection.navigateFromCard(card, e.key);
         }
       }
     });
@@ -233,8 +233,8 @@
     // Click handler
     card.addEventListener('click', () => {
       // Track this card as focused so we return to it
-      if (window.CozyCollection) {
-        window.CozyCollection.focusedCardId = item.id;
+      if (window.Cozy.Collection) {
+        window.Cozy.Collection.focusedCardId = item.id;
       }
       onClick(item.index);
     });
@@ -638,12 +638,16 @@
       // Find the previously focused card or default to first
       let focusedCard = null;
       if (this.focusedCardId) {
-        focusedCard = this.container.querySelector(
+        const candidate = this.container.querySelector(
           `.puzzle-card[data-puzzle-id="${this.focusedCardId}"]`
         );
+        // Only use if it's actually in the visible cards array (not in collapsed section)
+        if (candidate && cards.includes(candidate)) {
+          focusedCard = candidate;
+        }
       }
 
-      // If previously focused card not found, use first visible card
+      // If previously focused card not found or not visible, use first visible card
       if (!focusedCard) {
         focusedCard = cards[0];
         this.focusedCardId = focusedCard?.dataset.puzzleId || null;
@@ -817,5 +821,5 @@
   const collection = new CollectionManager();
 
   // Expose globally
-  window.CozyCollection = collection;
+  window.Cozy.Collection = collection;
 })();

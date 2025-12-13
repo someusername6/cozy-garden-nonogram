@@ -137,7 +137,9 @@
   }
 
   // === Export ===
-  window.CozyUtils = {
+  // Create the global Cozy namespace (other modules add themselves to it)
+  window.Cozy = window.Cozy || {};
+  window.Cozy.Utils = {
     CONFIG,
     getPuzzleId,
     getPuzzleTitle,

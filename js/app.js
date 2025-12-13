@@ -143,7 +143,7 @@
 
     // Save current state
     saveState() {
-      if (window.CozyGarden && window.CozyStorage) {
+      if (window.Cozy.Garden && window.Cozy.Storage) {
         // Game module will handle actual state saving
         console.log('[App] Saving state...');
       }
@@ -202,7 +202,7 @@
 
     // Vibrate (if supported)
     vibrate(pattern = 50) {
-      if (navigator.vibrate && window.CozyStorage?.getSetting('vibration')) {
+      if (navigator.vibrate && window.Cozy.Storage?.getSetting('vibration')) {
         navigator.vibrate(pattern);
       }
     }
@@ -216,5 +216,5 @@
   }
 
   // Expose globally
-  window.CozyApp = App;
+  window.Cozy.App = App;
 })();

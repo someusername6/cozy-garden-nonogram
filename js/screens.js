@@ -6,7 +6,7 @@ const ScreenManager = (function() {
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG, renderOutlinedCanvas } = window.CozyUtils;
+  const { CONFIG, renderOutlinedCanvas } = window.Cozy.Utils;
 
   // Screen definitions
   const SCREENS = {
@@ -256,8 +256,8 @@ const ScreenManager = (function() {
         break;
       case SCREENS.TUTORIAL:
         // Skip tutorial
-        if (window.CozyStorage) {
-          window.CozyStorage.setFlag('tutorialComplete', true);
+        if (window.Cozy.Storage) {
+          window.Cozy.Storage.setFlag('tutorialComplete', true);
         }
         showScreen(SCREENS.HOME);
         break;
@@ -283,8 +283,8 @@ const ScreenManager = (function() {
     // Handle leaving the current screen
     if (currentScreen && screenElements[currentScreen]) {
       // Clean up zoom system when leaving puzzle screen
-      if (currentScreen === SCREENS.PUZZLE && window.CozyZoom) {
-        window.CozyZoom.destroy();
+      if (currentScreen === SCREENS.PUZZLE && window.Cozy.Zoom) {
+        window.Cozy.Zoom.destroy();
       }
 
       screenElements[currentScreen].classList.remove('screen-active');
@@ -398,7 +398,7 @@ const ScreenManager = (function() {
         history.replaceState(null, '', cleanUrl);
 
         // Try to resume last session
-        const storage = window.CozyStorage;
+        const storage = window.Cozy.Storage;
         if (storage) {
           const session = storage.getSession();
           if (session && typeof session.puzzleIndex === 'number') {
@@ -410,7 +410,7 @@ const ScreenManager = (function() {
       }
 
       // Check if first time user
-      const hasPlayedBefore = window.CozyStorage?.getFlag('tutorialCompleted');
+      const hasPlayedBefore = window.Cozy.Storage?.getFlag('tutorialCompleted');
 
       if (!hasPlayedBefore) {
         showScreen(SCREENS.TUTORIAL);
@@ -445,10 +445,10 @@ const ScreenManager = (function() {
       const totalPuzzles = Array.isArray(puzzles) ? puzzles.length : 0;
       let solvedCount = 0;
 
-      if (window.CozyStorage && window.CozyGarden?.getPuzzleId) {
+      if (window.Cozy.Storage && window.Cozy.Garden?.getPuzzleId) {
         puzzles.forEach(puzzle => {
-          const puzzleId = window.CozyGarden.getPuzzleId(puzzle);
-          if (window.CozyStorage.isPuzzleCompleted(puzzleId)) {
+          const puzzleId = window.Cozy.Garden.getPuzzleId(puzzle);
+          if (window.Cozy.Storage.isPuzzleCompleted(puzzleId)) {
             solvedCount++;
           }
         });
@@ -483,8 +483,8 @@ const ScreenManager = (function() {
    */
   function initPuzzleScreen(data) {
     // Initialize zoom system for the puzzle screen
-    if (window.CozyZoom) {
-      window.CozyZoom.init();
+    if (window.Cozy.Zoom) {
+      window.Cozy.Zoom.init();
     }
 
     // Puzzle screen initialization is handled by game.js
@@ -613,7 +613,7 @@ const ScreenManager = (function() {
     const resetBtn = document.getElementById('settings-reset-btn');
 
     // Load current settings from CozyStorage (unified storage)
-    const storage = window.CozyStorage;
+    const storage = window.Cozy.Storage;
     if (vibrationToggle) vibrationToggle.checked = storage?.getSetting('vibration') ?? true;
 
     // Back button
@@ -639,18 +639,18 @@ const ScreenManager = (function() {
           danger: true,
           onConfirm: () => {
             // Clear game state (in-memory grid, etc.)
-            if (window.CozyGarden && window.CozyGarden.clearAllState) {
-              window.CozyGarden.clearAllState();
+            if (window.Cozy.Garden && window.Cozy.Garden.clearAllState) {
+              window.Cozy.Garden.clearAllState();
             }
 
             // Use CozyStorage reset (clears all progress, flags, and UI state)
-            if (window.CozyStorage && window.CozyStorage.reset) {
-              window.CozyStorage.reset();
+            if (window.Cozy.Storage && window.Cozy.Storage.reset) {
+              window.Cozy.Storage.reset();
             }
 
             // Refresh collection if visible
-            if (window.CozyCollection) {
-              window.CozyCollection.refresh();
+            if (window.Cozy.Collection) {
+              window.Cozy.Collection.refresh();
             }
 
             showAlertModal({
@@ -675,7 +675,7 @@ const ScreenManager = (function() {
     // Theme selection
     const themeOptions = document.querySelectorAll('.theme-option');
     // Get current theme, defaulting to system preference if not set
-    let currentTheme = window.CozyStorage?.getSetting('theme');
+    let currentTheme = window.Cozy.Storage?.getSetting('theme');
     if (!currentTheme || currentTheme === 'system') {
       currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
@@ -703,8 +703,8 @@ const ScreenManager = (function() {
           option.setAttribute('aria-pressed', 'true');
 
           // Save and apply theme
-          if (window.CozyStorage) {
-            window.CozyStorage.setSetting('theme', theme);
+          if (window.Cozy.Storage) {
+            window.Cozy.Storage.setSetting('theme', theme);
           }
           applyTheme(theme);
         });
@@ -723,14 +723,14 @@ const ScreenManager = (function() {
           cancelText: 'Cancel',
           onConfirm: () => {
             const puzzles = window.PUZZLE_DATA || [];
-            const storage = window.CozyStorage;
+            const storage = window.Cozy.Storage;
 
             if (storage) {
               puzzles.forEach(puzzle => {
                 // Use shared utility from CozyGarden if available for consistency
                 let puzzleId;
-                if (window.CozyGarden?.getPuzzleId) {
-                  puzzleId = window.CozyGarden.getPuzzleId(puzzle);
+                if (window.Cozy.Garden?.getPuzzleId) {
+                  puzzleId = window.Cozy.Garden.getPuzzleId(puzzle);
                 } else {
                   // Fallback - handle both concise (t) and verbose (title) formats
                   const title = puzzle.t || puzzle.title;
@@ -741,8 +741,8 @@ const ScreenManager = (function() {
             }
 
             // Refresh collection if visible
-            if (window.CozyCollection) {
-              window.CozyCollection.refresh();
+            if (window.Cozy.Collection) {
+              window.Cozy.Collection.refresh();
             }
 
             showAlertModal({
@@ -790,7 +790,7 @@ const ScreenManager = (function() {
     }
 
     function completeTutorial() {
-      window.CozyStorage?.setFlag('tutorialCompleted', true);
+      window.Cozy.Storage?.setFlag('tutorialCompleted', true);
       showScreen(SCREENS.HOME);
     }
 
@@ -843,7 +843,7 @@ const ScreenManager = (function() {
    * Initialize theme from saved preference or system default
    */
   function initTheme() {
-    let savedTheme = window.CozyStorage?.getSetting('theme');
+    let savedTheme = window.Cozy.Storage?.getSetting('theme');
     // Default to system preference if no saved theme (or legacy 'system' value)
     if (!savedTheme || savedTheme === 'system') {
       savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -866,7 +866,7 @@ const ScreenManager = (function() {
 })();
 
 // Expose globally
-window.ScreenManager = ScreenManager;
+window.Cozy.Screens = ScreenManager;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
