@@ -869,11 +869,13 @@ kbd {
 }
 
 .color-btn.selected {
-  border-color: transparent;
-  transform: scale(1.15);
+  /* Scale inward to create space for focus ring within original bounds */
+  transform: scale(0.75);
+  /* Focus ring with white gap for separation */
   box-shadow:
-    0 0 0 2px var(--color-surface),
-    0 0 0 5px var(--color-primary);
+    0 0 0 3px var(--color-surface),   /* White gap for separation */
+    0 0 0 6px var(--color-primary),   /* Green focus ring */
+    0 2px 6px rgba(0, 0, 0, 0.25);    /* Subtle drop shadow */
 }
 
 .color-btn.eraser {
@@ -1897,11 +1899,14 @@ body.is-installed {
   outline-offset: var(--focus-ring-offset);
 }
 
-/* Color palette buttons - uses larger offset to compensate for scale transform */
+/* Color palette buttons - scale inward with focus ring, matches selected state */
 .color-btn:focus-visible:not(.selected) {
-  outline: var(--focus-ring-width) solid var(--color-primary);
-  outline-offset: 3px;
-  transform: scale(1.15);
+  outline: none;
+  transform: scale(0.75);
+  box-shadow:
+    0 0 0 3px var(--color-surface),
+    0 0 0 6px var(--color-primary),
+    0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* Header back buttons */
