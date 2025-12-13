@@ -1,8 +1,8 @@
 // Cozy Garden Service Worker
 // Provides offline capability and caching
 
-const CACHE_NAME = 'cozy-garden-v0322fc4b';
-const STATIC_CACHE = 'cozy-garden-static-v0322fc4b';
+const CACHE_NAME = 'cozy-garden-v1e0658dc';
+const STATIC_CACHE = 'cozy-garden-static-v1e0658dc';
 const DATA_CACHE = 'cozy-garden-data-v1';
 
 // Files to cache immediately on install

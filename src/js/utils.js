@@ -84,6 +84,77 @@
   }
 
   /**
+   * Initialize an event listener on an element only once.
+   * Uses data-initialized attribute to prevent duplicate listeners.
+   * @param {Element|null} element - DOM element to attach listener to
+   * @param {string} event - Event type (e.g., 'click', 'change')
+   * @param {Function} handler - Event handler function
+   * @param {Object} options - Optional addEventListener options
+   * @returns {boolean} True if listener was added, false if skipped
+   */
+  function initOnce(element, event, handler, options = {}) {
+    if (!element || element.hasAttribute('data-initialized')) return false;
+    element.addEventListener(event, handler, options);
+    element.setAttribute('data-initialized', 'true');
+    return true;
+  }
+
+  /**
+   * Create a flying stamp canvas from a source canvas, positioned within a container.
+   * Used for stamp animations when navigating between screens.
+   * @param {HTMLCanvasElement} sourceCanvas - Canvas to copy content from
+   * @param {DOMRect} containerRect - Bounding rect to position and size within
+   * @param {Object} options - Optional settings
+   * @param {boolean} options.useScale - Use transform:scale for sizing (default: false)
+   * @returns {HTMLCanvasElement} The flying stamp element (already appended to body)
+   */
+  function createFlyingStamp(sourceCanvas, containerRect, options = {}) {
+    // Create canvas and copy content
+    const stamp = document.createElement('canvas');
+    stamp.width = sourceCanvas.width;
+    stamp.height = sourceCanvas.height;
+    const ctx = stamp.getContext('2d');
+    ctx.drawImage(sourceCanvas, 0, 0);
+
+    // Calculate aspect ratios
+    const canvasAspect = sourceCanvas.width / sourceCanvas.height;
+    const containerAspect = containerRect.width / containerRect.height;
+
+    let cssWidth, cssHeight;
+    if (options.useScale) {
+      // Use canvas pixel dimensions with scale transform (for victory screen)
+      cssWidth = sourceCanvas.width;
+      cssHeight = sourceCanvas.height;
+      const containerSize = Math.min(containerRect.width, containerRect.height);
+      const targetSize = canvasAspect > 1 ? containerSize : containerSize * canvasAspect;
+      const scale = targetSize / cssWidth;
+      stamp.style.transform = 'scale(' + scale + ')';
+    } else {
+      // Calculate CSS dimensions to fit within container (for back button)
+      if (canvasAspect > containerAspect) {
+        cssWidth = containerRect.width;
+        cssHeight = containerRect.width / canvasAspect;
+      } else {
+        cssHeight = containerRect.height;
+        cssWidth = containerRect.height * canvasAspect;
+      }
+    }
+
+    // Center within container
+    const centerX = containerRect.left + containerRect.width / 2;
+    const centerY = containerRect.top + containerRect.height / 2;
+
+    stamp.className = 'flying-stamp';
+    stamp.style.left = (centerX - cssWidth / 2) + 'px';
+    stamp.style.top = (centerY - cssHeight / 2) + 'px';
+    stamp.style.width = cssWidth + 'px';
+    stamp.style.height = cssHeight + 'px';
+    document.body.appendChild(stamp);
+
+    return stamp;
+  }
+
+  /**
    * Render pixel art to a canvas with outlined edges
    * @param {number} width - Grid width in cells
    * @param {number} height - Grid height in cells
@@ -156,6 +227,8 @@
     getPuzzleId,
     getPuzzleTitle,
     parsePuzzleTitle,
+    initOnce,
+    createFlyingStamp,
     renderOutlinedCanvas
   };
 })();

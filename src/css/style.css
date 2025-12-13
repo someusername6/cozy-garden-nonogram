@@ -51,6 +51,12 @@ html[data-theme="light"] {
   --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
 
+  /* Button styling - shared values for consistency */
+  --btn-border-radius: 8px;
+  --btn-border-radius-pill: 22px;
+  --btn-transition: all 0.2s;
+  --btn-min-height: 44px;
+
   /* === Dark Theme Values: "Night in the Garden"
    * Moonlit garden, deep blue night sky, cool silvery greens */
   --dark-color-primary: #a8d4a0;
@@ -959,12 +965,12 @@ kbd {
   color: var(--color-text);
   border: none;
   padding: 0 16px;
-  height: 44px;
-  border-radius: 22px;
+  height: var(--btn-min-height);
+  border-radius: var(--btn-border-radius-pill);
   cursor: pointer;
   font-size: 14px;
   font-family: inherit;
-  transition: all 0.2s;
+  transition: var(--btn-transition);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1035,14 +1041,14 @@ kbd {
 .help-btn {
   background: var(--color-secondary);
   border: none;
-  width: 44px;
-  height: 44px;
+  width: var(--btn-min-height);
+  height: var(--btn-min-height);
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: var(--btn-transition);
 }
 
 .help-btn:hover {
@@ -1231,10 +1237,10 @@ kbd {
   font-size: 1rem;
   font-family: inherit;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--btn-border-radius);
   cursor: pointer;
-  transition: all 0.2s;
-  min-height: 44px;
+  transition: var(--btn-transition);
+  min-height: var(--btn-min-height);
 }
 
 .confirm-modal-btn:active {
@@ -2804,7 +2810,7 @@ body.showing-game .collection-screen {
   background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--btn-transition);
   font-family: inherit;
 }
 
@@ -2836,17 +2842,24 @@ body.showing-game .collection-screen {
   line-height: 1;
 }
 
-.settings-btn {
+/* Settings buttons - shared base with color variants */
+.settings-btn,
+.settings-danger-btn,
+.settings-debug-btn {
   width: 100%;
   padding: 14px;
   font-size: 1rem;
   font-family: inherit;
-  border: 2px solid var(--color-primary);
-  border-radius: 8px;
+  border: 2px solid;
+  border-radius: var(--btn-border-radius);
   background: transparent;
-  color: var(--color-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--btn-transition);
+}
+
+.settings-btn {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .settings-btn:active {
@@ -2855,16 +2868,8 @@ body.showing-game .collection-screen {
 }
 
 .settings-danger-btn {
-  width: 100%;
-  padding: 14px;
-  font-size: 1rem;
-  font-family: inherit;
-  border: 2px solid var(--color-danger);
-  border-radius: 8px;
-  background: transparent;
+  border-color: var(--color-danger);
   color: var(--color-danger);
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
 .settings-danger-btn:active {
@@ -2873,16 +2878,8 @@ body.showing-game .collection-screen {
 }
 
 .settings-debug-btn {
-  width: 100%;
-  padding: 14px;
-  font-size: 1rem;
-  font-family: inherit;
-  border: 2px solid var(--color-info);
-  border-radius: 8px;
-  background: transparent;
+  border-color: var(--color-info);
   color: var(--color-info);
-  cursor: pointer;
-  transition: all 0.2s;
   margin-top: 10px;
 }
 
@@ -2994,7 +2991,7 @@ body.showing-game .collection-screen {
   height: 8px;
   border-radius: 50%;
   background: var(--color-secondary-dark);
-  transition: background 0.2s;
+  transition: var(--btn-transition);
 }
 
 .tutorial-dot.active {
@@ -3010,7 +3007,7 @@ body.showing-game .collection-screen {
   background: var(--color-primary);
   color: white;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--btn-transition);
 }
 
 .tutorial-next-btn:active {

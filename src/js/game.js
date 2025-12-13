@@ -29,7 +29,7 @@
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG, getPuzzleId, getPuzzleTitle, renderOutlinedCanvas } = window.Cozy.Utils;
+  const { CONFIG, getPuzzleId, getPuzzleTitle, createFlyingStamp, renderOutlinedCanvas } = window.Cozy.Utils;
 
   // Game state
   let currentPuzzle = 0;
@@ -2445,38 +2445,7 @@
     }
 
     const startRect = gridEl.getBoundingClientRect();
-
-    // Create flying stamp from the progress canvas
-    const flyingStamp = document.createElement('canvas');
-    flyingStamp.width = progressCanvas.width;
-    flyingStamp.height = progressCanvas.height;
-    const ctx = flyingStamp.getContext('2d');
-    ctx.drawImage(progressCanvas, 0, 0);
-
-    // Start at the grid's visual size, preserving aspect ratio
-    const canvasAspect = progressCanvas.width / progressCanvas.height;
-    const gridAspect = startRect.width / startRect.height;
-    let cssWidth, cssHeight;
-    if (canvasAspect > gridAspect) {
-      // Canvas is wider than grid - fit to width
-      cssWidth = startRect.width;
-      cssHeight = startRect.width / canvasAspect;
-    } else {
-      // Canvas is taller than grid - fit to height
-      cssHeight = startRect.height;
-      cssWidth = startRect.height * canvasAspect;
-    }
-
-    // Center within the grid bounds
-    const offsetX = (startRect.width - cssWidth) / 2;
-    const offsetY = (startRect.height - cssHeight) / 2;
-
-    flyingStamp.className = 'flying-stamp';
-    flyingStamp.style.left = (startRect.left + offsetX) + 'px';
-    flyingStamp.style.top = (startRect.top + offsetY) + 'px';
-    flyingStamp.style.width = cssWidth + 'px';
-    flyingStamp.style.height = cssHeight + 'px';
-    document.body.appendChild(flyingStamp);
+    const flyingStamp = createFlyingStamp(progressCanvas, startRect);
 
     // Save and navigate to collection with animation
     saveCurrentPuzzle();

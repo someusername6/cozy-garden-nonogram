@@ -390,93 +390,112 @@
 
     // Render each difficulty section
     sortedDifficulties.forEach(difficulty => {
-      const puzzleItems = groups[difficulty];
-      const stats = getGroupStats(puzzleItems);
-      const isCollapsed = collapsed[difficulty];
-
-      const section = document.createElement('div');
-      section.className = 'collection-section' + (isCollapsed ? ' collapsed' : '');
-      section.dataset.difficulty = difficulty;
-
-      // Grid ID for aria-controls
-      const gridId = `collection-grid-${difficulty}`;
-
-      // Section header (clickable and keyboard accessible)
-      const sectionHeader = document.createElement('div');
-      sectionHeader.className = 'collection-section-header';
-      sectionHeader.style.cursor = 'pointer';
-      sectionHeader.dataset.difficulty = difficulty;
-
-      // Accessibility: make headers part of unified keyboard navigation
-      sectionHeader.tabIndex = -1;  // Part of roving tabindex group
-      sectionHeader.setAttribute('role', 'button');
-      sectionHeader.setAttribute('aria-expanded', !isCollapsed);
-      sectionHeader.setAttribute('aria-controls', gridId);
-      sectionHeader.setAttribute('aria-label',
-        `${formatDifficulty(difficulty)}, ${stats.completed} of ${stats.total} completed, ${isCollapsed ? 'collapsed' : 'expanded'}`);
-
-      // Chevron indicator
-      const chevron = document.createElement('span');
-      chevron.className = 'section-chevron';
-      chevron.setAttribute('aria-hidden', 'true');
-      chevron.textContent = isCollapsed ? '\u25B6' : '\u25BC';
-      sectionHeader.appendChild(chevron);
-
-      const sectionTitle = document.createElement('h3');
-      sectionTitle.className = 'collection-section-title';
-      sectionTitle.textContent = formatDifficulty(difficulty);
-      sectionHeader.appendChild(sectionTitle);
-
-      const sectionStats = document.createElement('span');
-      sectionStats.className = 'collection-section-stats';
-      sectionStats.textContent = `${stats.completed}/${stats.total}`;
-      if (stats.completed === stats.total && stats.total > 0) {
-        sectionStats.classList.add('complete');
-      }
-      sectionHeader.appendChild(sectionStats);
-
-      // Click to toggle
-      sectionHeader.addEventListener('click', () => {
-        toggleSection(difficulty, collapsed);
-      });
-
-      // Keyboard handler for accessibility (Enter/Space to toggle, arrows to navigate)
-      sectionHeader.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleSection(difficulty, collapsed);
-          return;
-        }
-        // Arrow key navigation - delegate to collection manager
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (window.Cozy.Collection) {
-            window.Cozy.Collection.navigateFromElement(sectionHeader, e.key);
-          }
-        }
-      });
-
-      section.appendChild(sectionHeader);
-
-      // Puzzle grid
-      const grid = document.createElement('div');
-      grid.className = 'collection-grid';
-      grid.id = gridId;
-      grid.style.display = isCollapsed ? 'none' : 'flex';
-
-      puzzleItems.forEach(item => {
-        const cardOptions = {};
-        if (options.blankPuzzleId && item.id === options.blankPuzzleId) {
-          cardOptions.forceBlank = true;
-        }
-        const card = createPuzzleCard(item, onPuzzleSelect, cardOptions);
-        grid.appendChild(card);
-      });
-
-      section.appendChild(grid);
+      const section = renderDifficultySection(
+        difficulty,
+        groups[difficulty],
+        collapsed,
+        onPuzzleSelect,
+        options
+      );
       container.appendChild(section);
     });
+  }
+
+  /**
+   * Render a single difficulty section with header and puzzle grid.
+   * @param {string} difficulty - Difficulty level name
+   * @param {Array} puzzleItems - Array of {puzzle, originalIndex, id} for this difficulty
+   * @param {Object} collapsed - Map of difficulty -> collapsed state
+   * @param {Function} onPuzzleSelect - Callback when puzzle is selected
+   * @param {Object} options - Render options (e.g., blankPuzzleId)
+   * @returns {HTMLElement} The section element
+   */
+  function renderDifficultySection(difficulty, puzzleItems, collapsed, onPuzzleSelect, options) {
+    const stats = getGroupStats(puzzleItems);
+    const isCollapsed = collapsed[difficulty];
+
+    const section = document.createElement('div');
+    section.className = 'collection-section' + (isCollapsed ? ' collapsed' : '');
+    section.dataset.difficulty = difficulty;
+
+    // Grid ID for aria-controls
+    const gridId = `collection-grid-${difficulty}`;
+
+    // Section header (clickable and keyboard accessible)
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'collection-section-header';
+    sectionHeader.style.cursor = 'pointer';
+    sectionHeader.dataset.difficulty = difficulty;
+
+    // Accessibility: make headers part of unified keyboard navigation
+    sectionHeader.tabIndex = -1;  // Part of roving tabindex group
+    sectionHeader.setAttribute('role', 'button');
+    sectionHeader.setAttribute('aria-expanded', !isCollapsed);
+    sectionHeader.setAttribute('aria-controls', gridId);
+    sectionHeader.setAttribute('aria-label',
+      `${formatDifficulty(difficulty)}, ${stats.completed} of ${stats.total} completed, ${isCollapsed ? 'collapsed' : 'expanded'}`);
+
+    // Chevron indicator
+    const chevron = document.createElement('span');
+    chevron.className = 'section-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.textContent = isCollapsed ? '\u25B6' : '\u25BC';
+    sectionHeader.appendChild(chevron);
+
+    const sectionTitle = document.createElement('h3');
+    sectionTitle.className = 'collection-section-title';
+    sectionTitle.textContent = formatDifficulty(difficulty);
+    sectionHeader.appendChild(sectionTitle);
+
+    const sectionStats = document.createElement('span');
+    sectionStats.className = 'collection-section-stats';
+    sectionStats.textContent = `${stats.completed}/${stats.total}`;
+    if (stats.completed === stats.total && stats.total > 0) {
+      sectionStats.classList.add('complete');
+    }
+    sectionHeader.appendChild(sectionStats);
+
+    // Click to toggle
+    sectionHeader.addEventListener('click', () => {
+      toggleSection(difficulty, collapsed);
+    });
+
+    // Keyboard handler for accessibility (Enter/Space to toggle, arrows to navigate)
+    sectionHeader.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleSection(difficulty, collapsed);
+        return;
+      }
+      // Arrow key navigation - delegate to collection manager
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.Cozy.Collection) {
+          window.Cozy.Collection.navigateFromElement(sectionHeader, e.key);
+        }
+      }
+    });
+
+    section.appendChild(sectionHeader);
+
+    // Puzzle grid
+    const grid = document.createElement('div');
+    grid.className = 'collection-grid';
+    grid.id = gridId;
+    grid.style.display = isCollapsed ? 'none' : 'flex';
+
+    puzzleItems.forEach(item => {
+      const cardOptions = {};
+      if (options.blankPuzzleId && item.id === options.blankPuzzleId) {
+        cardOptions.forceBlank = true;
+      }
+      const card = createPuzzleCard(item, onPuzzleSelect, cardOptions);
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    return section;
   }
 
   // Collection manager class

@@ -6,7 +6,7 @@ const ScreenManager = (function() {
   'use strict';
 
   // === Shared Utilities ===
-  const { CONFIG, renderOutlinedCanvas } = window.Cozy.Utils;
+  const { CONFIG, initOnce, createFlyingStamp, renderOutlinedCanvas } = window.Cozy.Utils;
 
   // Screen definitions
   const SCREENS = {
@@ -438,15 +438,8 @@ const ScreenManager = (function() {
     const settingsBtn = document.getElementById('home-settings-btn');
     const progressEl = document.getElementById('home-progress');
 
-    if (playBtn && !playBtn.hasAttribute('data-initialized')) {
-      playBtn.addEventListener('click', () => showScreen(SCREENS.COLLECTION));
-      playBtn.setAttribute('data-initialized', 'true');
-    }
-
-    if (settingsBtn && !settingsBtn.hasAttribute('data-initialized')) {
-      settingsBtn.addEventListener('click', () => showScreen(SCREENS.SETTINGS));
-      settingsBtn.setAttribute('data-initialized', 'true');
-    }
+    initOnce(playBtn, 'click', () => showScreen(SCREENS.COLLECTION));
+    initOnce(settingsBtn, 'click', () => showScreen(SCREENS.SETTINGS));
 
     // Update progress display using CozyStorage
     if (progressEl && window.PUZZLE_DATA) {
@@ -525,63 +518,25 @@ const ScreenManager = (function() {
     }
 
     // Set up continue button (only once)
-    if (continueBtn && !continueBtn.hasAttribute('data-initialized')) {
-      continueBtn.addEventListener('click', () => {
-        // Get the victory canvas for the flying animation
-        const victoryCanvas = imageEl ? imageEl.querySelector('canvas') : null;
+    initOnce(continueBtn, 'click', () => {
+      // Get the victory canvas for the flying animation
+      const victoryCanvas = imageEl ? imageEl.querySelector('canvas') : null;
 
-        if (victoryCanvas) {
-          // Get the container position (200x200 box) for centering
-          const containerRect = imageEl.getBoundingClientRect();
+      if (victoryCanvas) {
+        const containerRect = imageEl.getBoundingClientRect();
+        const flyingStamp = createFlyingStamp(victoryCanvas, containerRect, { useScale: true });
 
-          // Create a new canvas and copy the image content
-          // (cloneNode doesn't copy canvas content)
-          const flyingStamp = document.createElement('canvas');
-          flyingStamp.width = victoryCanvas.width;
-          flyingStamp.height = victoryCanvas.height;
-          const ctx = flyingStamp.getContext('2d');
-          ctx.drawImage(victoryCanvas, 0, 0);
-
-          // Use canvas pixel dimensions for initial CSS size
-          const cssWidth = victoryCanvas.width;
-          const cssHeight = victoryCanvas.height;
-
-          // Scale to fit within container while preserving aspect ratio
-          const canvasAspect = victoryCanvas.width / victoryCanvas.height;
-          const containerSize = Math.min(containerRect.width, containerRect.height);
-          let targetSize;
-          if (canvasAspect > 1) {
-            targetSize = containerSize;
-          } else {
-            targetSize = containerSize * canvasAspect;
-          }
-          const initialScale = targetSize / cssWidth;
-
-          // Center the stamp within the container bounds
-          const centerX = containerRect.left + containerRect.width / 2;
-          const centerY = containerRect.top + containerRect.height / 2;
-
-          flyingStamp.className = 'flying-stamp';
-          flyingStamp.style.left = (centerX - cssWidth / 2) + 'px';
-          flyingStamp.style.top = (centerY - cssHeight / 2) + 'px';
-          flyingStamp.style.width = cssWidth + 'px';
-          flyingStamp.style.height = cssHeight + 'px';
-          flyingStamp.style.transform = 'scale(' + initialScale + ')';
-          document.body.appendChild(flyingStamp);
-
-          // Go to collection with animation flag
-          showScreen(SCREENS.COLLECTION, {
-            scrollToPuzzleId: victoryPuzzleId,
-            animateStamp: true,
-            flyingStamp: flyingStamp
-          });
-        } else {
-          // Fallback: just navigate without animation
-          showScreen(SCREENS.COLLECTION, { scrollToPuzzleId: victoryPuzzleId });
-        }
-      });
-      continueBtn.setAttribute('data-initialized', 'true');
-    }
+        // Go to collection with animation flag
+        showScreen(SCREENS.COLLECTION, {
+          scrollToPuzzleId: victoryPuzzleId,
+          animateStamp: true,
+          flyingStamp: flyingStamp
+        });
+      } else {
+        // Fallback: just navigate without animation
+        showScreen(SCREENS.COLLECTION, { scrollToPuzzleId: victoryPuzzleId });
+      }
+    });
 
     // Focus management: focus on Continue button
     if (continueBtn) {
@@ -613,76 +568,17 @@ const ScreenManager = (function() {
     container.appendChild(canvas);
   }
 
+  // ============================================
+  // Settings Screen Helper Functions
+  // ============================================
+
   /**
-   * Settings Screen
+   * Initialize the theme selector UI.
+   * Marks the current theme as active and sets up click handlers.
    */
-  function initSettingsScreen() {
-    const backBtn = document.getElementById('settings-back-btn');
-    const vibrationToggle = document.getElementById('settings-vibration');
-    const resetBtn = document.getElementById('settings-reset-btn');
-
-    // Load current settings from CozyStorage (unified storage)
-    const storage = window.Cozy.Storage;
-    if (vibrationToggle) vibrationToggle.checked = storage?.getSetting('vibration') ?? true;
-
-    // Back button
-    if (backBtn && !backBtn.hasAttribute('data-initialized')) {
-      backBtn.addEventListener('click', goBack);
-      backBtn.setAttribute('data-initialized', 'true');
-    }
-
-    // Setting toggles - save to CozyStorage
-    if (vibrationToggle && !vibrationToggle.hasAttribute('data-initialized')) {
-      vibrationToggle.addEventListener('change', () => storage?.setSetting('vibration', vibrationToggle.checked));
-      vibrationToggle.setAttribute('data-initialized', 'true');
-    }
-
-    // Reset progress
-    if (resetBtn && !resetBtn.hasAttribute('data-initialized')) {
-      resetBtn.addEventListener('click', () => {
-        showConfirmModal({
-          title: 'Reset Progress',
-          message: 'Are you sure you want to reset all progress? This cannot be undone.',
-          confirmText: 'Reset',
-          cancelText: 'Cancel',
-          danger: true,
-          onConfirm: () => {
-            // Clear game state (in-memory grid, etc.)
-            if (window.Cozy.Garden && window.Cozy.Garden.clearAllState) {
-              window.Cozy.Garden.clearAllState();
-            }
-
-            // Use CozyStorage reset (clears all progress, flags, and UI state)
-            if (window.Cozy.Storage && window.Cozy.Storage.reset) {
-              window.Cozy.Storage.reset();
-            }
-
-            // Refresh collection if visible
-            if (window.Cozy.Collection) {
-              window.Cozy.Collection.refresh();
-            }
-
-            showAlertModal({
-              title: 'Progress Reset',
-              message: 'All progress has been cleared.'
-            });
-          }
-        });
-      });
-      resetBtn.setAttribute('data-initialized', 'true');
-    }
-
-    // Show tutorial button
-    const tutorialBtn = document.getElementById('settings-tutorial-btn');
-    if (tutorialBtn && !tutorialBtn.hasAttribute('data-initialized')) {
-      tutorialBtn.addEventListener('click', () => {
-        showScreen(SCREENS.TUTORIAL);
-      });
-      tutorialBtn.setAttribute('data-initialized', 'true');
-    }
-
-    // Theme selection
+  function initThemeSelector() {
     const themeOptions = document.querySelectorAll('.theme-option');
+
     // Get current theme, defaulting to system preference if not set
     let currentTheme = window.Cozy.Storage?.getSetting('theme');
     if (!currentTheme || currentTheme === 'system') {
@@ -699,72 +595,134 @@ const ScreenManager = (function() {
 
     // Add click handlers
     themeOptions.forEach(option => {
-      if (!option.hasAttribute('data-initialized')) {
-        option.addEventListener('click', () => {
-          const theme = option.dataset.theme;
+      initOnce(option, 'click', () => {
+        const theme = option.dataset.theme;
 
-          // Update active state and aria-pressed
-          themeOptions.forEach(opt => {
-            opt.classList.remove('active');
-            opt.setAttribute('aria-pressed', 'false');
-          });
-          option.classList.add('active');
-          option.setAttribute('aria-pressed', 'true');
-
-          // Save and apply theme
-          if (window.Cozy.Storage) {
-            window.Cozy.Storage.setSetting('theme', theme);
-          }
-          applyTheme(theme);
+        // Update active state and aria-pressed
+        themeOptions.forEach(opt => {
+          opt.classList.remove('active');
+          opt.setAttribute('aria-pressed', 'false');
         });
-        option.setAttribute('data-initialized', 'true');
-      }
+        option.classList.add('active');
+        option.setAttribute('aria-pressed', 'true');
+
+        // Save and apply theme
+        if (window.Cozy.Storage) {
+          window.Cozy.Storage.setSetting('theme', theme);
+        }
+        applyTheme(theme);
+      });
     });
+  }
 
-    // Solve all puzzles (debug)
+  /**
+   * Initialize the reset progress button with confirmation modal.
+   */
+  function initResetProgressButton() {
+    const resetBtn = document.getElementById('settings-reset-btn');
+
+    initOnce(resetBtn, 'click', () => {
+      showConfirmModal({
+        title: 'Reset Progress',
+        message: 'Are you sure you want to reset all progress? This cannot be undone.',
+        confirmText: 'Reset',
+        cancelText: 'Cancel',
+        danger: true,
+        onConfirm: () => {
+          // Clear game state (in-memory grid, etc.)
+          if (window.Cozy.Garden?.clearAllState) {
+            window.Cozy.Garden.clearAllState();
+          }
+
+          // Use CozyStorage reset (clears all progress, flags, and UI state)
+          if (window.Cozy.Storage?.reset) {
+            window.Cozy.Storage.reset();
+          }
+
+          // Refresh collection if visible
+          if (window.Cozy.Collection) {
+            window.Cozy.Collection.refresh();
+          }
+
+          showAlertModal({
+            title: 'Progress Reset',
+            message: 'All progress has been cleared.'
+          });
+        }
+      });
+    });
+  }
+
+  /**
+   * Initialize the debug "Solve All" button with confirmation modal.
+   */
+  function initDebugSolveAll() {
     const solveAllBtn = document.getElementById('settings-solve-all-btn');
-    if (solveAllBtn && !solveAllBtn.hasAttribute('data-initialized')) {
-      solveAllBtn.addEventListener('click', () => {
-        showConfirmModal({
-          title: 'Debug: Solve All',
-          message: 'Mark all puzzles as solved? This is a debug feature.',
-          confirmText: 'Solve All',
-          cancelText: 'Cancel',
-          onConfirm: () => {
-            const puzzles = window.PUZZLE_DATA || [];
-            const storage = window.Cozy.Storage;
 
-            if (storage) {
-              puzzles.forEach(puzzle => {
-                // Use shared utility from CozyGarden if available for consistency
-                let puzzleId;
-                if (window.Cozy.Garden?.getPuzzleId) {
-                  puzzleId = window.Cozy.Garden.getPuzzleId(puzzle);
-                } else {
-                  // Fallback - handle both concise (t) and verbose (title) formats
-                  const title = puzzle.t || puzzle.title;
-                  puzzleId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-                }
-                storage.completePuzzle(puzzleId);
-              });
-            }
+    initOnce(solveAllBtn, 'click', () => {
+      showConfirmModal({
+        title: 'Debug: Solve All',
+        message: 'Mark all puzzles as solved? This is a debug feature.',
+        confirmText: 'Solve All',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+          const puzzles = window.PUZZLE_DATA || [];
+          const storage = window.Cozy.Storage;
 
-            // Refresh collection if visible
-            if (window.Cozy.Collection) {
-              window.Cozy.Collection.refresh();
-            }
-
-            showAlertModal({
-              title: 'All Puzzles Solved',
-              message: `Marked ${puzzles.length} puzzles as solved!`
+          if (storage) {
+            puzzles.forEach(puzzle => {
+              // Use shared utility from CozyGarden if available for consistency
+              let puzzleId;
+              if (window.Cozy.Garden?.getPuzzleId) {
+                puzzleId = window.Cozy.Garden.getPuzzleId(puzzle);
+              } else {
+                // Fallback - handle both concise (t) and verbose (title) formats
+                const title = puzzle.t || puzzle.title;
+                puzzleId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+              }
+              storage.completePuzzle(puzzleId);
             });
           }
-        });
-      });
-      solveAllBtn.setAttribute('data-initialized', 'true');
-    }
 
-    // Focus management: focus on vibration toggle (first interactive setting)
+          // Refresh collection if visible
+          if (window.Cozy.Collection) {
+            window.Cozy.Collection.refresh();
+          }
+
+          showAlertModal({
+            title: 'All Puzzles Solved',
+            message: `Marked ${puzzles.length} puzzles as solved!`
+          });
+        }
+      });
+    });
+  }
+
+  /**
+   * Settings Screen - Main initialization
+   */
+  function initSettingsScreen() {
+    const backBtn = document.getElementById('settings-back-btn');
+    const vibrationToggle = document.getElementById('settings-vibration');
+    const tutorialBtn = document.getElementById('settings-tutorial-btn');
+
+    // Load current settings
+    const storage = window.Cozy.Storage;
+    if (vibrationToggle) vibrationToggle.checked = storage?.getSetting('vibration') ?? true;
+
+    // Navigation
+    initOnce(backBtn, 'click', goBack);
+    initOnce(tutorialBtn, 'click', () => showScreen(SCREENS.TUTORIAL));
+
+    // Setting toggles
+    initOnce(vibrationToggle, 'change', () => storage?.setSetting('vibration', vibrationToggle.checked));
+
+    // Feature-specific initialization
+    initThemeSelector();
+    initResetProgressButton();
+    initDebugSolveAll();
+
+    // Focus management
     if (vibrationToggle) {
       setTimeout(() => vibrationToggle.focus(), 100);
     }
@@ -803,22 +761,16 @@ const ScreenManager = (function() {
       showScreen(SCREENS.HOME);
     }
 
-    if (skipBtn && !skipBtn.hasAttribute('data-initialized')) {
-      skipBtn.addEventListener('click', completeTutorial);
-      skipBtn.setAttribute('data-initialized', 'true');
-    }
+    initOnce(skipBtn, 'click', completeTutorial);
 
-    if (nextBtn && !nextBtn.hasAttribute('data-initialized')) {
-      nextBtn.addEventListener('click', () => {
-        if (tutorialCurrentStep < steps.length - 1) {
-          tutorialCurrentStep++;
-          showStep(tutorialCurrentStep);
-        } else {
-          completeTutorial();
-        }
-      });
-      nextBtn.setAttribute('data-initialized', 'true');
-    }
+    initOnce(nextBtn, 'click', () => {
+      if (tutorialCurrentStep < steps.length - 1) {
+        tutorialCurrentStep++;
+        showStep(tutorialCurrentStep);
+      } else {
+        completeTutorial();
+      }
+    });
 
     // Reset to first step when entering
     tutorialCurrentStep = 0;
