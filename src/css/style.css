@@ -852,7 +852,7 @@ kbd {
   border: 3px solid rgba(0, 0, 0, 0.15);
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.1s, border-color 0.1s;
+  transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   box-sizing: border-box; /* Include border in width/height */
   /* Touch-friendly minimum size */
@@ -870,10 +870,14 @@ kbd {
 
 .color-btn.selected {
   border-color: transparent;
-  transform: scale(1.15);
+  /* Outer ring approach - ring is completely outside swatch, no color blending */
   box-shadow:
-    0 0 0 2px var(--color-surface),
-    0 0 0 5px var(--color-primary);
+    /* White gap between swatch and ring */
+    0 0 0 3px var(--color-surface),
+    /* Primary color ring outside the gap */
+    0 0 0 6px var(--color-primary),
+    /* Subtle lift shadow for depth */
+    0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .color-btn.eraser {
@@ -1897,11 +1901,17 @@ body.is-installed {
   outline-offset: var(--focus-ring-offset);
 }
 
-/* Color palette buttons - uses larger offset to compensate for scale transform */
+/* Color palette buttons - outer ring for focus, consistent with selected state */
 .color-btn:focus-visible:not(.selected) {
-  outline: var(--focus-ring-width) solid var(--color-primary);
-  outline-offset: 3px;
-  transform: scale(1.15);
+  outline: none;
+  /* Outer ring approach - matches selected state */
+  box-shadow:
+    /* White gap between swatch and ring */
+    0 0 0 3px var(--color-surface),
+    /* Primary color ring outside the gap */
+    0 0 0 6px var(--color-primary),
+    /* Subtle lift shadow */
+    0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Header back buttons */
