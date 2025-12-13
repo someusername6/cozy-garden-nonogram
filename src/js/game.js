@@ -185,9 +185,16 @@
     }
   }
 
-  // Normalize puzzle from concise format to verbose format
-  // Concise: {t, w, h, r, c, p, s} with 0-indexed colors, hex palette
-  // Verbose: {title, width, height, row_clues, col_clues, color_map, solution} with 1-indexed colors
+  /**
+   * Convert puzzle from concise storage format to verbose runtime format.
+   * Handles both formats: returns verbose as-is, converts concise format.
+   *
+   * Concise format (storage): {t, w, h, r, c, p, s} with 0-indexed colors
+   * Verbose format (runtime): {title, width, height, row_clues, col_clues, color_map, solution} with 1-indexed colors
+   *
+   * @param {Object} p - Puzzle in either format
+   * @returns {Object|null} Normalized puzzle in verbose format, or null if invalid
+   */
   function normalizePuzzle(p) {
     if (!p) return null;
     // Already in verbose format - validate basic structure
@@ -389,6 +396,11 @@
 
   // === Pencil Mode ===
 
+  /**
+   * Set pencil mode on or off.
+   * Pencil mode marks cells as "uncertain" - they don't count toward win detection.
+   * @param {boolean} enabled - Whether to enable pencil mode
+   */
   function setPencilMode(enabled) {
     isPencilMode = enabled;
     updatePencilModeUI();
@@ -396,6 +408,9 @@
     closeModeMenu(); // Close menu after selection
   }
 
+  /**
+   * Toggle between pen mode (certain marks) and pencil mode (uncertain marks).
+   */
   function togglePencilMode() {
     setPencilMode(!isPencilMode);
   }
@@ -547,6 +562,10 @@
 
   // === Batch Operations ===
 
+  /**
+   * Clear all pencil (uncertain) marks from the grid.
+   * Resets uncertain cells to empty. Recorded as a single undoable action.
+   */
   function clearAllPencilMarks() {
     const puzzle = getPuzzles()[currentPuzzle];
     if (!puzzle) return;
@@ -582,6 +601,11 @@
     saveSession();
   }
 
+  /**
+   * Convert all pencil (uncertain) marks to certain marks.
+   * Makes all uncertain cells permanent. Recorded as a single undoable action.
+   * Triggers win check after confirmation.
+   */
   function confirmAllPencilMarks() {
     const puzzle = getPuzzles()[currentPuzzle];
     if (!puzzle) return;
@@ -620,6 +644,10 @@
 
   // === Undo/Redo ===
 
+  /**
+   * Undo the last action (fill, clear, or batch operation).
+   * Restores cells to their previous state and updates UI.
+   */
   function performUndo() {
     const history = getHistory();
     if (!history) return;
@@ -643,6 +671,10 @@
     saveSession();
   }
 
+  /**
+   * Redo the last undone action.
+   * Restores cells to their "after" state and triggers win check.
+   */
   function performRedo() {
     const history = getHistory();
     if (!history) return;
@@ -955,6 +987,10 @@
     // 6 or fewer buttons can use full 44px size on all screens
   }
 
+  /**
+   * Select a color from the palette for filling cells.
+   * @param {number} colorId - Color ID (0 for eraser/X, 1+ for palette colors)
+   */
   function selectColor(colorId) {
     selectedColor = colorId;
     const puzzles = getPuzzles();
@@ -1566,8 +1602,16 @@
     }
   }
 
-  // Extract color runs from a line of cell values
-  // Returns array of {count, color} objects
+  /**
+   * Extract consecutive color runs from a line of cell values.
+   * A "run" is a sequence of consecutive cells with the same non-zero color.
+   * Empty cells (0) act as separators between runs.
+   *
+   * Example: [0, 1, 1, 0, 2, 2, 2, 0] → [{count: 2, color: 1}, {count: 3, color: 2}]
+   *
+   * @param {number[]} values - Array of cell values (0 = empty, 1+ = color)
+   * @returns {Array<{count: number, color: number}>} Array of run objects
+   */
   function extractRuns(values) {
     const runs = [];
     let currentColor = null;
@@ -1600,7 +1644,14 @@
     return runs;
   }
 
-  // Check if extracted runs match the clues
+  /**
+   * Check if extracted runs exactly match the expected clues.
+   * Both count and color must match for each run, in order.
+   *
+   * @param {Array<{count: number, color: number}>} runs - Extracted runs from grid
+   * @param {Array<{count: number, color: number}>} clues - Expected clues for the line
+   * @returns {boolean} True if runs match clues exactly
+   */
   function runsMatchClues(runs, clues) {
     if (runs.length !== clues.length) return false;
     for (let i = 0; i < runs.length; i++) {
@@ -1611,7 +1662,16 @@
     return true;
   }
 
-  // Update visual styling of clues based on satisfaction
+  /**
+   * Update visual styling of row/column clues based on satisfaction.
+   * A line is "satisfied" when its certain cells form runs that exactly match
+   * the expected clues. Uncertain (pencil) cells prevent satisfaction.
+   *
+   * Adds/removes 'satisfied' class on clue elements for CSS styling
+   * (dimming and strikethrough effect).
+   *
+   * @param {Object} puzzle - Current puzzle object
+   */
   function updateClueSatisfaction(puzzle) {
     // Check each row
     for (let row = 0; row < puzzle.height; row++) {
@@ -1664,6 +1724,17 @@
     }
   }
 
+  /**
+   * Check if the puzzle is solved and trigger victory if so.
+   *
+   * Win condition: All rows AND columns have runs that exactly match their clues,
+   * AND no cells are uncertain (pencil marks). This is clue-based validation,
+   * not solution comparison - allows winning without explicitly marking empty cells.
+   *
+   * If won: records completion, clears session, shows victory screen.
+   *
+   * @param {Object} puzzle - Current puzzle object
+   */
   function checkWin(puzzle) {
     // Check for any uncertain (pencil) cells first
     for (let row = 0; row < puzzle.height; row++) {
@@ -1721,6 +1792,10 @@
     showVictory(puzzle);
   }
 
+  /**
+   * Reset the current puzzle to its initial empty state.
+   * Clears all cells and records the action for undo. Requires hold-to-confirm.
+   */
   function resetPuzzle() {
     const puzzle = getPuzzles()[currentPuzzle];
     if (!puzzle) return;
@@ -1770,6 +1845,11 @@
     updateHoldButtonStates();
   }
 
+  /**
+   * Reveal the puzzle solution.
+   * Fills all cells with correct values. Recorded for undo. Requires hold-to-confirm.
+   * Does NOT trigger win - player didn't solve it themselves.
+   */
   function showSolution() {
     const puzzle = getPuzzles()[currentPuzzle];
     if (!puzzle) return;
@@ -1879,7 +1959,10 @@
     }
   }
 
-  // Navigate to collection screen, saving current puzzle first
+  /**
+   * Navigate to the collection screen.
+   * Saves current puzzle progress before navigating.
+   */
   function showCollection() {
     saveCurrentPuzzle();
     if (window.Cozy.Screens) {
@@ -1887,7 +1970,10 @@
     }
   }
 
-  // Navigate to puzzle screen
+  /**
+   * Navigate to the puzzle screen for a specific puzzle.
+   * @param {number} puzzleIndex - Index of the puzzle to show
+   */
   function showGame(puzzleIndex) {
     if (window.Cozy.Screens) {
       window.Cozy.Screens.showScreen(window.Cozy.Screens.SCREENS.PUZZLE, { puzzleId: puzzleIndex });
@@ -1984,6 +2070,17 @@
   // Hold-to-confirm button pattern
   const HOLD_DURATION = 1200; // ms
 
+  /**
+   * Set up a "hold to confirm" button for destructive actions.
+   * User must hold the button for HOLD_DURATION ms to trigger the action.
+   * Provides visual feedback via CSS 'holding' class during hold.
+   *
+   * Supports mouse, touch, and keyboard (Enter/Space) interactions.
+   * Cancels if user releases early or moves away from button.
+   *
+   * @param {HTMLElement} btn - Button element to enhance
+   * @param {Function} onConfirm - Callback when hold completes successfully
+   */
   function setupHoldButton(btn, onConfirm) {
     if (!btn) return;
 
@@ -2195,7 +2292,12 @@
     );
   }
 
-  // Navigate to collection with stamp animation for partial progress
+  /**
+   * Navigate to collection screen with a flying stamp animation.
+   * Renders current grid progress to a canvas that animates from the grid
+   * to the puzzle's card in the collection. Used when pressing back button
+   * during puzzle play to give visual feedback of progress.
+   */
   function navigateToCollectionWithStamp() {
     const puzzles = getPuzzles();
     const puzzle = puzzles[currentPuzzle];
@@ -2267,7 +2369,11 @@
     }
   }
 
-  // Clear all game state (called when progress is reset)
+  /**
+   * Clear all game state to initial values.
+   * Called when user resets all progress from settings. Clears grid,
+   * resets indices, and wipes undo history.
+   */
   function clearAllState() {
     grid = [];
     currentPuzzle = 0;
