@@ -47,6 +47,10 @@ html[data-theme="light"] {
   --color-highlight-strong: rgba(74, 124, 63, 0.22);
   --color-skip-link-bg: #2d5a1f;
 
+  /* Focus indicator styling - consistent across all interactive elements */
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+
   /* === Dark Theme Values: "Night in the Garden"
    * Moonlit garden, deep blue night sky, cool silvery greens */
   --dark-color-primary: #a8d4a0;
@@ -161,8 +165,8 @@ html[data-theme="dark"] {
 
 .skip-link:focus {
   top: 0;
-  outline: 2px solid var(--color-text);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-text);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* === Reset & Base === */
@@ -1309,6 +1313,15 @@ kbd {
   opacity: 0.9;
 }
 
+/* Dark theme: use darker green for proper contrast with white text */
+html[data-theme="dark"] .update-banner {
+  background: var(--color-primary-btn);
+}
+
+html[data-theme="dark"] .update-banner button {
+  color: var(--color-primary-btn);
+}
+
 /* === Zoom & Pan System === */
 
 /* Zoom container wraps the board for scrolling when zoomed */
@@ -1840,8 +1853,8 @@ body.is-installed {
 
 /* Default focus ring for all interactive elements */
 :focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* Buttons */
@@ -1858,42 +1871,44 @@ body.is-installed {
 .settings-btn:focus-visible,
 .settings-danger-btn:focus-visible,
 .settings-debug-btn:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
 }
 
-/* Color palette buttons */
+/* Color palette buttons - uses larger offset to compensate for scale transform */
 .color-btn:focus-visible:not(.selected) {
-  outline: 3px solid var(--color-primary);
+  outline: var(--focus-ring-width) solid var(--color-primary);
   outline-offset: 3px;
   transform: scale(1.15);
 }
 
 /* Header back buttons */
 .header-back-btn:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
   background: var(--color-secondary);
 }
 
 /* Theme option buttons */
 .theme-option:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* Puzzle cards in collection */
 .puzzle-card:focus-visible {
-  outline: 3px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
   transform: translateY(-2px);
 }
 
 /* Collection section headers (collapsible) */
 .collection-section-header:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
   border-radius: 4px;
+  position: relative;
+  z-index: 11; /* Above sticky search bar (z-index: 10) */
 }
 
 /* Search input */
@@ -1903,18 +1918,18 @@ body.is-installed {
   box-shadow: 0 0 0 3px rgba(76, 108, 74, 0.2);
 }
 
-/* Grid cells - keyboard accessible */
+/* Grid cells - uses negative offset to keep ring inside cell boundaries */
 .cell:focus-visible {
-  outline: 3px solid var(--color-primary);
+  outline: var(--focus-ring-width) solid var(--color-primary);
   outline-offset: -3px;
   z-index: 2;
 }
 
-/* Clue cells */
+/* Clue cells - now consistent with other interactive elements */
 .clue-cell:focus-visible,
 .row-clue-cell:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* Settings toggle checkboxes (via label) */
@@ -1924,8 +1939,8 @@ body.is-installed {
 
 /* Update banner button */
 .update-banner button:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid #fff;
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* Dark mode focus adjustments */
@@ -1937,10 +1952,6 @@ html[data-theme="dark"] .color-btn:focus-visible,
 html[data-theme="dark"] .cell:focus-visible,
 html[data-theme="dark"] .puzzle-card:focus-visible {
   outline-color: var(--color-accent);
-}
-
-html[data-theme="dark"] :focus-visible {
-  outline-color: var(--color-primary-light);
 }
 
 /* High contrast mode support */
@@ -1955,8 +1966,8 @@ html[data-theme="dark"] :focus-visible {
   }
 
   :focus-visible {
-    outline: 3px solid #000;
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid #000;
+    outline-offset: var(--focus-ring-offset);
   }
 }
 

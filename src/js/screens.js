@@ -206,9 +206,14 @@ const ScreenManager = (function() {
     // Initialize confirm modal
     initConfirmModal();
 
-    // Cache all screen elements
+    // Cache all screen elements and set initial inert state
     Object.values(SCREENS).forEach(screenId => {
-      screenElements[screenId] = document.getElementById(`screen-${screenId}`);
+      const screen = document.getElementById(`screen-${screenId}`);
+      screenElements[screenId] = screen;
+      // All screens start as inert; showScreen will remove inert from active screen
+      if (screen) {
+        screen.setAttribute('inert', '');
+      }
     });
 
     // Handle browser back button
@@ -289,11 +294,15 @@ const ScreenManager = (function() {
 
       screenElements[currentScreen].classList.remove('screen-active');
       screenElements[currentScreen].classList.add('screen-hidden');
+      // Make hidden screen inert (removes from tab order and accessibility tree)
+      screenElements[currentScreen].setAttribute('inert', '');
     }
 
     // Show target screen
     targetScreen.classList.remove('screen-hidden');
     targetScreen.classList.add('screen-active');
+    // Remove inert from active screen
+    targetScreen.removeAttribute('inert');
 
     // Track history for back navigation (with limit to prevent unbounded growth)
     if (addToHistory && currentScreen !== null) {

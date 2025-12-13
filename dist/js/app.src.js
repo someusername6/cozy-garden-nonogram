@@ -981,9 +981,14 @@ const ScreenManager = (function() {
     // Initialize confirm modal
     initConfirmModal();
 
-    // Cache all screen elements
+    // Cache all screen elements and set initial inert state
     Object.values(SCREENS).forEach(screenId => {
-      screenElements[screenId] = document.getElementById(`screen-${screenId}`);
+      const screen = document.getElementById(`screen-${screenId}`);
+      screenElements[screenId] = screen;
+      // All screens start as inert; showScreen will remove inert from active screen
+      if (screen) {
+        screen.setAttribute('inert', '');
+      }
     });
 
     // Handle browser back button
@@ -1064,11 +1069,15 @@ const ScreenManager = (function() {
 
       screenElements[currentScreen].classList.remove('screen-active');
       screenElements[currentScreen].classList.add('screen-hidden');
+      // Make hidden screen inert (removes from tab order and accessibility tree)
+      screenElements[currentScreen].setAttribute('inert', '');
     }
 
     // Show target screen
     targetScreen.classList.remove('screen-hidden');
     targetScreen.classList.add('screen-active');
+    // Remove inert from active screen
+    targetScreen.removeAttribute('inert');
 
     // Track history for back navigation (with limit to prevent unbounded growth)
     if (addToHistory && currentScreen !== null) {
@@ -1685,19 +1694,37 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!section) return;
 
     const isCollapsed = collapsed[difficulty];
-    collapsed[difficulty] = !isCollapsed;
+    const newCollapsed = !isCollapsed;
+    collapsed[difficulty] = newCollapsed;
     saveCollapsedSections(collapsed);
 
     // Update UI
-    section.classList.toggle('collapsed', !isCollapsed);
+    section.classList.toggle('collapsed', newCollapsed);
     const grid = section.querySelector('.collection-grid');
     const chevron = section.querySelector('.section-chevron');
+    const header = section.querySelector('.collection-section-header');
 
     if (grid) {
-      grid.style.display = !isCollapsed ? 'none' : 'flex';
+      grid.style.display = newCollapsed ? 'none' : 'flex';
     }
     if (chevron) {
-      chevron.textContent = !isCollapsed ? '\u25B6' : '\u25BC';
+      chevron.textContent = newCollapsed ? '\u25B6' : '\u25BC';
+    }
+
+    // Update accessibility attributes
+    if (header) {
+      header.setAttribute('aria-expanded', !newCollapsed);
+      // Update aria-label to reflect new state
+      const stats = header.querySelector('.collection-section-stats');
+      const statsText = stats ? stats.textContent : '';
+      const [completed, total] = statsText.split('/');
+      header.setAttribute('aria-label',
+        `${formatDifficulty(difficulty)}, ${completed} of ${total} completed, ${newCollapsed ? 'collapsed' : 'expanded'}`);
+    }
+
+    // Update roving tabindex after section visibility changes
+    if (window.Cozy.Collection) {
+      window.Cozy.Collection.updateRovingTabindex();
     }
   }
 
@@ -1835,12 +1862,12 @@ document.addEventListener('DOMContentLoaded', () => {
         onClick(item.index);
         return;
       }
-      // Arrow key navigation - delegate to collection manager
+      // Arrow key navigation - delegate to collection manager (unified with headers)
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         e.stopPropagation();
         if (window.Cozy.Collection) {
-          window.Cozy.Collection.navigateFromCard(card, e.key);
+          window.Cozy.Collection.navigateFromElement(card, e.key);
         }
       }
     });
@@ -2035,14 +2062,27 @@ document.addEventListener('DOMContentLoaded', () => {
       section.className = 'collection-section' + (isCollapsed ? ' collapsed' : '');
       section.dataset.difficulty = difficulty;
 
-      // Section header (clickable)
+      // Grid ID for aria-controls
+      const gridId = `collection-grid-${difficulty}`;
+
+      // Section header (clickable and keyboard accessible)
       const sectionHeader = document.createElement('div');
       sectionHeader.className = 'collection-section-header';
       sectionHeader.style.cursor = 'pointer';
+      sectionHeader.dataset.difficulty = difficulty;
+
+      // Accessibility: make headers part of unified keyboard navigation
+      sectionHeader.tabIndex = -1;  // Part of roving tabindex group
+      sectionHeader.setAttribute('role', 'button');
+      sectionHeader.setAttribute('aria-expanded', !isCollapsed);
+      sectionHeader.setAttribute('aria-controls', gridId);
+      sectionHeader.setAttribute('aria-label',
+        `${formatDifficulty(difficulty)}, ${stats.completed} of ${stats.total} completed, ${isCollapsed ? 'collapsed' : 'expanded'}`);
 
       // Chevron indicator
       const chevron = document.createElement('span');
       chevron.className = 'section-chevron';
+      chevron.setAttribute('aria-hidden', 'true');
       chevron.textContent = isCollapsed ? '\u25B6' : '\u25BC';
       sectionHeader.appendChild(chevron);
 
@@ -2064,11 +2104,29 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSection(difficulty, collapsed);
       });
 
+      // Keyboard handler for accessibility (Enter/Space to toggle, arrows to navigate)
+      sectionHeader.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleSection(difficulty, collapsed);
+          return;
+        }
+        // Arrow key navigation - delegate to collection manager
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (window.Cozy.Collection) {
+            window.Cozy.Collection.navigateFromElement(sectionHeader, e.key);
+          }
+        }
+      });
+
       section.appendChild(sectionHeader);
 
       // Puzzle grid
       const grid = document.createElement('div');
       grid.className = 'collection-grid';
+      grid.id = gridId;
       grid.style.display = isCollapsed ? 'none' : 'flex';
 
       puzzleItems.forEach(item => {
@@ -2096,7 +2154,12 @@ document.addEventListener('DOMContentLoaded', () => {
       this.searchInput = null;
       this.searchInputHandler = null;  // Store handler reference for cleanup
       this.searchDebounceTimeout = null;  // Debounce timer for search
-      this.focusedCardId = null;  // Track focused card for roving tabindex
+      // Track focused element for roving tabindex (either card or header)
+      this.focusedCardId = null;
+      this.focusedHeaderDifficulty = null;
+      // Track ideal X position for consistent column navigation during up/down
+      // This persists across vertical navigation, updated only on left/right
+      this.idealX = null;
     }
 
     init(containerId, puzzles, onPuzzleSelect) {
@@ -2192,6 +2255,184 @@ document.addEventListener('DOMContentLoaded', () => {
       return cards;
     }
 
+    // Get all navigable elements (section headers + visible cards) in DOM order
+    getNavigableElements() {
+      if (!this.container) return [];
+      const elements = [];
+      const sections = this.container.querySelectorAll('.collection-section');
+      sections.forEach(section => {
+        // Add section header (always navigable)
+        const header = section.querySelector('.collection-section-header');
+        if (header) {
+          elements.push(header);
+        }
+        // Add cards only if section is expanded
+        const grid = section.querySelector('.collection-grid');
+        if (grid && grid.style.display !== 'none') {
+          const sectionCards = grid.querySelectorAll('.puzzle-card');
+          sectionCards.forEach(card => elements.push(card));
+        }
+      });
+      return elements;
+    }
+
+    // Check if element is a section header
+    isHeader(element) {
+      return element && element.classList.contains('collection-section-header');
+    }
+
+    // Find element in specified direction based on visual position
+    // Works with both headers and cards
+    // direction: 'up', 'down', 'left', 'right'
+    // targetX: optional X position to use for up/down navigation (for column consistency)
+    findElementInDirection(currentElement, direction, targetX = null) {
+      const elements = this.getNavigableElements();
+      if (elements.length === 0) return null;
+
+      const currentRect = currentElement.getBoundingClientRect();
+      const currentCenterX = currentRect.left + currentRect.width / 2;
+      const currentCenterY = currentRect.top + currentRect.height / 2;
+      const isCurrentHeader = this.isHeader(currentElement);
+
+      // For up/down, use targetX if provided (for column consistency)
+      // For left/right, always use current element's X
+      const searchX = (direction === 'up' || direction === 'down') && targetX !== null
+        ? targetX
+        : currentCenterX;
+
+      // Tolerance for "same row/column" comparison
+      const rowTolerance = currentRect.height * 0.5;
+      const colTolerance = currentRect.width * 0.5;
+
+      let bestCandidate = null;
+      let bestDistance = Infinity;
+
+      elements.forEach(element => {
+        if (element === currentElement) return;
+
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const isTargetHeader = this.isHeader(element);
+
+        let isValid = false;
+
+        switch (direction) {
+          case 'left':
+            // Must be to the left and roughly same row
+            // Headers span full width, so left/right from header goes nowhere
+            if (isCurrentHeader) {
+              isValid = false;
+            } else {
+              isValid = !isTargetHeader &&
+                        centerX < currentCenterX - colTolerance &&
+                        Math.abs(centerY - currentCenterY) < rowTolerance;
+            }
+            break;
+          case 'right':
+            // Must be to the right and roughly same row
+            if (isCurrentHeader) {
+              isValid = false;
+            } else {
+              isValid = !isTargetHeader &&
+                        centerX > currentCenterX + colTolerance &&
+                        Math.abs(centerY - currentCenterY) < rowTolerance;
+            }
+            break;
+          case 'up':
+            // Must be above (allow any column, prefer closest to searchX)
+            isValid = centerY < currentCenterY - rowTolerance;
+            break;
+          case 'down':
+            // Must be below (allow any column, prefer closest to searchX)
+            isValid = centerY > currentCenterY + rowTolerance;
+            break;
+        }
+
+        if (isValid) {
+          // Calculate distance
+          let distance;
+          if (direction === 'left' || direction === 'right') {
+            distance = Math.abs(centerX - currentCenterX);
+          } else {
+            // For up/down, prioritize closest Y first, then prefer closest to searchX
+            const yDist = Math.abs(centerY - currentCenterY);
+            const xDist = Math.abs(centerX - searchX);
+            distance = yDist * 1000 + xDist; // Heavily weight Y distance
+          }
+
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestCandidate = element;
+          }
+        }
+      });
+
+      return bestCandidate;
+    }
+
+    // Unified navigation from any element (header or card)
+    navigateFromElement(element, key) {
+      const directionMap = {
+        'ArrowUp': 'up',
+        'ArrowDown': 'down',
+        'ArrowLeft': 'left',
+        'ArrowRight': 'right'
+      };
+      const direction = directionMap[key];
+      if (!direction) return;
+
+      const currentRect = element.getBoundingClientRect();
+      const currentCenterX = currentRect.left + currentRect.width / 2;
+
+      // For up/down navigation, use idealX for column consistency
+      // For left/right, use current position
+      let targetElement;
+      if (direction === 'up' || direction === 'down') {
+        // Initialize idealX from current position if not set
+        if (this.idealX === null) {
+          this.idealX = currentCenterX;
+        }
+        targetElement = this.findElementInDirection(element, direction, this.idealX);
+      } else {
+        targetElement = this.findElementInDirection(element, direction);
+      }
+
+      if (targetElement) {
+        const targetRect = targetElement.getBoundingClientRect();
+        const targetCenterX = targetRect.left + targetRect.width / 2;
+
+        // Update idealX based on movement type
+        if (direction === 'left' || direction === 'right') {
+          // Horizontal movement: update idealX to new position
+          this.idealX = targetCenterX;
+        } else if (!this.isHeader(targetElement)) {
+          // Vertical movement landing on a card: keep idealX unchanged
+          // This maintains column consistency through headers and varying row lengths
+          // (idealX is only updated on explicit left/right movement)
+        }
+        // Note: landing on a header doesn't change idealX either
+
+        // Update tabindex for roving pattern
+        element.tabIndex = -1;
+        targetElement.tabIndex = 0;
+        targetElement.focus();
+
+        // Track focused element
+        if (this.isHeader(targetElement)) {
+          this.focusedCardId = null;
+          this.focusedHeaderDifficulty = targetElement.dataset.difficulty;
+        } else {
+          this.focusedCardId = targetElement.dataset.puzzleId;
+          this.focusedHeaderDifficulty = null;
+        }
+
+        // Scroll into view if needed
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Legacy method - delegates to unified navigation
     // Find card in specified direction based on visual position
     // direction: 'up', 'down', 'left', 'right'
     findCardInDirection(currentCard, direction) {
@@ -2286,31 +2527,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update roving tabindex after render
+    // Includes both section headers and visible cards in navigation
     updateRovingTabindex() {
-      const cards = this.getVisibleCards();
-      if (cards.length === 0) return;
+      const elements = this.getNavigableElements();
+      if (elements.length === 0) return;
 
-      // Find the previously focused card or default to first
-      let focusedCard = null;
+      // Find the previously focused element (could be card or header)
+      let focusedElement = null;
+
+      // Try to find by card ID first
       if (this.focusedCardId) {
         const candidate = this.container.querySelector(
           `.puzzle-card[data-puzzle-id="${this.focusedCardId}"]`
         );
-        // Only use if it's actually in the visible cards array (not in collapsed section)
-        if (candidate && cards.includes(candidate)) {
-          focusedCard = candidate;
+        // Only use if it's actually visible (not in collapsed section)
+        if (candidate && elements.includes(candidate)) {
+          focusedElement = candidate;
         }
       }
 
-      // If previously focused card not found or not visible, use first visible card
-      if (!focusedCard) {
-        focusedCard = cards[0];
-        this.focusedCardId = focusedCard?.dataset.puzzleId || null;
+      // Try to find by header difficulty
+      if (!focusedElement && this.focusedHeaderDifficulty) {
+        const candidate = this.container.querySelector(
+          `.collection-section-header[data-difficulty="${this.focusedHeaderDifficulty}"]`
+        );
+        if (candidate && elements.includes(candidate)) {
+          focusedElement = candidate;
+        }
       }
 
-      // Set all cards to tabindex=-1 except the focused one
-      cards.forEach(card => {
-        card.tabIndex = (card === focusedCard) ? 0 : -1;
+      // If previously focused element not found, use first element (first header)
+      if (!focusedElement) {
+        focusedElement = elements[0];
+        // Update tracking based on element type
+        if (this.isHeader(focusedElement)) {
+          this.focusedHeaderDifficulty = focusedElement.dataset.difficulty;
+          this.focusedCardId = null;
+        } else {
+          this.focusedCardId = focusedElement?.dataset.puzzleId || null;
+          this.focusedHeaderDifficulty = null;
+        }
+      }
+
+      // Set all elements to tabindex=-1 except the focused one
+      elements.forEach(element => {
+        element.tabIndex = (element === focusedElement) ? 0 : -1;
       });
     }
 
