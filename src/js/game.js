@@ -2224,6 +2224,8 @@
           // Mark as completed for instant hide (no animation)
           btn.classList.add('hold-complete');
           cancelHold();
+          // Haptic feedback on confirmation
+          if (window.Cozy.App) window.Cozy.App.vibrate(50);
           announce('Confirmed');
           onConfirm();
           // Remove completed class after a tick

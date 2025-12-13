@@ -600,7 +600,7 @@ Examples:
     parser.add_argument("--max-colors", type=int, default=6,
                         help="Maximum colors per puzzle (default: 6)")
     parser.add_argument("--timeout", type=int, default=10,
-                        help="Timeout per image in seconds (default: 30)")
+                        help="Timeout per image in seconds (default: 10)")
     parser.add_argument("--difficulties", nargs="+", default=["easy", "medium", "hard", "challenging", "expert", "master"],
                         choices=["easy", "medium", "hard", "challenging", "expert", "master"],
                         help="Difficulties to include in website (default: easy medium hard challenging expert master)")
