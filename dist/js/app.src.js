@@ -3974,6 +3974,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Update hold button states based on puzzle state
       updateHoldButtonStates();
+
+      // Announce puzzle for screen readers
+      const nameMatch = puzzle.title.match(/^(.+?)\s*\(/);
+      const puzzleName = nameMatch ? nameMatch[1].trim() : puzzle.title;
+      const difficulty = getDifficulty(puzzle.title);
+      const colorList = puzzle.color_names?.join(', ') || `${Object.keys(puzzle.color_map).length} colors`;
+      announce(`${puzzleName}, ${puzzle.width} by ${puzzle.height}, ${colorList}. ${difficulty} difficulty.`);
     } finally {
       isLoadingPuzzle = false;
     }
@@ -4101,6 +4108,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Empty row/column indicator
       cell.textContent = '0';
       cell.style.background = '#333';
+      cell.setAttribute('aria-label', 'empty');
     } else {
       const colorRgb = puzzle.color_map[clue.color];
       cell.textContent = clue.count;
@@ -4108,6 +4116,9 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.style.color = getBrightness(colorRgb) > CONFIG.BRIGHTNESS_MIDPOINT ? '#000' : '#fff';
       cell.style.cursor = 'pointer';
       cell.onclick = () => selectColor(clue.color);
+      // Accessible label with color name (color_names is 0-indexed, clue.color is 1-indexed)
+      const colorName = puzzle.color_names?.[clue.color - 1] || `color ${clue.color}`;
+      cell.setAttribute('aria-label', `${clue.count} ${colorName}`);
     }
 
     return cell;
@@ -4713,13 +4724,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update aria-label with cell state for screen readers
+    // Use color names for accessibility (color_names is 0-indexed, cell.value is 1-indexed)
     let stateDesc;
     if (cell.value === null) {
       stateDesc = 'empty';
     } else if (cell.value === 0) {
       stateDesc = cell.certain ? 'marked empty' : 'maybe empty';
     } else {
-      stateDesc = cell.certain ? `color ${cell.value}` : `maybe color ${cell.value}`;
+      const colorName = puzzle.color_names?.[cell.value - 1] || `color ${cell.value}`;
+      stateDesc = cell.certain ? colorName : `maybe ${colorName}`;
     }
     cellEl.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}, ${stateDesc}`);
   }
