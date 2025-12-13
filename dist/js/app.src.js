@@ -4534,6 +4534,34 @@ document.addEventListener('DOMContentLoaded', () => {
         fillCell(row, col, 0, !isPencilMode);
         if (history) history.commitAction();
         updatePencilActionsVisibility();
+      } else if (e.key === 'r' || e.key === 'R') {
+        // R key reads current row's clues for screen reader users
+        e.preventDefault();
+        const puzzle = getPuzzles()[currentPuzzle];
+        if (puzzle) {
+          const clues = puzzle.row_clues[row];
+          const clueText = clues.length > 0
+            ? clues.map(c => {
+                const colorName = puzzle.color_names?.[c.color - 1] || `color ${c.color}`;
+                return `${c.count} ${colorName}`;
+              }).join(', ')
+            : 'empty row';
+          announce(`Row ${row + 1} clues: ${clueText}`);
+        }
+      } else if (e.key === 'c' || e.key === 'C') {
+        // C key reads current column's clues for screen reader users
+        e.preventDefault();
+        const puzzle = getPuzzles()[currentPuzzle];
+        if (puzzle) {
+          const clues = puzzle.col_clues[col];
+          const clueText = clues.length > 0
+            ? clues.map(c => {
+                const colorName = puzzle.color_names?.[c.color - 1] || `color ${c.color}`;
+                return `${c.count} ${colorName}`;
+              }).join(', ')
+            : 'empty column';
+          announce(`Column ${col + 1} clues: ${clueText}`);
+        }
       }
     };
   }
