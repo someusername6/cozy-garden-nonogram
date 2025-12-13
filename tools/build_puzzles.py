@@ -95,14 +95,21 @@ COLOR_OVERRIDES = {
 def perceptual_color_distance(c1: tuple, c2: tuple) -> float:
     """Calculate perceptual distance between two RGB colors.
 
-    Uses weighted Euclidean distance that accounts for human perception
-    (green is more perceptible than red, red more than blue).
+    Uses weighted Euclidean distance that accounts for human perception:
+    green (0.59) > red (0.30) > blue (0.11).
 
     Note: This differs from palette.py's color_distance() which uses the
     compuphase formula. This simpler formula is kept here because
     MIN_COLOR_DISTANCE (35) was empirically tuned for this specific formula.
     The compuphase formula gives ~3x larger values, so switching would
     require re-tuning the threshold.
+
+    Args:
+        c1: First color as (r, g, b) tuple (0-255 each)
+        c2: Second color as (r, g, b) tuple (0-255 each)
+
+    Returns:
+        Perceptual distance (0 = identical, ~196 = max for black vs white)
     """
     r1, g1, b1 = c1
     r2, g2, b2 = c2
@@ -154,7 +161,17 @@ def load_skip_list(skip_file: Path) -> set[str]:
 
 
 def get_display_name(filename: str) -> str:
-    """Convert filename to display name."""
+    """Convert filename to human-readable display name.
+
+    Transforms underscores/dashes to spaces and applies title case.
+    Preserves trailing numbers (e.g., "rose_1" -> "Rose 1").
+
+    Args:
+        filename: Filename without extension (e.g., "pink_rose_1")
+
+    Returns:
+        Display name in title case (e.g., "Pink Rose 1")
+    """
     name = filename.replace("_", " ").replace("-", " ")
     parts = name.rsplit(" ", 1)
     if len(parts) == 2 and parts[1].isdigit():
@@ -163,7 +180,17 @@ def get_display_name(filename: str) -> str:
 
 
 def get_puzzle_prefix(title: str) -> str:
-    """Extract family prefix from puzzle title (e.g., 'Red Tulip 1 (10x12, easy)' -> 'red_tulip')."""
+    """Extract family prefix from puzzle title for grouping related puzzles.
+
+    Used to identify puzzle families (e.g., all "Red Tulip" variants) for
+    palette consistency analysis.
+
+    Args:
+        title: Full puzzle title (e.g., "Red Tulip 1 (10x12, easy)")
+
+    Returns:
+        Normalized prefix in lowercase with underscores (e.g., "red_tulip")
+    """
     # Remove difficulty suffix like "(10x12, easy)"
     name = re.sub(r'\s*\([^)]+\)\s*$', '', title)
     # Remove trailing number
@@ -172,14 +199,37 @@ def get_puzzle_prefix(title: str) -> str:
 
 
 def rgb_to_hsl(r: int, g: int, b: int) -> tuple:
-    """Convert RGB to HSL."""
+    """Convert RGB color to HSL color space.
+
+    Args:
+        r: Red component (0-255)
+        g: Green component (0-255)
+        b: Blue component (0-255)
+
+    Returns:
+        Tuple of (hue, saturation, lightness) where:
+        - hue: 0-360 degrees
+        - saturation: 0-100 percent
+        - lightness: 0-100 percent
+    """
     r, g, b = r/255, g/255, b/255
     h, l, s = colorsys.rgb_to_hls(r, g, b)
     return (h * 360, s * 100, l * 100)
 
 
 def color_distance_rgb(c1: list, c2: list) -> float:
-    """Euclidean distance in RGB space."""
+    """Calculate Euclidean distance between two colors in RGB space.
+
+    Simple unweighted distance. For perceptual distance, use
+    perceptual_color_distance() instead.
+
+    Args:
+        c1: First color as [r, g, b] (0-255 each)
+        c2: Second color as [r, g, b] (0-255 each)
+
+    Returns:
+        Distance value (0 = identical, ~441 = max for black vs white)
+    """
     return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
 
 

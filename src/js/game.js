@@ -1,7 +1,29 @@
-// Cozy Garden - Nonogram Game Logic
-// Uses window.PUZZLE_DATA loaded from data/puzzles.js
-// Uses window.Cozy.Storage for progress persistence
-// Uses window.Cozy.History for undo/redo
+/**
+ * Cozy Garden - Nonogram Game Logic
+ *
+ * Core gameplay module handling puzzle rendering, user interaction, and win detection.
+ *
+ * Architecture:
+ * - IIFE pattern with window.Cozy.Garden namespace for public API
+ * - Grid state stored in `grid[][]` as {value, certain} objects
+ * - DOM elements cached in cellElements[][], rowClueElements[], colClueElements[]
+ * - Event handlers support mouse, touch, and keyboard (accessibility)
+ *
+ * Key flows:
+ * - loadPuzzle() → buildPalette() + buildClues() + buildGrid() → restore session
+ * - User interaction → fillCell() → updateCellVisual() + updateClueSatisfaction()
+ * - Win check via clue validation (not solution comparison)
+ *
+ * Dependencies:
+ * - window.PUZZLE_DATA from data/puzzles.js
+ * - window.Cozy.Utils for CONFIG and shared utilities
+ * - window.Cozy.Storage for progress persistence
+ * - window.Cozy.History for undo/redo
+ * - window.Cozy.Screens for navigation
+ * - window.Cozy.Zoom for pinch-to-zoom integration
+ *
+ * @module game
+ */
 
 (function() {
   'use strict';
@@ -914,6 +936,14 @@
     }
   }
 
+  /**
+   * Build the color palette UI for a puzzle.
+   * Creates eraser button (color 0) plus a button for each puzzle color.
+   * Preserves the mode menu if it exists. Adjusts button sizes based on
+   * color count for optimal touch targets.
+   *
+   * @param {Object} puzzle - Puzzle object with color_map
+   */
   function buildPalette(puzzle) {
     const palette = document.getElementById('palette');
 
@@ -1035,6 +1065,14 @@
     return cell;
   }
 
+  /**
+   * Build the row and column clue displays for a puzzle.
+   * Creates DOM elements for each clue cell with appropriate colors and
+   * click handlers. Caches elements in colClueElements/rowClueElements
+   * for fast satisfaction updates.
+   *
+   * @param {Object} puzzle - Puzzle object with row_clues, col_clues, color_map
+   */
   function buildClues(puzzle) {
     // Initialize clue element caches
     colClueElements = [];
@@ -1451,6 +1489,14 @@
     };
   }
 
+  /**
+   * Build the interactive puzzle grid.
+   * Creates cell elements with mouse, touch, and keyboard event handlers.
+   * Sets up drag handling, crosshair highlighting, and focus management.
+   * Caches elements in cellElements[][] for fast visual updates.
+   *
+   * @param {Object} puzzle - Puzzle object with width, height
+   */
   function buildGrid(puzzle) {
     const gridEl = document.getElementById('grid');
     gridEl.innerHTML = '';
@@ -1506,6 +1552,21 @@
     document.addEventListener('mouseup', mouseUpHandler);
   }
 
+  /**
+   * Fill a cell with a color value, handling toggle logic and history.
+   *
+   * Toggle behavior (when skipToggle=false):
+   * - Tapping a pencil cell with same color in pen mode → converts to certain
+   * - Tapping a cell with same value/certainty → clears to empty
+   *
+   * Records changes to history for undo. Updates visual and clue satisfaction.
+   *
+   * @param {number} row - Row index
+   * @param {number} col - Column index
+   * @param {number|null} newValue - Color value (0=X, 1+=color, null=empty)
+   * @param {boolean} newCertain - Whether mark is certain (pen) or uncertain (pencil)
+   * @param {boolean} [skipToggle=false] - Skip toggle logic (used during drag)
+   */
   function fillCell(row, col, newValue, newCertain, skipToggle) {
     const puzzle = getPuzzles()[currentPuzzle];
     const currentCell = getCell(row, col);
