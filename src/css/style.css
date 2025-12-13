@@ -45,6 +45,7 @@ html[data-theme="light"] {
   --color-focus-ring: rgba(74, 124, 63, 0.25);
   --color-highlight: rgba(74, 124, 63, 0.12);
   --color-highlight-strong: rgba(74, 124, 63, 0.22);
+  --color-skip-link-bg: #2d5a1f;
 
   /* === Dark Theme Values: "Night in the Garden"
    * Moonlit garden, deep blue night sky, cool silvery greens */
@@ -73,6 +74,7 @@ html[data-theme="light"] {
   --dark-color-focus-ring: rgba(122, 196, 160, 0.3);
   --dark-color-highlight: rgba(122, 196, 160, 0.15);
   --dark-color-highlight-strong: rgba(122, 196, 160, 0.25);
+  --dark-color-skip-link-bg: #3d5a48;
 
   /* Spacing */
   --safe-area-top: env(safe-area-inset-top, 0px);
@@ -123,6 +125,7 @@ html[data-theme="dark"] {
   --color-focus-ring: var(--dark-color-focus-ring);
   --color-highlight: var(--dark-color-highlight);
   --color-highlight-strong: var(--dark-color-highlight-strong);
+  --color-skip-link-bg: var(--dark-color-skip-link-bg);
 }
 
 
@@ -138,6 +141,28 @@ html[data-theme="dark"] {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Skip link - hidden until focused, for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-skip-link-bg);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  font-weight: 600;
+  z-index: 1000;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
 }
 
 /* === Reset & Base === */

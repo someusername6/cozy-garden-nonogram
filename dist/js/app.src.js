@@ -2768,6 +2768,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let rowClueElements = [];  // rowClueElements[row]
   let colClueElements = [];  // colClueElements[col]
 
+  // Clue satisfaction state for change detection (enables screen reader announcements)
+  let rowSatisfied = [];  // boolean for each row
+  let colSatisfied = [];  // boolean for each column
+
   // Help shown flag now stored in CozyStorage.flags.helpShown
 
   // === Toast Notification ===
@@ -2906,6 +2910,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+  }
+
+  /**
+   * Set up skip link for keyboard navigation.
+   * Focuses the first cell of the grid when activated.
+   */
+  function setupSkipLink() {
+    const skipLink = document.getElementById('skip-to-puzzle');
+    if (skipLink) {
+      skipLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Focus the first cell of the grid
+        const firstCell = cellElements[0]?.[0];
+        if (firstCell) {
+          firstCell.focus();
+        }
+      });
+    }
   }
 
   function maybeShowFirstTimeHelp() {
@@ -3786,9 +3808,11 @@ document.addEventListener('DOMContentLoaded', () => {
    * @param {Object} puzzle - Puzzle object with row_clues, col_clues, color_map
    */
   function buildClues(puzzle) {
-    // Initialize clue element caches
+    // Initialize clue element caches and satisfaction state
     colClueElements = [];
     rowClueElements = [];
+    rowSatisfied = new Array(puzzle.height).fill(false);
+    colSatisfied = new Array(puzzle.width).fill(false);
 
     // Column clues
     const colCluesEl = document.getElementById('col-clues');
@@ -3967,7 +3991,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Accessibility: roving tabindex - only focused cell is tabbable
     cell.tabIndex = (row === focusedRow && col === focusedCol) ? 0 : -1;
     cell.setAttribute('role', 'gridcell');
-    cell.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}`);
+    cell.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}, empty`);
     return cell;
   }
 
@@ -4373,6 +4397,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     }
+
+    // Update aria-label with cell state for screen readers
+    let stateDesc;
+    if (cell.value === null) {
+      stateDesc = 'empty';
+    } else if (cell.value === 0) {
+      stateDesc = cell.certain ? 'marked empty' : 'maybe empty';
+    } else {
+      stateDesc = cell.certain ? `color ${cell.value}` : `maybe color ${cell.value}`;
+    }
+    cellEl.setAttribute('aria-label', `Row ${row + 1}, Column ${col + 1}, ${stateDesc}`);
   }
 
   /**
@@ -4470,6 +4505,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (rowClueEl) {
         rowClueEl.classList.toggle('satisfied', isSatisfied);
       }
+
+      // Announce state changes for screen readers
+      if (isSatisfied !== rowSatisfied[row]) {
+        rowSatisfied[row] = isSatisfied;
+        if (isSatisfied) {
+          announce(`Row ${row + 1} complete`);
+        } else {
+          announce(`Row ${row + 1} incomplete`);
+        }
+      }
     }
 
     // Check each column
@@ -4493,6 +4538,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const colClueEl = colClueElements[col];
       if (colClueEl) {
         colClueEl.classList.toggle('satisfied', isSatisfied);
+      }
+
+      // Announce state changes for screen readers
+      if (isSatisfied !== colSatisfied[col]) {
+        colSatisfied[col] = isSatisfied;
+        if (isSatisfied) {
+          announce(`Column ${col + 1} complete`);
+        } else {
+          announce(`Column ${col + 1} incomplete`);
+        }
       }
     }
   }
@@ -4540,7 +4595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Puzzle completed!
-    // (Victory screen provides the feedback, no toast needed)
+    announce('Puzzle complete!');
 
     // Success haptic
     if (window.Cozy.App) window.Cozy.App.vibrate([50, 100, 50]);
@@ -4987,6 +5042,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupKeyboardShortcuts();
     setupButtonListeners();
     setupHelpModal();
+    setupSkipLink();
 
     // Initialize history UI
     const history = getHistory();

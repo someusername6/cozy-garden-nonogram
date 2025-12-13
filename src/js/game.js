@@ -200,6 +200,24 @@
     });
   }
 
+  /**
+   * Set up skip link for keyboard navigation.
+   * Focuses the first cell of the grid when activated.
+   */
+  function setupSkipLink() {
+    const skipLink = document.getElementById('skip-to-puzzle');
+    if (skipLink) {
+      skipLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Focus the first cell of the grid
+        const firstCell = cellElements[0]?.[0];
+        if (firstCell) {
+          firstCell.focus();
+        }
+      });
+    }
+  }
+
   function maybeShowFirstTimeHelp() {
     // Show help modal automatically on first visit
     if (!window.Cozy.Storage?.getFlag('helpShown')) {
@@ -2312,6 +2330,7 @@
     setupKeyboardShortcuts();
     setupButtonListeners();
     setupHelpModal();
+    setupSkipLink();
 
     // Initialize history UI
     const history = getHistory();

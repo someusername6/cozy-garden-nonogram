@@ -116,7 +116,7 @@
     </header>
 
     <main class="screen-content">
-      <div class="collection-search">
+      <div class="collection-search" role="search">
         <input type="text" id="collection-search-input" class="collection-search-input" placeholder="Search puzzles..." autocomplete="off" aria-label="Search puzzles">
       </div>
       <div class="collection-screen" id="collection-screen"></div>
@@ -127,6 +127,7 @@
   <!-- PUZZLE SCREEN (Gameplay) -->
   <!-- ============================================ -->
   <div id="screen-puzzle" class="screen screen-hidden">
+    <a href="#" class="skip-link" id="skip-to-puzzle">Skip to puzzle</a>
     <header class="screen-header">
       <button class="header-back-btn" aria-label="Back to collection">
         <span aria-hidden="true">&#8592;</span>
