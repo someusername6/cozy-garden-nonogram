@@ -1750,6 +1750,23 @@ html[data-theme="dark"] .confirm-modal-btn-primary {
   .status {
     font-size: 18px;
   }
+
+  /* Keep selected swatch full size with outward ring on larger screens */
+  .color-btn.selected {
+    transform: none;
+    box-shadow:
+      0 0 0 3px var(--color-surface),
+      0 0 0 6px var(--color-primary),
+      0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  .color-btn:focus-visible:not(.selected) {
+    transform: none;
+    box-shadow:
+      0 0 0 3px var(--color-surface),
+      0 0 0 6px var(--color-primary),
+      0 2px 6px rgba(0, 0, 0, 0.25);
+  }
 }
 
 /* Large screens (desktops) */
