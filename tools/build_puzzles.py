@@ -233,6 +233,209 @@ def color_distance_rgb(c1: list, c2: list) -> float:
     return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
 
 
+# ============================================================================
+# COLOR NAMING FOR SCREEN READER ACCESSIBILITY
+# ============================================================================
+# 65 familiar color names for generating ARIA labels on color palette buttons.
+# Each color has an HSL reference point for matching.
+
+COLOR_NAME_REFERENCES = [
+    # REDS (0°-15°)
+    {"name": "red", "h": 0, "s": 100, "l": 50},
+    {"name": "dark red", "h": 0, "s": 90, "l": 30},
+    {"name": "light red", "h": 0, "s": 85, "l": 65},
+    {"name": "maroon", "h": 0, "s": 70, "l": 25},
+    {"name": "crimson", "h": 350, "s": 80, "l": 45},
+    {"name": "brick", "h": 5, "s": 65, "l": 38},
+
+    # ORANGES (15°-45°)
+    {"name": "tomato", "h": 10, "s": 90, "l": 58},
+    {"name": "coral", "h": 16, "s": 75, "l": 62},
+    {"name": "salmon", "h": 8, "s": 85, "l": 72},
+    {"name": "orange", "h": 28, "s": 100, "l": 52},
+    {"name": "rust", "h": 18, "s": 75, "l": 38},
+    {"name": "copper", "h": 22, "s": 68, "l": 48},
+
+    # BROWNS
+    {"name": "brown", "h": 25, "s": 60, "l": 30},
+    {"name": "chocolate", "h": 20, "s": 75, "l": 22},
+    {"name": "tan", "h": 32, "s": 42, "l": 68},
+    {"name": "beige", "h": 35, "s": 38, "l": 78},
+    {"name": "peach", "h": 28, "s": 90, "l": 82},
+
+    # YELLOWS/GOLDS (40°-65°)
+    {"name": "amber", "h": 40, "s": 95, "l": 50},
+    {"name": "gold", "h": 48, "s": 92, "l": 52},
+    {"name": "yellow", "h": 55, "s": 100, "l": 55},
+    {"name": "lemon", "h": 58, "s": 100, "l": 72},
+    {"name": "mustard", "h": 48, "s": 78, "l": 45},
+    {"name": "olive", "h": 58, "s": 55, "l": 35},
+    {"name": "khaki", "h": 50, "s": 38, "l": 62},
+
+    # YELLOW-GREENS (70°-100°)
+    {"name": "lime", "h": 78, "s": 88, "l": 52},
+    {"name": "chartreuse", "h": 88, "s": 88, "l": 48},
+    {"name": "sage", "h": 82, "s": 28, "l": 55},
+    {"name": "moss", "h": 80, "s": 42, "l": 38},
+
+    # GREENS (100°-160°)
+    {"name": "green", "h": 120, "s": 85, "l": 38},
+    {"name": "dark green", "h": 120, "s": 65, "l": 22},
+    {"name": "light green", "h": 115, "s": 68, "l": 60},
+    {"name": "forest", "h": 120, "s": 60, "l": 28},
+    {"name": "emerald", "h": 142, "s": 68, "l": 42},
+    {"name": "mint", "h": 148, "s": 50, "l": 72},
+    {"name": "seafoam", "h": 162, "s": 48, "l": 65},
+
+    # TEALS/CYANS (165°-190°)
+    {"name": "teal", "h": 175, "s": 75, "l": 35},
+    {"name": "turquoise", "h": 178, "s": 65, "l": 52},
+    {"name": "aqua", "h": 182, "s": 80, "l": 55},
+    {"name": "cyan", "h": 185, "s": 100, "l": 55},
+
+    # BLUES (190°-250°)
+    {"name": "sky blue", "h": 198, "s": 68, "l": 72},
+    {"name": "azure", "h": 208, "s": 85, "l": 55},
+    {"name": "blue", "h": 220, "s": 100, "l": 50},
+    {"name": "light blue", "h": 205, "s": 75, "l": 70},
+    {"name": "dark blue", "h": 225, "s": 85, "l": 35},
+    {"name": "cobalt", "h": 225, "s": 78, "l": 45},
+    {"name": "navy", "h": 230, "s": 75, "l": 25},
+    {"name": "steel", "h": 215, "s": 22, "l": 50},
+    {"name": "slate", "h": 210, "s": 18, "l": 40},
+
+    # PURPLES (250°-290°)
+    {"name": "indigo", "h": 260, "s": 78, "l": 32},
+    {"name": "violet", "h": 270, "s": 70, "l": 55},
+    {"name": "purple", "h": 280, "s": 75, "l": 42},
+    {"name": "dark purple", "h": 275, "s": 65, "l": 28},
+    {"name": "lavender", "h": 270, "s": 55, "l": 78},
+    {"name": "lilac", "h": 280, "s": 42, "l": 72},
+    {"name": "plum", "h": 295, "s": 55, "l": 35},
+    {"name": "mauve", "h": 300, "s": 28, "l": 58},
+
+    # MAGENTAS/PINKS (290°-350°)
+    {"name": "magenta", "h": 300, "s": 95, "l": 50},
+    {"name": "fuchsia", "h": 315, "s": 88, "l": 58},
+    {"name": "hot pink", "h": 325, "s": 85, "l": 60},
+    {"name": "pink", "h": 330, "s": 85, "l": 75},
+    {"name": "rose", "h": 340, "s": 58, "l": 55},
+    {"name": "blush", "h": 345, "s": 52, "l": 85},
+
+    # NEUTRALS
+    {"name": "white", "h": 0, "s": 0, "l": 98},
+    {"name": "ivory", "h": 48, "s": 90, "l": 95},
+    {"name": "cream", "h": 40, "s": 85, "l": 92},
+    {"name": "silver", "h": 0, "s": 0, "l": 76},
+    {"name": "gray", "h": 0, "s": 0, "l": 50},
+    {"name": "dark gray", "h": 0, "s": 0, "l": 30},
+    {"name": "charcoal", "h": 0, "s": 0, "l": 22},
+    {"name": "black", "h": 0, "s": 0, "l": 5},
+]
+
+
+def hex_to_hsl(hex_color: str) -> tuple:
+    """Convert hex color string to HSL.
+
+    Args:
+        hex_color: Color as "#rrggbb" string
+
+    Returns:
+        Tuple of (hue, saturation, lightness) where:
+        - hue: 0-360 degrees
+        - saturation: 0-100 percent
+        - lightness: 0-100 percent
+    """
+    hex_color = hex_color.lstrip('#')
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    return rgb_to_hsl(r, g, b)
+
+
+def hsl_distance(c1: dict, c2: dict) -> float:
+    """Calculate perceptual distance between two HSL colors.
+
+    Weights hue by saturation (grays have no meaningful hue) and
+    lightness more heavily (most perceptually important).
+
+    Args:
+        c1: First color as {"h": hue, "s": sat, "l": light}
+        c2: Second color as {"h": hue, "s": sat, "l": light}
+
+    Returns:
+        Distance value (lower = more similar)
+    """
+    # Hue difference (circular)
+    h_diff = abs(c1["h"] - c2["h"])
+    if h_diff > 180:
+        h_diff = 360 - h_diff
+
+    # Weight hue by average saturation (grays have no meaningful hue)
+    avg_sat = (c1["s"] + c2["s"]) / 2
+    hue_weight = avg_sat / 100
+
+    return (
+        (h_diff * hue_weight) ** 2 * 2 +  # Hue (weighted by saturation)
+        (c1["s"] - c2["s"]) ** 2 +         # Saturation
+        (c1["l"] - c2["l"]) ** 2 * 3       # Lightness (most important)
+    ) ** 0.5
+
+
+def generate_color_names(palette: list[str]) -> list[str]:
+    """Generate unique, human-readable names for a color palette.
+
+    Used for ARIA labels on color palette buttons to improve
+    screen reader accessibility.
+
+    Args:
+        palette: List of hex color strings (e.g., ["#ff0000", "#00ff00"])
+
+    Returns:
+        List of color names (e.g., ["red", "green"])
+    """
+    # Convert hex colors to HSL
+    colors = []
+    for hex_color in palette:
+        h, s, l = hex_to_hsl(hex_color)
+        colors.append({"hex": hex_color, "h": h, "s": s, "l": l})
+
+    names = [None] * len(colors)
+    used_names = {}  # name -> count
+
+    # Pass 1: Force neutral names for extreme values
+    for idx, c in enumerate(colors):
+        if c["l"] >= 95 or (c["l"] >= 90 and c["s"] < 25):
+            names[idx] = "white"
+            used_names["white"] = used_names.get("white", 0) + 1
+        elif c["l"] <= 10 or (c["l"] <= 15 and c["s"] < 15):
+            names[idx] = "black"
+            used_names["black"] = used_names.get("black", 0) + 1
+
+    # Pass 2: Match remaining colors to reference vocabulary
+    for idx, c in enumerate(colors):
+        if names[idx] is not None:
+            continue
+
+        best_name = None
+        best_score = float('inf')
+
+        for ref in COLOR_NAME_REFERENCES:
+            dist = hsl_distance(c, ref)
+            # Heavy penalty for reusing a name in this palette
+            penalty = 800 * used_names.get(ref["name"], 0)
+            score = dist + penalty
+
+            if score < best_score:
+                best_score = score
+                best_name = ref["name"]
+
+        names[idx] = best_name
+        used_names[best_name] = used_names.get(best_name, 0) + 1
+
+    return names
+
+
 def normalize_family_palettes(puzzles: list[dict], min_consistency_score: float = 60.0) -> tuple[list[dict], dict]:
     """
     Normalize color palettes across puzzle families.
@@ -473,6 +676,8 @@ def process_single_image(input_path: Path, output_path: Path, min_distance: floa
             col_clues = [[[c.count, c.color - 1] for c in col] for col in puzzle.col_clues]
             # Palette as hex colors (e.g., "#ff00aa")
             palette = ['#{:02x}{:02x}{:02x}'.format(*puzzle.color_map[i]) for i in sorted(puzzle.color_map.keys())]
+            # Color names for screen reader accessibility
+            color_names = generate_color_names(palette)
             # Solution with 0-indexed colors (-1 = empty)
             solution_0indexed = [[c - 1 if c > 0 else -1 for c in row] for row in grid]
 
@@ -485,6 +690,7 @@ def process_single_image(input_path: Path, output_path: Path, min_distance: floa
                 "r": row_clues,
                 "c": col_clues,
                 "p": palette,
+                "n": color_names,
                 "s": solution_0indexed
             }
         else:

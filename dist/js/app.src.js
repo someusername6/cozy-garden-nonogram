@@ -3322,6 +3322,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row_clues: convertClues(p.r),
         col_clues: convertClues(p.c),
         color_map: convertPalette(p.p),
+        color_names: p.n || null,  // Color names for accessibility (0-indexed array)
         solution: convertSolution(p.s)
       };
     } catch (e) {
@@ -4014,7 +4015,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const isSelected = parseInt(colorId) === selectedColor;
       btn.className = 'color-btn' + (isSelected ? ' selected' : '');
       btn.style.background = rgb(colorRgb);
-      btn.setAttribute('aria-label', `Color ${colorId}`);
+      // Use color name for accessibility if available (colorId is 1-indexed, names array is 0-indexed)
+      const colorIndex = parseInt(colorId) - 1;
+      const colorName = puzzle.color_names && puzzle.color_names[colorIndex]
+        ? puzzle.color_names[colorIndex]
+        : `Color ${colorId}`;
+      btn.setAttribute('aria-label', colorName.charAt(0).toUpperCase() + colorName.slice(1));
       btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
       btn.addEventListener('click', () => selectColor(parseInt(colorId)));
       palette.appendChild(btn);
@@ -5244,6 +5250,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // Mark as completed for instant hide (no animation)
           btn.classList.add('hold-complete');
           cancelHold();
+          // Haptic feedback on confirmation
+          if (window.Cozy.App) window.Cozy.App.vibrate(50);
           announce('Confirmed');
           onConfirm();
           // Remove completed class after a tick
