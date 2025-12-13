@@ -1333,6 +1333,10 @@ html[data-theme="dark"] .update-banner button {
 /* Zoom container wraps the board for scrolling when zoomed */
 .zoom-container {
   position: relative;
+  /* Stretch to full width despite parent's align-items: center */
+  /* This ensures container size is stable for fit-zoom calculations */
+  align-self: stretch;
+  width: 100%;
   max-width: 100%;
   /* Expand to fill available space instead of fixed height */
   flex: 1;
@@ -1576,10 +1580,14 @@ html[data-theme="dark"] .confirm-modal-btn-primary {
   border-color: var(--color-primary-btn);
 }
 
-/* Hide zoom controls on desktop (mouse users don't need them) */
+/* On desktop, zoom controls are less prominent but available */
 @media (hover: hover) and (pointer: fine) {
   .zoom-controls {
-    display: none;
+    opacity: 0.4;
+  }
+  .zoom-controls:hover,
+  .zoom-controls:focus-within {
+    opacity: 1;
   }
 }
 
