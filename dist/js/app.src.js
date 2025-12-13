@@ -1,5 +1,5 @@
 // ============================================================
-// FILE: js/utils.js
+// FILE: src/js/utils.js
 // ============================================================
 
 // Cozy Garden - Shared Utilities
@@ -154,7 +154,7 @@
 
 
 // ============================================================
-// FILE: js/storage.js
+// FILE: src/js/storage.js
 // ============================================================
 
 // Cozy Garden - Storage Module
@@ -516,7 +516,7 @@
 
 
 // ============================================================
-// FILE: js/history.js
+// FILE: src/js/history.js
 // ============================================================
 
 // Cozy Garden - History Module
@@ -758,7 +758,7 @@
 
 
 // ============================================================
-// FILE: js/screens.js
+// FILE: src/js/screens.js
 // ============================================================
 
 /**
@@ -1638,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ============================================================
-// FILE: js/collection.js
+// FILE: src/js/collection.js
 // ============================================================
 
 // Cozy Garden - Collection Screen
@@ -2469,7 +2469,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ============================================================
-// FILE: js/app.js
+// FILE: src/js/app.js
 // ============================================================
 
 // Cozy Garden - PWA Application Module
@@ -2695,7 +2695,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ============================================================
-// FILE: js/game.js
+// FILE: src/js/game.js
 // ============================================================
 
 // Cozy Garden - Nonogram Game Logic
@@ -5037,7 +5037,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ============================================================
-// FILE: js/zoom.js
+// FILE: src/js/zoom.js
 // ============================================================
 
 // Cozy Garden - Zoom & Pan System

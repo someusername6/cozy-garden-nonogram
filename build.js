@@ -20,27 +20,28 @@ let esbuild;
 
 // === Configuration ===
 
+const SRC_DIR = 'src';
 const DIST_DIR = 'dist';
 
 // JS files in dependency order (utils must be first, creates window.Cozy)
 const JS_FILES = [
-  'js/utils.js',
-  'js/storage.js',
-  'js/history.js',
-  'js/screens.js',
-  'js/collection.js',
-  'js/app.js',
-  'js/game.js',
-  'js/zoom.js'
+  'src/js/utils.js',
+  'src/js/storage.js',
+  'src/js/history.js',
+  'src/js/screens.js',
+  'src/js/collection.js',
+  'src/js/app.js',
+  'src/js/game.js',
+  'src/js/zoom.js'
 ];
 
-// Files to copy as-is
+// Files to copy as-is (paths relative to SRC_DIR)
 const COPY_FILES = [
   'manifest.json',
   'data/puzzles.js'
 ];
 
-// Directories to copy
+// Directories to copy (paths relative to SRC_DIR)
 const COPY_DIRS = [
   'assets/icons'
 ];
@@ -143,7 +144,7 @@ async function buildJS() {
 async function buildCSS() {
   console.log('\nProcessing CSS...');
 
-  const srcFile = 'css/style.css';
+  const srcFile = path.join(SRC_DIR, 'css/style.css');
   const sizeBefore = getFileSize(srcFile);
 
   // Minify with source map
@@ -172,7 +173,7 @@ async function buildServiceWorker(jsContent, cssContent) {
   const hash = contentHash(jsContent + cssContent);
 
   // Read original service worker
-  let sw = fs.readFileSync('sw.js', 'utf8');
+  let sw = fs.readFileSync(path.join(SRC_DIR, 'sw.js'), 'utf8');
 
   // Update cache version names
   sw = sw.replace(
@@ -224,7 +225,7 @@ async function buildServiceWorker(jsContent, cssContent) {
 async function buildHTML() {
   console.log('\nTransforming index.html...');
 
-  let html = fs.readFileSync('index.html', 'utf8');
+  let html = fs.readFileSync(path.join(SRC_DIR, 'index.html'), 'utf8');
 
   // Replace CSS preload hint
   html = html.replace(
@@ -265,16 +266,18 @@ async function copyAssets() {
 
   // Copy individual files
   for (const file of COPY_FILES) {
+    const srcPath = path.join(SRC_DIR, file);
     const destDir = path.join(DIST_DIR, path.dirname(file));
     ensureDir(destDir);
-    fs.copyFileSync(file, path.join(DIST_DIR, file));
+    fs.copyFileSync(srcPath, path.join(DIST_DIR, file));
     console.log(`  ${file}`);
   }
 
   // Copy directories
   for (const dir of COPY_DIRS) {
-    copyDir(dir, path.join(DIST_DIR, dir));
-    const count = fs.readdirSync(dir).length;
+    const srcPath = path.join(SRC_DIR, dir);
+    copyDir(srcPath, path.join(DIST_DIR, dir));
+    const count = fs.readdirSync(srcPath).length;
     console.log(`  ${dir}/ (${count} files)`);
   }
 }

@@ -537,8 +537,8 @@ Examples:
     parser.add_argument("--difficulties", nargs="+", default=["easy", "medium", "hard", "challenging", "expert", "master"],
                         choices=["easy", "medium", "hard", "challenging", "expert", "master"],
                         help="Difficulties to include in website (default: easy medium hard challenging expert master)")
-    parser.add_argument("--output", type=Path, default=Path("data/puzzles.js"),
-                        help="Output puzzle data file (default: data/puzzles.js)")
+    parser.add_argument("--output", type=Path, default=Path("src/data/puzzles.js"),
+                        help="Output puzzle data file (default: src/data/puzzles.js)")
     parser.add_argument("--html", type=Path, default=None,
                         help="Legacy: HTML file to update (use --output instead)")
     parser.add_argument("--no-update", action="store_true",
