@@ -29,7 +29,12 @@
 
     // Zoom
     MAX_ZOOM: 3.0,              // Maximum pinch-to-zoom level
-    COMFORTABLE_ZOOM: 2.0       // Suggested zoom for comfortable touch targets
+    COMFORTABLE_ZOOM: 2.0,      // Suggested zoom for comfortable touch targets
+    AUTO_ZOOM_MIN_SIZE: 10,     // Skip auto-zoom for puzzles ≤ this dimension
+
+    // Visual thresholds
+    BRIGHTNESS_MIDPOINT: 128,   // Light/dark threshold for text contrast (0-255 scale)
+    BADGE_MAX_DISPLAY: 99       // Show "99+" for counts above this
   };
 
   // === Shared Utilities ===

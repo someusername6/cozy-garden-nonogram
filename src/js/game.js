@@ -297,6 +297,8 @@
     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
   }
 
+  // ITU-R BT.601 luma formula - standard weights for perceived brightness
+  // Green (0.587) > Red (0.299) > Blue (0.114) matches human eye sensitivity
   function getBrightness(color) {
     return (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
   }
@@ -536,7 +538,9 @@
       menuBtn.classList.toggle('has-pencil-marks', hasMarks);
       const badge = menuBtn.querySelector('.pencil-badge');
       if (badge) {
-        badge.textContent = markCount > 99 ? '99+' : String(markCount);
+        badge.textContent = markCount > CONFIG.BADGE_MAX_DISPLAY
+          ? `${CONFIG.BADGE_MAX_DISPLAY}+`
+          : String(markCount);
       }
     }
   }
@@ -987,7 +991,7 @@
       const colorRgb = puzzle.color_map[clue.color];
       cell.textContent = clue.count;
       cell.style.background = rgb(colorRgb);
-      cell.style.color = getBrightness(colorRgb) > 128 ? '#000' : '#fff';
+      cell.style.color = getBrightness(colorRgb) > CONFIG.BRIGHTNESS_MIDPOINT ? '#000' : '#fff';
       cell.style.cursor = 'pointer';
       cell.onclick = () => selectColor(clue.color);
     }
@@ -1553,7 +1557,7 @@
           cellEl.style.setProperty('--cell-color', colorStr);
           // Set fold outline color based on cell brightness for visibility
           const brightness = getBrightness(colorRgb);
-          const outlineColor = brightness > 128
+          const outlineColor = brightness > CONFIG.BRIGHTNESS_MIDPOINT
             ? 'rgba(0, 0, 0, 0.6)'
             : 'rgba(255, 255, 255, 0.7)';
           cellEl.style.setProperty('--fold-outline-color', outlineColor);

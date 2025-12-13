@@ -54,6 +54,17 @@ from difficulty import calculate_difficulty
 # while allowing enough palette variety for detailed pixel art.
 MIN_COLOR_DISTANCE = 35
 
+# Color matching threshold for palette consistency analysis.
+# When comparing colors across puzzle variants (e.g., rose_1, rose_2),
+# colors closer than this are considered "matching" for consistency scoring.
+# Uses compuphase weighted distance (~3x larger than perceptual_color_distance).
+COLOR_MATCH_THRESHOLD = 200
+
+# Color remapping threshold for palette unification.
+# When unifying a puzzle family to a canonical palette, only remap colors
+# that are within this distance. Prevents mapping dissimilar colors.
+COLOR_REMAP_THRESHOLD = 150
+
 # Per-image max color overrides (image stem -> max colors)
 COLOR_OVERRIDES = {
     "black_susan": 3,
@@ -237,7 +248,7 @@ def normalize_family_palettes(puzzles: list[dict], min_consistency_score: float 
                             if d < best_dist:
                                 best_dist = d
                                 best_idx = k
-                    if best_idx >= 0 and best_dist < 200:
+                    if best_idx >= 0 and best_dist < COLOR_MATCH_THRESHOLD:
                         used.add(best_idx)
                         total_dist += best_dist
                         matched += 1
@@ -294,8 +305,8 @@ def normalize_family_palettes(puzzles: list[dict], min_consistency_score: float 
                             best_dist = d
                             best_canonical_idx = k
 
-                # Only remap if distance is reasonable (< 150)
-                if best_dist < 150:
+                # Only remap if distance is reasonable
+                if best_dist < COLOR_REMAP_THRESHOLD:
                     used_canonical.add(best_canonical_idx)
                     color_remap[old_idx] = canonical_colors[best_canonical_idx]
                 else:

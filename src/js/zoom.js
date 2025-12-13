@@ -339,7 +339,7 @@
       const color = window.Cozy.Garden?.getColorRgb?.(clue.color) || [128, 128, 128];
       const isSatisfied = clue.satisfied;
       const brightness = (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
-      const textColor = brightness > 128 ? '#333' : '#fff';
+      const textColor = brightness > CONFIG.BRIGHTNESS_MIDPOINT ? '#333' : '#fff';
 
       return `<span class="clue-tooltip-num${isSatisfied ? ' satisfied' : ''}"
                     style="background: rgb(${color.join(',')}); color: ${textColor}">
@@ -492,7 +492,7 @@
     if (!puzzle) return;
 
     // Only show for large puzzles
-    if (puzzle.width <= 10 && puzzle.height <= 10) return;
+    if (puzzle.width <= CONFIG.AUTO_ZOOM_MIN_SIZE && puzzle.height <= CONFIG.AUTO_ZOOM_MIN_SIZE) return;
 
     // Only show once
     if (window.Cozy.Storage?.getFlag('zoomHintShown')) return;
