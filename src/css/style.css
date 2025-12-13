@@ -1591,6 +1591,14 @@ html[data-theme="dark"] .confirm-modal-btn-primary {
   }
 }
 
+/* Constrain zoom controls to content area on wide screens */
+/* This aligns them with the 900px max-width content boundary */
+@media (min-width: 768px) {
+  .zoom-controls {
+    right: max(16px, calc((100vw - 900px) / 2 + 16px));
+  }
+}
+
 /* Landscape adjustments for zoom */
 @media (orientation: landscape) {
   .clue-tooltip.position-bottom {
