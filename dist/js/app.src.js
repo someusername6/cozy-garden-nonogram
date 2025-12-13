@@ -33,7 +33,12 @@
 
     // Zoom
     MAX_ZOOM: 3.0,              // Maximum pinch-to-zoom level
-    COMFORTABLE_ZOOM: 2.0       // Suggested zoom for comfortable touch targets
+    COMFORTABLE_ZOOM: 2.0,      // Suggested zoom for comfortable touch targets
+    AUTO_ZOOM_MIN_SIZE: 10,     // Skip auto-zoom for puzzles ≤ this dimension
+
+    // Visual thresholds
+    BRIGHTNESS_MIDPOINT: 128,   // Light/dark threshold for text contrast (0-255 scale)
+    BADGE_MAX_DISPLAY: 99       // Show "99+" for counts above this
   };
 
   // === Shared Utilities ===
@@ -3004,6 +3009,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
   }
 
+  // ITU-R BT.601 luma formula - standard weights for perceived brightness
+  // Green (0.587) > Red (0.299) > Blue (0.114) matches human eye sensitivity
   function getBrightness(color) {
     return (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
   }
@@ -3243,7 +3250,9 @@ document.addEventListener('DOMContentLoaded', () => {
       menuBtn.classList.toggle('has-pencil-marks', hasMarks);
       const badge = menuBtn.querySelector('.pencil-badge');
       if (badge) {
-        badge.textContent = markCount > 99 ? '99+' : String(markCount);
+        badge.textContent = markCount > CONFIG.BADGE_MAX_DISPLAY
+          ? `${CONFIG.BADGE_MAX_DISPLAY}+`
+          : String(markCount);
       }
     }
   }
@@ -3694,7 +3703,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const colorRgb = puzzle.color_map[clue.color];
       cell.textContent = clue.count;
       cell.style.background = rgb(colorRgb);
-      cell.style.color = getBrightness(colorRgb) > 128 ? '#000' : '#fff';
+      cell.style.color = getBrightness(colorRgb) > CONFIG.BRIGHTNESS_MIDPOINT ? '#000' : '#fff';
       cell.style.cursor = 'pointer';
       cell.onclick = () => selectColor(clue.color);
     }
@@ -4260,7 +4269,7 @@ document.addEventListener('DOMContentLoaded', () => {
           cellEl.style.setProperty('--cell-color', colorStr);
           // Set fold outline color based on cell brightness for visibility
           const brightness = getBrightness(colorRgb);
-          const outlineColor = brightness > 128
+          const outlineColor = brightness > CONFIG.BRIGHTNESS_MIDPOINT
             ? 'rgba(0, 0, 0, 0.6)'
             : 'rgba(255, 255, 255, 0.7)';
           cellEl.style.setProperty('--fold-outline-color', outlineColor);
@@ -5414,7 +5423,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const color = window.Cozy.Garden?.getColorRgb?.(clue.color) || [128, 128, 128];
       const isSatisfied = clue.satisfied;
       const brightness = (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
-      const textColor = brightness > 128 ? '#333' : '#fff';
+      const textColor = brightness > CONFIG.BRIGHTNESS_MIDPOINT ? '#333' : '#fff';
 
       return `<span class="clue-tooltip-num${isSatisfied ? ' satisfied' : ''}"
                     style="background: rgb(${color.join(',')}); color: ${textColor}">
@@ -5567,7 +5576,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!puzzle) return;
 
     // Only show for large puzzles
-    if (puzzle.width <= 10 && puzzle.height <= 10) return;
+    if (puzzle.width <= CONFIG.AUTO_ZOOM_MIN_SIZE && puzzle.height <= CONFIG.AUTO_ZOOM_MIN_SIZE) return;
 
     // Only show once
     if (window.Cozy.Storage?.getFlag('zoomHintShown')) return;
