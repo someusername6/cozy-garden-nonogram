@@ -1,0 +1,15 @@
+{
+  "name": "cozy-garden",
+  "version": "1.0.0",
+  "description": "A cozy nonogram puzzle game",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "preview": "npm run build && python3 -m http.server 3000 -d dist",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "sharp": "^0.34.5"
+  }
+}

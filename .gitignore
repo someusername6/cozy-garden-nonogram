@@ -22,6 +22,8 @@ Thumbs.db
 *.json
 !puzzles.json
 !manifest.json
+!package.json
+!package-lock.json
 report.txt
 skip_list.txt
 
@@ -32,4 +34,8 @@ test_images/test_variants/
 # Claude settings (local)
 .claude/
 images/input_reduced/
+
+# Node
 node_modules/
+
+# Note: dist/ is NOT ignored - production build is committed for deployment
