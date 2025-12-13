@@ -3675,6 +3675,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  /**
+   * Create a clue cell element
+   * @param {Object|null} clue - Clue object {count, color} or null for empty row/column
+   * @param {Object} puzzle - Puzzle object with color_map
+   * @param {string} className - CSS class name for the cell
+   * @returns {HTMLElement} The clue cell element
+   */
+  function createClueCell(clue, puzzle, className) {
+    const cell = document.createElement('div');
+    cell.className = className;
+
+    if (clue === null) {
+      // Empty row/column indicator
+      cell.textContent = '0';
+      cell.style.background = '#333';
+    } else {
+      const colorRgb = puzzle.color_map[clue.color];
+      cell.textContent = clue.count;
+      cell.style.background = rgb(colorRgb);
+      cell.style.color = getBrightness(colorRgb) > 128 ? '#000' : '#fff';
+      cell.style.cursor = 'pointer';
+      cell.onclick = () => selectColor(clue.color);
+    }
+
+    return cell;
+  }
+
   function buildClues(puzzle) {
     // Initialize clue element caches
     colClueElements = [];
@@ -3691,21 +3718,10 @@ document.addEventListener('DOMContentLoaded', () => {
       col.dataset.col = colIndex;
 
       if (clues.length === 0) {
-        const cell = document.createElement('div');
-        cell.className = 'clue-cell';
-        cell.textContent = '0';
-        cell.style.background = '#333';
-        col.appendChild(cell);
+        col.appendChild(createClueCell(null, puzzle, 'clue-cell'));
       } else {
         clues.forEach(clue => {
-          const cell = document.createElement('div');
-          cell.className = 'clue-cell';
-          cell.textContent = clue.count;
-          cell.style.background = rgb(puzzle.color_map[clue.color]);
-          cell.style.color = getBrightness(puzzle.color_map[clue.color]) > 128 ? '#000' : '#fff';
-          cell.style.cursor = 'pointer';
-          cell.onclick = () => selectColor(clue.color);
-          col.appendChild(cell);
+          col.appendChild(createClueCell(clue, puzzle, 'clue-cell'));
         });
       }
 
@@ -3725,21 +3741,10 @@ document.addEventListener('DOMContentLoaded', () => {
       rowClues.dataset.row = rowIndex;
 
       if (clues.length === 0) {
-        const cell = document.createElement('div');
-        cell.className = 'row-clue-cell';
-        cell.textContent = '0';
-        cell.style.background = '#333';
-        rowClues.appendChild(cell);
+        rowClues.appendChild(createClueCell(null, puzzle, 'row-clue-cell'));
       } else {
         clues.forEach(clue => {
-          const cell = document.createElement('div');
-          cell.className = 'row-clue-cell';
-          cell.textContent = clue.count;
-          cell.style.background = rgb(puzzle.color_map[clue.color]);
-          cell.style.color = getBrightness(puzzle.color_map[clue.color]) > 128 ? '#000' : '#fff';
-          cell.style.cursor = 'pointer';
-          cell.onclick = () => selectColor(clue.color);
-          rowClues.appendChild(cell);
+          rowClues.appendChild(createClueCell(clue, puzzle, 'row-clue-cell'));
         });
       }
 
@@ -3943,6 +3948,51 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  // === Drag Helpers (shared between mouse and touch handlers) ===
+
+  /**
+   * Begin a drag operation - sets up state and fills the initial cell
+   * @param {number} row - Cell row
+   * @param {number} col - Cell column
+   * @param {boolean} isEraser - Whether to use eraser (X mark) instead of selected color
+   */
+  function beginDrag(row, col, isEraser = false) {
+    const history = getHistory();
+    if (history) history.beginAction('fill');
+
+    isDragging = true;
+    dragColor = isEraser ? 0 : selectedColor;
+    dragCertain = !isPencilMode;
+    fillCell(row, col, dragColor, dragCertain);
+
+    // Capture actual value after toggle logic for consistent drag
+    const cellAfterFill = getCell(row, col);
+    dragColor = cellAfterFill.value;
+    dragCertain = cellAfterFill.certain;
+  }
+
+  /**
+   * End a drag operation - commits or cancels the history action
+   * @param {boolean} commit - Whether to commit (true) or cancel (false) the action
+   */
+  function endDrag(commit = true) {
+    if (!isDragging) return;
+
+    isDragging = false;
+    dragColor = null;
+
+    const history = getHistory();
+    if (history) {
+      if (commit) {
+        history.commitAction();
+      } else {
+        history.cancelAction();
+      }
+    }
+
+    updatePencilActionsVisibility();
+  }
+
   /**
    * Attach mouse event handlers for cell interaction
    */
@@ -3950,17 +4000,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cell.onmousedown = (e) => {
       e.preventDefault();
       cell.focus(); // Explicitly focus since preventDefault blocks default focus
-      const history = getHistory();
-      if (history) history.beginAction('fill');
-
-      isDragging = true;
-      dragColor = e.button === 2 ? 0 : selectedColor;
-      dragCertain = !isPencilMode;
-      fillCell(row, col, dragColor, dragCertain);
-      // Capture actual value after toggle logic for consistent drag
-      const cellAfterFill = getCell(row, col);
-      dragColor = cellAfterFill.value;
-      dragCertain = cellAfterFill.certain;
+      beginDrag(row, col, e.button === 2);
     };
 
     cell.onmouseenter = () => {
@@ -4059,20 +4099,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cell.ontouchend = () => {
       clearTimeout(longPressTimer);
-
-      // If it was a quick tap (not long-press, not drag), ensure we filled
-      const tapDuration = Date.now() - touchStartTime;
-      if (tapDuration < CONFIG.LONG_PRESS_DELAY && !touchMoved) {
-        // Quick tap - already filled in touchstart
-      }
-
-      isDragging = false;
-      dragColor = null;
-
-      const history = getHistory();
-      if (history) history.commitAction();
-
-      updatePencilActionsVisibility();
+      endDrag(true);
 
       // Notify zoom system to hide tooltip
       if (window.Cozy.Zoom) {
@@ -4082,11 +4109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cell.ontouchcancel = () => {
       clearTimeout(longPressTimer);
-      isDragging = false;
-      dragColor = null;
-
-      const history = getHistory();
-      if (history) history.cancelAction();
+      endDrag(false);
 
       // Notify zoom system to hide tooltip
       if (window.Cozy.Zoom) {
@@ -4146,17 +4169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Mouse up handler (for mouse-based drag)
-    mouseUpHandler = () => {
-      if (isDragging) {
-        isDragging = false;
-        dragColor = null;
-
-        const history = getHistory();
-        if (history) history.commitAction();
-
-        updatePencilActionsVisibility();
-      }
-    };
+    mouseUpHandler = () => endDrag(true);
     document.addEventListener('mouseup', mouseUpHandler);
   }
 
