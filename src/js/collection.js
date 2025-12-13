@@ -275,7 +275,8 @@
           if (value > 0) {
             const color = puzzle.color_map?.[value];
             if (color && Array.isArray(color) && color.length >= 3) {
-              return color;
+              // Apply colorblind transform for display
+              return window.Cozy.Utils.getDisplayColor(color);
             }
           }
           return null;
@@ -302,7 +303,8 @@
           if (value !== null && value > 0) {
             const color = puzzle.color_map?.[value];
             if (color && Array.isArray(color) && color.length >= 3) {
-              return color;
+              // Apply colorblind transform for display
+              return window.Cozy.Utils.getDisplayColor(color);
             }
           }
           return null;

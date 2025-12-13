@@ -223,6 +223,144 @@
     return canvas;
   }
 
+  // === Colorblind Support ===
+  // Daltonization algorithm to make colors more distinguishable for colorblind users
+  // Based on Brettel, Viénot, and Mollon (1997) simulation + compensation
+
+  // RGB to LMS conversion matrix (Hunt-Pointer-Estevez)
+  const RGB_TO_LMS = [
+    [0.31399022, 0.63951294, 0.04649755],
+    [0.15537241, 0.75789446, 0.08670142],
+    [0.01775239, 0.10944209, 0.87256922]
+  ];
+
+  // LMS to RGB conversion matrix (inverse)
+  const LMS_TO_RGB = [
+    [5.47221206, -4.64196010, 0.16963708],
+    [-1.12524190, 2.29317094, -0.16789520],
+    [0.02980165, -0.19318073, 1.16364789]
+  ];
+
+  // Simulation matrices for each type of colorblindness
+  // These transform LMS values to simulate what colorblind person sees
+  const COLORBLIND_MATRICES = {
+    protanopia: [
+      [0, 1.05118294, -0.05116099],
+      [0, 1, 0],
+      [0, 0, 1]
+    ],
+    deuteranopia: [
+      [1, 0, 0],
+      [0.9513092, 0, 0.04866992],
+      [0, 0, 1]
+    ],
+    tritanopia: [
+      [1, 0, 0],
+      [0, 1, 0],
+      [-0.86744736, 1.86727089, 0]
+    ]
+  };
+
+  /**
+   * Multiply a 3x3 matrix by a 3-element vector
+   */
+  function matrixMultiply(matrix, vector) {
+    return [
+      matrix[0][0] * vector[0] + matrix[0][1] * vector[1] + matrix[0][2] * vector[2],
+      matrix[1][0] * vector[0] + matrix[1][1] * vector[1] + matrix[1][2] * vector[2],
+      matrix[2][0] * vector[0] + matrix[2][1] * vector[1] + matrix[2][2] * vector[2]
+    ];
+  }
+
+  /**
+   * Clamp a value to 0-255 range
+   */
+  function clamp255(value) {
+    return Math.max(0, Math.min(255, Math.round(value)));
+  }
+
+  /**
+   * Transform a color for colorblind users using daltonization.
+   * Takes the error (what colorblind person can't see) and shifts it
+   * to wavelengths they CAN see.
+   *
+   * @param {number[]} rgb - [r, g, b] array with values 0-255
+   * @param {string} mode - 'protanopia', 'deuteranopia', or 'tritanopia'
+   * @returns {number[]} Transformed [r, g, b] array
+   */
+  function daltonize(rgb, mode) {
+    if (!mode || mode === 'off' || !COLORBLIND_MATRICES[mode]) {
+      return rgb;
+    }
+
+    // Normalize to 0-1 range
+    const rgbNorm = [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
+
+    // Convert RGB to LMS
+    const lms = matrixMultiply(RGB_TO_LMS, rgbNorm);
+
+    // Simulate colorblind vision
+    const lmsSim = matrixMultiply(COLORBLIND_MATRICES[mode], lms);
+
+    // Convert simulated LMS back to RGB
+    const rgbSim = matrixMultiply(LMS_TO_RGB, lmsSim);
+
+    // Calculate error (what the colorblind person can't see)
+    const error = [
+      rgbNorm[0] - rgbSim[0],
+      rgbNorm[1] - rgbSim[1],
+      rgbNorm[2] - rgbSim[2]
+    ];
+
+    // Shift error to visible channels
+    // For protanopia/deuteranopia: shift red/green error to blue
+    // For tritanopia: shift blue error to red/green
+    let errorShift;
+    if (mode === 'tritanopia') {
+      errorShift = [
+        error[2] * 0.7,           // Add some blue error to red
+        error[2] * 0.7,           // Add some blue error to green
+        0
+      ];
+    } else {
+      errorShift = [
+        0,
+        error[0] * 0.7 + error[1] * 0.7,  // Shift red+green error to green channel
+        error[0] * 0.7 + error[1] * 0.7   // Shift red+green error to blue channel
+      ];
+    }
+
+    // Apply correction
+    const corrected = [
+      clamp255((rgbNorm[0] + errorShift[0]) * 255),
+      clamp255((rgbNorm[1] + errorShift[1]) * 255),
+      clamp255((rgbNorm[2] + errorShift[2]) * 255)
+    ];
+
+    return corrected;
+  }
+
+  /**
+   * Get the current colorblind mode from storage
+   * @returns {string} Current mode or 'off'
+   */
+  function getColorblindMode() {
+    if (window.Cozy.Storage) {
+      return window.Cozy.Storage.getSetting('colorblindMode') || 'off';
+    }
+    return 'off';
+  }
+
+  /**
+   * Transform a color based on current colorblind setting
+   * @param {number[]} rgb - [r, g, b] array with values 0-255
+   * @returns {number[]} Transformed [r, g, b] array
+   */
+  function getDisplayColor(rgb) {
+    const mode = getColorblindMode();
+    return daltonize(rgb, mode);
+  }
+
   // === Export ===
   // Create the global Cozy namespace (other modules add themselves to it)
   window.Cozy = window.Cozy || {};
@@ -233,7 +371,10 @@
     parsePuzzleTitle,
     initOnce,
     createFlyingStamp,
-    renderOutlinedCanvas
+    renderOutlinedCanvas,
+    daltonize,
+    getColorblindMode,
+    getDisplayColor
   };
 })();
 
@@ -270,7 +411,8 @@
       progress: {}, // puzzleId -> { completed: bool, bestTime: ms, attempts: int }
       settings: {
         vibration: true,
-        theme: 'light'
+        theme: 'light',
+        colorblindMode: 'off'  // 'off', 'protanopia', 'deuteranopia', 'tritanopia'
       },
       stats: {
         totalCompleted: 0,
@@ -1407,7 +1549,8 @@ const ScreenManager = (function() {
       (row, col) => {
         const colorIndex = solution[row][col];
         if (colorIndex > 0 && palette[colorIndex]) {
-          return palette[colorIndex];
+          // Apply colorblind transform for display
+          return window.Cozy.Utils.getDisplayColor(palette[colorIndex]);
         }
         return null;
       }
@@ -1552,11 +1695,13 @@ const ScreenManager = (function() {
   function initSettingsScreen() {
     const backBtn = document.getElementById('settings-back-btn');
     const vibrationToggle = document.getElementById('settings-vibration');
+    const colorblindSelect = document.getElementById('settings-colorblind');
     const tutorialBtn = document.getElementById('settings-tutorial-btn');
 
     // Load current settings
     const storage = window.Cozy.Storage;
     if (vibrationToggle) vibrationToggle.checked = storage?.getSetting('vibration') ?? true;
+    if (colorblindSelect) colorblindSelect.value = storage?.getSetting('colorblindMode') || 'off';
 
     // Navigation
     initOnce(backBtn, 'click', goBack);
@@ -1564,6 +1709,13 @@ const ScreenManager = (function() {
 
     // Setting toggles
     initOnce(vibrationToggle, 'change', () => storage?.setSetting('vibration', vibrationToggle.checked));
+    initOnce(colorblindSelect, 'change', () => {
+      storage?.setSetting('colorblindMode', colorblindSelect.value);
+      // Refresh collection to update puzzle preview colors
+      if (window.Cozy.Collection) {
+        window.Cozy.Collection.refresh();
+      }
+    });
 
     // Feature-specific initialization
     initThemeSelector();
@@ -1964,7 +2116,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (value > 0) {
             const color = puzzle.color_map?.[value];
             if (color && Array.isArray(color) && color.length >= 3) {
-              return color;
+              // Apply colorblind transform for display
+              return window.Cozy.Utils.getDisplayColor(color);
             }
           }
           return null;
@@ -1991,7 +2144,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (value !== null && value > 0) {
             const color = puzzle.color_map?.[value];
             if (color && Array.isArray(color) && color.length >= 3) {
-              return color;
+              // Apply colorblind transform for display
+              return window.Cozy.Utils.getDisplayColor(color);
             }
           }
           return null;
@@ -4021,7 +4175,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const btn = document.createElement('button');
       const isSelected = parseInt(colorId) === selectedColor;
       btn.className = 'color-btn' + (isSelected ? ' selected' : '');
-      btn.style.background = rgb(colorRgb);
+      // Apply colorblind transform for display
+      const displayRgb = window.Cozy.Utils.getDisplayColor(colorRgb);
+      btn.style.background = rgb(displayRgb);
       // Use color name for accessibility if available (colorId is 1-indexed, names array is 0-indexed)
       const colorIndex = parseInt(colorId) - 1;
       const colorName = puzzle.color_names && puzzle.color_names[colorIndex]
@@ -4111,9 +4267,11 @@ document.addEventListener('DOMContentLoaded', () => {
       cell.setAttribute('aria-label', 'empty');
     } else {
       const colorRgb = puzzle.color_map[clue.color];
+      // Apply colorblind transform for display
+      const displayRgb = window.Cozy.Utils.getDisplayColor(colorRgb);
       cell.textContent = clue.count;
-      cell.style.background = rgb(colorRgb);
-      cell.style.color = getBrightness(colorRgb) > CONFIG.BRIGHTNESS_MIDPOINT ? '#000' : '#fff';
+      cell.style.background = rgb(displayRgb);
+      cell.style.color = getBrightness(displayRgb) > CONFIG.BRIGHTNESS_MIDPOINT ? '#000' : '#fff';
       cell.style.cursor = 'pointer';
       cell.onclick = () => selectColor(clue.color);
       // Accessible label with color name (color_names is 0-indexed, clue.color is 1-indexed)
@@ -4706,7 +4864,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Color
       const colorRgb = puzzle.color_map[cell.value];
       if (colorRgb) {
-        const colorStr = `rgb(${colorRgb[0]}, ${colorRgb[1]}, ${colorRgb[2]})`;
+        // Apply colorblind transform for display
+        const displayRgb = window.Cozy.Utils.getDisplayColor(colorRgb);
+        const colorStr = `rgb(${displayRgb[0]}, ${displayRgb[1]}, ${displayRgb[2]})`;
 
         if (cell.certain) {
           cellEl.style.background = colorStr;
@@ -4714,7 +4874,7 @@ document.addEventListener('DOMContentLoaded', () => {
           cellEl.classList.add('maybe-color');
           cellEl.style.setProperty('--cell-color', colorStr);
           // Set fold outline color based on cell brightness for visibility
-          const brightness = getBrightness(colorRgb);
+          const brightness = getBrightness(displayRgb);
           const outlineColor = brightness > CONFIG.BRIGHTNESS_MIDPOINT
             ? 'rgba(0, 0, 0, 0.6)'
             : 'rgba(255, 255, 255, 0.7)';
@@ -5446,7 +5606,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cell.value !== null && cell.value > 0) {
           const color = puzzle.color_map[cell.value];
           if (color) {
-            return color;
+            // Apply colorblind transform for display
+            return window.Cozy.Utils.getDisplayColor(color);
           }
         }
         return null;

@@ -1001,7 +1001,9 @@
       const btn = document.createElement('button');
       const isSelected = parseInt(colorId) === selectedColor;
       btn.className = 'color-btn' + (isSelected ? ' selected' : '');
-      btn.style.background = rgb(colorRgb);
+      // Apply colorblind transform for display
+      const displayRgb = window.Cozy.Utils.getDisplayColor(colorRgb);
+      btn.style.background = rgb(displayRgb);
       // Use color name for accessibility if available (colorId is 1-indexed, names array is 0-indexed)
       const colorIndex = parseInt(colorId) - 1;
       const colorName = puzzle.color_names && puzzle.color_names[colorIndex]
@@ -1091,9 +1093,11 @@
       cell.setAttribute('aria-label', 'empty');
     } else {
       const colorRgb = puzzle.color_map[clue.color];
+      // Apply colorblind transform for display
+      const displayRgb = window.Cozy.Utils.getDisplayColor(colorRgb);
       cell.textContent = clue.count;
-      cell.style.background = rgb(colorRgb);
-      cell.style.color = getBrightness(colorRgb) > CONFIG.BRIGHTNESS_MIDPOINT ? '#000' : '#fff';
+      cell.style.background = rgb(displayRgb);
+      cell.style.color = getBrightness(displayRgb) > CONFIG.BRIGHTNESS_MIDPOINT ? '#000' : '#fff';
       cell.style.cursor = 'pointer';
       cell.onclick = () => selectColor(clue.color);
       // Accessible label with color name (color_names is 0-indexed, clue.color is 1-indexed)
@@ -1686,7 +1690,9 @@
       // Color
       const colorRgb = puzzle.color_map[cell.value];
       if (colorRgb) {
-        const colorStr = `rgb(${colorRgb[0]}, ${colorRgb[1]}, ${colorRgb[2]})`;
+        // Apply colorblind transform for display
+        const displayRgb = window.Cozy.Utils.getDisplayColor(colorRgb);
+        const colorStr = `rgb(${displayRgb[0]}, ${displayRgb[1]}, ${displayRgb[2]})`;
 
         if (cell.certain) {
           cellEl.style.background = colorStr;
@@ -1694,7 +1700,7 @@
           cellEl.classList.add('maybe-color');
           cellEl.style.setProperty('--cell-color', colorStr);
           // Set fold outline color based on cell brightness for visibility
-          const brightness = getBrightness(colorRgb);
+          const brightness = getBrightness(displayRgb);
           const outlineColor = brightness > CONFIG.BRIGHTNESS_MIDPOINT
             ? 'rgba(0, 0, 0, 0.6)'
             : 'rgba(255, 255, 255, 0.7)';
@@ -2426,7 +2432,8 @@
         if (cell.value !== null && cell.value > 0) {
           const color = puzzle.color_map[cell.value];
           if (color) {
-            return color;
+            // Apply colorblind transform for display
+            return window.Cozy.Utils.getDisplayColor(color);
           }
         }
         return null;

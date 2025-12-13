@@ -559,7 +559,8 @@ const ScreenManager = (function() {
       (row, col) => {
         const colorIndex = solution[row][col];
         if (colorIndex > 0 && palette[colorIndex]) {
-          return palette[colorIndex];
+          // Apply colorblind transform for display
+          return window.Cozy.Utils.getDisplayColor(palette[colorIndex]);
         }
         return null;
       }
@@ -704,11 +705,13 @@ const ScreenManager = (function() {
   function initSettingsScreen() {
     const backBtn = document.getElementById('settings-back-btn');
     const vibrationToggle = document.getElementById('settings-vibration');
+    const colorblindSelect = document.getElementById('settings-colorblind');
     const tutorialBtn = document.getElementById('settings-tutorial-btn');
 
     // Load current settings
     const storage = window.Cozy.Storage;
     if (vibrationToggle) vibrationToggle.checked = storage?.getSetting('vibration') ?? true;
+    if (colorblindSelect) colorblindSelect.value = storage?.getSetting('colorblindMode') || 'off';
 
     // Navigation
     initOnce(backBtn, 'click', goBack);
@@ -716,6 +719,13 @@ const ScreenManager = (function() {
 
     // Setting toggles
     initOnce(vibrationToggle, 'change', () => storage?.setSetting('vibration', vibrationToggle.checked));
+    initOnce(colorblindSelect, 'change', () => {
+      storage?.setSetting('colorblindMode', colorblindSelect.value);
+      // Refresh collection to update puzzle preview colors
+      if (window.Cozy.Collection) {
+        window.Cozy.Collection.refresh();
+      }
+    });
 
     // Feature-specific initialization
     initThemeSelector();

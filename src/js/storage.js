@@ -26,7 +26,8 @@
       progress: {}, // puzzleId -> { completed: bool, bestTime: ms, attempts: int }
       settings: {
         vibration: true,
-        theme: 'light'
+        theme: 'light',
+        colorblindMode: 'off'  // 'off', 'protanopia', 'deuteranopia', 'tritanopia'
       },
       stats: {
         totalCompleted: 0,
