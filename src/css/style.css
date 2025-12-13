@@ -870,11 +870,11 @@ kbd {
 
 .color-btn.selected {
   /* Scale inward to create space for focus ring within original bounds */
-  transform: scale(0.75);
-  /* Focus ring with white gap - sizes compensate for 0.75 scale to appear 3px */
+  transform: scale(0.82);
+  /* Focus ring with white gap - sizes compensate for scale to appear ~3px */
   box-shadow:
-    0 0 0 4px var(--color-surface),   /* White gap (4px * 0.75 = 3px visual) */
-    0 0 0 8px var(--color-primary),   /* Green ring (4px visible * 0.75 = 3px visual) */
+    0 0 0 4px var(--color-surface),   /* White gap */
+    0 0 0 7px var(--color-primary),   /* Green ring */
     0 2px 6px rgba(0, 0, 0, 0.25);    /* Subtle drop shadow */
 }
 
@@ -1902,10 +1902,10 @@ body.is-installed {
 /* Color palette buttons - scale inward with focus ring, matches selected state */
 .color-btn:focus-visible:not(.selected) {
   outline: none;
-  transform: scale(0.75);
+  transform: scale(0.82);
   box-shadow:
     0 0 0 4px var(--color-surface),
-    0 0 0 8px var(--color-primary),
+    0 0 0 7px var(--color-primary),
     0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
