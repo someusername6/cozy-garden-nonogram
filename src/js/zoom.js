@@ -156,20 +156,24 @@
     }
 
     const baseCellSize = getBaseCellSize();
-
-    // Clue areas scale with cell size, so express them as multiples of cell size
     const maxRowClues = Math.max(...puzzle.row_clues.map(r => r.length));
     const maxColClues = Math.max(...puzzle.col_clues.map(c => c.length));
 
-    // Clue area in terms of cell-size units
-    // Row clues: each clue is ~0.6 cell widths, plus gap
-    // Col clues: each clue is ~0.6 cell heights, plus gap
-    const clueWidthUnits = Math.max(2, maxRowClues * 0.6 + 0.5);
-    const clueHeightUnits = Math.max(2, maxColClues * 0.6 + 0.5);
+    // Components that scale with cell size (in cell-size units)
+    // Row clue cells: CSS min-width is 0.65 * cell-size
+    // Col clue cells: CSS height is 0.7 * cell-size
+    const scalingWidthUnits = puzzle.width + maxRowClues * 0.65;
+    const scalingHeightUnits = puzzle.height + maxColClues * 0.7;
 
-    // Total board size in cell-size units (grid + clues + gap between them)
-    const totalWidthUnits = puzzle.width + clueWidthUnits + 0.25;
-    const totalHeightUnits = puzzle.height + clueHeightUnits + 0.25;
+    // Fixed pixel components that don't scale with zoom
+    // These gaps are defined in CSS and remain constant regardless of cell size
+    const ROW_CLUE_GAP = 2;  // CSS: .row-clues { gap: 2px }
+    const COL_CLUE_GAP = 2;  // CSS: .col-clue { gap: 2px }
+    const GRID_GAP = 1;      // CSS: .grid, .col-clues { gap: 1px }
+    const CLUE_GRID_GAP = 4; // Gap between clue areas and grid
+
+    const nonScalingWidth = (maxRowClues - 1) * ROW_CLUE_GAP + (puzzle.width - 1) * GRID_GAP + CLUE_GRID_GAP;
+    const nonScalingHeight = (maxColClues - 1) * COL_CLUE_GAP + (puzzle.height - 1) * GRID_GAP + CLUE_GRID_GAP;
 
     // Measure actual container dimensions
     const availableWidth = container.clientWidth;
@@ -178,9 +182,9 @@
     // Small padding for breathing room
     const padding = 8;
 
-    // Calculate zoom needed to fit in each dimension
-    const fitZoomX = (availableWidth - padding * 2) / (totalWidthUnits * baseCellSize);
-    const fitZoomY = (availableHeight - padding * 2) / (totalHeightUnits * baseCellSize);
+    // Solve for zoom: scalingUnits * baseCellSize * zoom + nonScaling + 2*padding = available
+    const fitZoomX = (availableWidth - nonScalingWidth - padding * 2) / (scalingWidthUnits * baseCellSize);
+    const fitZoomY = (availableHeight - nonScalingHeight - padding * 2) / (scalingHeightUnits * baseCellSize);
 
     // Use the smaller of the two to ensure puzzle fits in both dimensions
     const fitZoom = Math.min(fitZoomX, fitZoomY);
