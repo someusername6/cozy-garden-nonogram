@@ -2216,11 +2216,15 @@
       isHolding = true;
       btn.classList.add('holding');
 
+      // Announce for screen readers
+      announce('Holding, keep holding to confirm');
+
       holdTimer = setTimeout(() => {
         if (isHolding) {
           // Mark as completed for instant hide (no animation)
           btn.classList.add('hold-complete');
           cancelHold();
+          announce('Confirmed');
           onConfirm();
           // Remove completed class after a tick
           setTimeout(() => btn.classList.remove('hold-complete'), 50);
